@@ -21,8 +21,8 @@ import lang::java::jdt::refactorings::JavaADT;
  *
  * For example, one of the following:
  */
-import typecomputationbasedframework4refactorings::TypeValues;
-// import typecomputationbasedframewrok4refactorings::gens::TypeValues;
+import typecomputations::TypeValues;
+// import typecomputations::TypeValuesPlusGens;
 
 import IO;
 
