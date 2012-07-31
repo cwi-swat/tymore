@@ -22,12 +22,12 @@ import lang::java::jdt::refactorings::JavaADT;
  * For example, one of the following:
  */
 import typecomputations::TypeValues;
-// import typecomputations::TypeValuesPlusGens;
+import typecomputations::TypeValuesPlusGens;
 
 import IO;
 
 /*
- * The type constructor of an intial monad, its inclusion and bind functions
+ * The type constructor of an initial monad, its inclusion and bind functions
  */
 data TypeOf[&V] = typeof(&V val)
 			  	  | typeid(&V val);		
@@ -49,7 +49,7 @@ public SetTypeOf[&V1] bind(settypeof(set[TypeOf[&V]] vals), SetTypeOf[&V1] (&V) 
 	= settypeof({ (typeof(&V v) := val) ? *runSetTypeOf(f(v)) : val | TypeOf[&V] val <- vals });
 		
 /*
- * The type constructor of a monad modelling Computations with a state passed around, its inclusion and bind functions
+ * The type constructor of a monad modelling computations with a state passed around, its inclusion and bind functions
  * '+' its run function
  */  
 data StateTypeOf[&V] = statetypeof(SetTypeOf[&V] (AstNode) val);
@@ -59,10 +59,50 @@ public StateTypeOf[&V] bind(statetypeof(SetTypeOf[&V] (AstNode) sval), StateType
 	= statetypeof( SetTypeOf[&V1] (AstNode t) { 
 		return settypeof( { v | /TypeOf[&V] v <- { (typeof(&V val) := tval) ? runSetTypeOf(runStateTypeOf(f(val))(t)) : { tval } | TypeOf[&V] tval <- runSetTypeOf(sval(t)) } }); } );
 
+@doc{ Lifting to computations }
+public TypeOf[&V] (AstNode) lift(&V (AstNode) f)
+	= TypeOf[&V] (AstNode t) { return !isType(f(v)) ? include(f(v)) : typeid(f(v)); };
+	
+/*
+ * Evaluation
+ */
+public &V1 (TypeOf[&V]) lift(&V1 (&V) f)
+	= &V1 (TypeOf[&V] val) { 
+			return visit(val) { 
+					case typeof(&V v) => f(v)
+					case typeid(&V v) => v 
+			}; 
+	  };
+
+@doc{ Lifting to stateful computations }
+public SetTypeOf[&V] (AstNode) lift(TypeOf[&V] (AstNode) f) 
+	= SetTypeOf[&V] (AstNode t) { return settypeof( { f(t) } ); };
+	
+public SetTypeOf[&V1] (&V) lift(TypeOf[&V1] (&V) f) 
+	= SetTypeOf[&V1] (&V val) { return settypeof( { f(val) } ); };
+
+/*
+ * Evaluation
+ */	
+public set[&V1] (SetTypeOf[&V]) lift(&V1 (TypeOf[&V]) f) = set[&V1] (SetTypeOf[&V] val) { return { f(v) | TypeOf[&V] v <- runSetTypeOf(val) }; };
+
+public StateTypeOf[&V1] (AstNode) lift(SetTypeOf[&V1] (AstNode) f) 
+	= StateTypeOf[&V1] (AstNode t) { return statetypeof( SetTypeOf[&V1] (AstNode tt) { return f(t); } ); }; 
+	
+public StateTypeOf[&V1] (&V) lift(SetTypeOf[&V1] (&V) f) 
+	= StateTypeOf[&V1] (&V val) { return statetypeof( (AstNode t) { return f(val); } ); }; 
+
+/*
+ * Evaluation
+ */
+public set[&V1] (AstNode) (StateTypeOf[&V]) lift(set[&V1] (SetTypeOf[&V]) f) = set[&V1] (AstNode) (StateTypeOf[&V] val) { return set[&V1] (AstNode t) { return f(runStateTypeOf(val)(t)); }; };
+
+
 /*
  * Ordinary composition operator
  */
 public &V1 o(&V val, &V1 (&V) f) = f(val); 
+
 
 
 /* 
@@ -86,8 +126,7 @@ public TypeOf[&V] cdecl(&V val) = include(decl(val));
 @doc{ Param computation }
 public TypeOf[&V] cparam(&V val, int i) = include(param(val, i));
 
-
-// ----- Bunch of prettyprint utility functions (Not interesting!) -------------------------------------
+// ----- Bunch of prettyprint utility functions -------------------------------------
 public str prettyprint(set[&V] vals) = "{ <for(val<-vals){><prettyprint(val)><}> }";
 public str prettyprint(typeof(&V val)) = "[<prettyprint(val)>]";
 public str prettyprint(typeid(&V val)) = "[<prettyprint(val)>]";

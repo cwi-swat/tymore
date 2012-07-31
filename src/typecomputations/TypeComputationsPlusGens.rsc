@@ -16,31 +16,6 @@ import typecomputationbasedframework4refactorings::TypeComputations;
 
 import IO;
 
-
-@doc{ Lifting to stateful computations }
-public SetTypeOf[&V1] (AstNode) lift(TypeOf[&V1] (AstNode) f) 
-	= SetTypeOf[&V1] (AstNode t) { return settypeof( { f(t) } ); };
-	
-public SetTypeOf[&V1] (&V) lift(TypeOf[&V1] (&V) f) 
-	= SetTypeOf[&V1] (&V val) { return settypeof( { f(val) } ); };
-
-/*
- * Evaluation
- */	
-public set[&V1] (SetTypeOf[&V]) lift(&V1 (TypeOf[&V]) f) = set[&V1] (SetTypeOf[&V] val) { return { f(v) | TypeOf[&V] v <- runSetTypeOf(val) }; };
-
-public StateTypeOf[&V1] (AstNode) lift(SetTypeOf[&V1] (AstNode) f) 
-	= StateTypeOf[&V1] (AstNode t) { return statetypeof( SetTypeOf[&V1] (AstNode tt) { return f(t); } ); }; 
-	
-public StateTypeOf[&V1] (&V) lift(SetTypeOf[&V1] (&V) f) 
-	= StateTypeOf[&V1] (&V val) { return statetypeof( (AstNode t) { return f(val); } ); }; 
-
-/*
- * Evaluation
- */
-public set[&V1] (AstNode) (StateTypeOf[&V]) lift(set[&V1] (SetTypeOf[&V]) f) = set[&V1] (AstNode) (StateTypeOf[&V] val) { return set[&V1] (AstNode t) { return f(runStateTypeOf(val)(t)); }; };
-
-
 /*
  * Type computation plus generics
  */
