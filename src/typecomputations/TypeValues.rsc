@@ -88,4 +88,4 @@ public set[Entity] (Entity) overrides(CompitUnit facts) = set[Entity] (Entity va
 @doc{Declaring type semantics}
 public Entity decl(Entity val) = entity(val.id + decl());
 @doc{Declared parameter type semantics}
-public Entity param(Entity val, int i) = entity(val.id + \parameter(i));
+public Entity (Entity) param(int i) = Entity (Entity val) { return entity(val.id + \parameter(i)); };

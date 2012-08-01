@@ -81,6 +81,9 @@ public ParameterizedEntity (ParameterizedEntity) parameterize1(CompilUnitGens fa
 		tracer(val.bindings != bindings([],[]), "evalc + gens (out) <prettyprint(val)>; ");	
 		return val;
 	};
+	
+@doc{ Evaluation under parameterization }
+public  ParameterizedEntity (ParameterizedEntity) evalPlusGens(CompilUnitGens facts) = parameterize1;
 
 public ParamterizedEntity typeArgument(ParameterizedEntity arg, tparam:entity([ *ids, typeParameter(str name, list[Entity] bounds) ]), &V context, Mapper mapper) {
 	if(isTypeParameter(arg)) return arg;

@@ -19,48 +19,49 @@ import IO;
 /*
  * Type computation plus generics
  */
-
-public  set[&V] (AstNode) (set[&V] (AstNode)) eval_a_PlusGens(&V (AstNode, &V) parameterize) =
-	set[&V] (AstNode) (set[&V] (AstNode) val) { 
-		return set[&V] (AstNode t) { 
-			return { parameterize(t, v) | v <- val(t) };
-		}; 
-	};
-	
-public StateTypeOf[&V] (AstNode) lookup_a_PlusGens(&V (AstNode) lookup, 
-												   &V (&V) eval, 
-												   &V (&V) parameterize_eval, 
-												   &V (AstNode, AstNode, &V, &V) parameterize_lookup,
-												   &V (AstNode, &V) parameterize_lookup_reduced,
-												   StateTypeOf[&V] (&V) filter_a_1,
-												   StateTypeOf[&V] (&V) filter_a_2) 
+// lookup := lift(lift(lift1(lookup(facts.mapper))))	
+// eval := lift(lift(lift2(evalPlusGens(facts))))
+public StateTypeOf[&V] (AstNode) lookupPlusGens(StateTypeOf[&V] (&V) lookup, set[&V] (AstNode) (StateTypeOf[&V]) eval, StateTypeOf[&V] (&V) filter1, StateTypeOf[&V] (&V) filter2, CompilUnitGens facts) 
 	= StateTypeOf[&V] (AstNode t) {  
 		return (some(subt) := subterm(t)) ? 
-					bind( bind( bind( lift(lift(lookup_a(lookup)))(t), 
-									  filter_a_1), 
+					bind( bind( bind( lookup(t), filter1), 
 							  	StateTypeOf[&V] (&V val) {
 									return statetypeof(SetTypeOf[&V] (AstNode t) { 
-										return settypeof({ typeof( o ( o (lookup_a_PlusGens(lookup, 
-																							eval, 
-																							parameterize_eval, 
-																							parameterize_lookup, 
-																							parameterize_lookup_reduced, 
-																							filter_a_1, 
-																						    filter_a_2)(subt), 
-														 				  lift(lift(eval_a(parameterize_eval)))), 
-																   		&V (set[&V] (AstNode) val_T) { 
-																   				return parameterize_lookup(t, subt, val, getOneFrom(val_T(subt))); } ) ) }); }) ;
+										return settypeof({ typeof(v) | v <- o ( o (lookupPlusGens(lookup, eval, filter1, filter2, facts)(subt), eval), 
+																   	  			set[&V] (set[&V] (AstNode) vals_T) { 
+																   						return { parameterize2(facts)(t, subt, val, val_T) | &V val_T <- vals_T(subt) }; 
+																   					} 
+																   			   )
+														  }); });
 								}), 
-							filter_a_2) 
-					: bind(	bind( bind( lift(lift(lookup_a(lookup)))(t), 
-										filter_a_1),
-								  StateTypeOf[&V] (&V val) {
-										return statetypeof(SetTypeOf[&V] (AstNode t) { 
-											return settypeof({ include(parameterize_lookup_reduced(t, val)) }); });
+						  filter2) 
+				  : bind( bind( bind( lookup(t), filter1),
+								StateTypeOf[&V] (&V val) {
+									return statetypeof(SetTypeOf[&V] (AstNode t) { 
+										return settypeof({ include(parameterize2Reduced(facts)(t, val)) }); });
 								 }), 
-							filter_a_2); };
+						  filter2); };
+						  
+public StateTypeOf[&V] (AstNode) lookupPlusGensOpen(StateTypeOf[&V] (&V) lookup, set[&V] (AstNode) (StateTypeOf[&V]) eval, StateTypeOf[&V] (&V) filter1, StateTypeOf[&V] (&V) filter2, CompilUnitGens facts) 
+	= StateTypeOf[&V] (AstNode t) {  
+		return (some(subt) := subterm(t)) ?  
+					bind( lookup(t), 
+							   StateTypeOf[&V] (&V val) {
+									return statetypeof(SetTypeOf[&V] (AstNode t) { 
+										return settypeof({ typeof(v) | v <- o ( o (lookupPlusGens(lookup, eval, filter1, filter2, facts)(subt), eval), 
+																	   			set[&V] (set[&V] (AstNode) vals_T) { 
+																		 					return { parameterize2(facts)(t, subt, val, val_T(subt)) | &V val_T <- vals_T(subt)}; } ) 
+														 }); }) ;
+						       }) 
+				  : bind(lookup(t), 
+						 StateTypeOf[&V] (&V val) {
+								return statetypeof(SetTypeOf[&V] (AstNode t) { 
+										return settypeof({ include(parameterize2Reduced(facts)(t, val)) }); });
+						   }); 
+	 };
  
 private AstNode this(Entity scope) = thisExpression(none())[@bindings = ("typeBinding" : scope)]; 
+
 @doc{A function that returns a subterm which is sub-looked up}
 public Option[AstNode] subterm(e:classInstanceCreation(none(),_,[],_,none())) = none();
 public Option[AstNode] subterm(e:classInstanceCreation(some(AstNode expr),_,[],_,none())) = some(removeParentheses(expr));
@@ -78,44 +79,14 @@ public Option[AstNode] subterm(e:superMethodInvocation(none(),_,_,_)) = some(thi
 public Option[AstNode] subterm(e:superMethodInvocation(some(AstNode qualifier),_,_,_)) = some(qualifier); 
 public default Option[AstNode] subterm(AstNode t) = none();
 
-public AstNode removeParentheses(term:parenthesizedExpression(AstNode expression)) = removeParentheses(expression);
+public AstNode removeParentheses(parenthesizedExpression(AstNode expression)) = removeParentheses(expression);
 public AstNode removeParentheses(AstNode expression) = expression;
 
-public StateTypeOf[&V] (&V) filter_a(bool (&V) p, &V (&V) eval) 
+public StateTypeOf[&V] (&V) filter(bool (&V) p, &V (&V) eval) 
 	= StateTypeOf[&V] (&V val) { 
 		return statetypeof( SetTypeOf[&V] (AstNode t) { 
 			return settypeof({ (p(val)) ? typeid(eval(val)) : include(val) }); } ); 
 	  };
-
-public StateTypeOf[&V] (AstNode) lookup_a_PlusGens_Open(&V (AstNode) lookup, 
-												   &V (&V) eval, 
-												   &V (&V) parameterize_eval, 
-												   &V (AstNode, AstNode, &V, &V) parameterize_lookup,
-												   &V (AstNode, &V) parameterize_lookup_reduced,
-												   StateTypeOf[&V] (&V) filter_a_1,
-												   StateTypeOf[&V] (&V) filter_a_2) 
-	= StateTypeOf[&V] (AstNode t) {  
-		return (some(subt) := subterm(t)) ?  
-					bind( lift(lift(lookup_a(lookup)))(t), 
-							   StateTypeOf[&V] (&V val) {
-									return statetypeof(SetTypeOf[&V] (AstNode t) { 
-										return settypeof({ typeof( o ( o (lookup_a_PlusGens(lookup, 
-																							eval, 
-																							parameterize_eval, 
-																							parameterize_lookup, 
-																							parameterize_lookup_reduced, 
-																							filter_a_1, 
-																							filter_a_2)(subt), 
-																 		   lift(lift(eval_a(parameterize_eval)))), 
-																	   &V (set[&V] (AstNode) val_T) { 
-																		 	return parameterize_lookup(t, subt, val, getOneFrom(val_T(subt))); } ) ) }); }) ;
-						}) 
-					: bind(lift(lift(lookup_a(lookup)))(t), 
-						   StateTypeOf[&V] (&V val) {
-								return statetypeof(SetTypeOf[&V] (AstNode t) { 
-										return settypeof({ include(parameterize_lookup_reduced(t, val)) }); });
-						   }); 
-	 };
 	 
 public StateTypeOf[ParameterizedEntity] (ParameterizedEntity val) paramc(int i) 
 	= StateTypeOf[ParameterizedEntity] (ParameterizedEntity val) {
