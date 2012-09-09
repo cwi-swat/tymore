@@ -354,7 +354,7 @@ public class TypeComputationModelBuilder {
 					params.append(bindingConverter.getEntity(param));
 					importBinding(param, null);
 				}
-				if(binding.isLocal())  return params.done(); // local type declarations
+				if(binding.isLocal()) return params.done(); // local type declarations
 				if(binding.getDeclaringClass() != null) 
 					return getTypeParameters(binding.getDeclaringClass()).concat(params.done());
 				return params.done();
@@ -362,7 +362,7 @@ public class TypeComputationModelBuilder {
 			
 			private IList getTypeParameters(IVariableBinding binding) {
 				IListWriter params = values.listWriter(ADT_ENTITY);
-				if(binding.getDeclaringMethod() != null)  return params.done(); // local variable declarations
+				if(binding.getDeclaringMethod() != null) return params.done(); // local variable declarations
 				if(binding.getDeclaringClass() != null) 
 					return getTypeParameters(binding.getDeclaringClass()).concat(params.done());
 				return params.done();

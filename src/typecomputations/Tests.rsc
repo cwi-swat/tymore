@@ -1,170 +1,138 @@
 module typecomputations::Tests
 
-import List;
-import Node;
-import Relation;
-import Set;
-
+import Prelude;
 import lang::java::jdt::Java;
 import lang::java::jdt::JavaADT;
+import lang::java::jdt::refactorings::Java;
 import lang::java::jdt::refactorings::JavaADT;
 import lang::java::jdt::refactorings::JDT4Refactorings;
+import lang::java::jdt::refactorings::PrettyPrintUtil;
+import typecomputations::TypeValues;
+import typecomputations::TypeValuesPlusGens;
+import typecomputations::SemanticDomains;
+import typecomputations::TypeMonadTransformers;
+import typecomputations::TypeComputations;
+import typecomputations::ConstraintMonadTransformers;
+import typecomputations::Constraints;
+import typecomputations::ConstraintComputations;
+import typecomputations::tests::TestProjects;
 
-import typecomputationbasedframework4refactorings::TypeValues;
-import typecomputationbasedframework4refactorings::TypeValuesPlusGens;
-import typecomputationbasedframework4refactorings::TypeComputations;
-import typecomputationbasedframework4refactorings::TypeComputationsPlusGens;
-import typecomputationbasedframework4refactorings::SetComputationOfConstraints;
-
-import typecomputationbasedframework4refactorings::testprojects::TestProjects;
-
-import IO;
-
-
-public alias CompilUnit = map[str, rel[Entity, Entity]];
+public void main1() { testComputations(testcase1); }
 
 public void testComputations(list[loc] projects) { for(project <- projects) testComputations(project); }	
 
-private int cn = 0;
-
 private void testComputations(loc project) {
 	println("calculating facts and asts...");
-	set[AstNode] compilationUnits = createAstsFromProject(project); 
+	set[AstNode] compilationUnits = createAstsFromProjectR(project); 
 	println("done...");
+	int cn = 0;
 	for(AstNode cu <- compilationUnits) {
 		cn += 1;
 		println(cu@location);
 		
-		CompilUnit typeComputationModel = cu@typeComputationModel;
-		map[Entity, tuple[ tuple[list[Entity], list[Entity]], Entity ]] parameterizedTypesSemantics = cu@parameterizedTypesSemantics;
+		CompilUnit facts = cu@typeComputationModel;
+		Mapper mapper = cu@parameterizedTypesSemantics;
 		
-		/*
-		 * Building functional computational model
-		 */
-		tuple[ tuple[list[Entity], list[Entity]], Entity ] (Entity) mapper 
-			= tuple[ tuple[list[Entity], list[Entity]], Entity ] (Entity val) { return parameterizedTypesSemantics[val]; };
-			
-		ParameterizedEntity (Entity) toGens = ParameterizedEntity (Entity val) { return toGenerics(mapper)(val); };
+		println("facts: <facts>");
+		println("mapper: <mapper>");
 		
-		rel[ParameterizedEntity, ParameterizedEntity] evaluation_semantics = { <toGens(val1), toGens(val2)> | <val1, val2> <- typeComputationModel["evaluation_func"] };
-		//rel[ParameterizedEntity, ParameterizedEntity] declares_semantics   = { <toGens(val1), toGens(val2)> | <val1, val2> <- typeComputationModel["declares_func"] };
-		//rel[ParameterizedEntity, ParameterizedEntity] supertypes_semantics = { <toGens(val1), toGens(val2)> | <val1, val2> <- typeComputationModel["supertypes_func"] };
-		//rel[ParameterizedEntity, ParameterizedEntity] overrides_semantics  = { <toGens(val1), toGens(val2)> | <val1, val2> <- typeComputationModel["overrides_func"] };
-		
-		ParameterizedEntity (AstNode) lookup_func                       = lookup(toGens);
-		ParameterizedEntity (ParameterizedEntity) evaluation_func       = eval(toGens);
-		//set[ParameterizedEntity] (ParameterizedEntity) declares_func    = set[ParameterizedEntity] (ParameterizedEntity val) { return declares_semantics[val]; };
-		//set[ParameterizedEntity] (ParameterizedEntity) supertypes_func  = set[ParameterizedEntity] (ParameterizedEntity val) { return supertypes_semantics[val]; };
-		//set[ParameterizedEntity] (ParameterizedEntity) overrides_func   = set[ParameterizedEntity] (ParameterizedEntity val) { return overrides_semantics[val]; };
-		
-		//println("<typeComputationModel["declares_func"]>");
-		for(decl <- cu.typeDeclarations) testComputations(decl, compute(toGens, lookup_func, evaluation_func/*, declares_func, supertypes_func, bounds_func*/));
+		for(decl <- cu.typeDeclarations) 
+			testComputations(decl, compute(facts, mapper));
 	}
 	
-	println("cn: <cn>; decls: <size(decls)>; decls_raw: <size(decls_raw)>");
+	println("cn: <cn>");
 }
 
-public void (AstNode) compute(ParameterizedEntity (Entity) toGens,
-							  ParameterizedEntity (AstNode) lookup_func,
-							  ParameterizedEntity (ParameterizedEntity) evaluation_func
-							  /* 
-							  set[ParameterizedEntity] (ParameterizedEntity) declares_func,
-							  set[ParameterizedEntity] (ParameterizedEntity) supertypes_func,
-							  set[Entity] (Entity) bounds_func
-							  */) = void (AstNode t) {
-							  
-	 ParameterizedEntity val = lookup_func(t);
-	 // println("<val>");
-	 if(entity([ *_, anonymous(loc location, Entity declaredType) ]) := val.genericval) val = parameterizedentity(bindings([],[]), declaredType);
-	 if( isMethodBinding(val.genericval) || isVariableBinding(val.genericval) || isFieldBinding(val.genericval) ) decls += val;
-	 if(/ParameterizedEntity arg <- evaluation_func(val).bindings.args, arg == parameterizedentity(bindings([],[]), entity([]))) decls_raw += val;
-	
-	// println("lookup alpha of gens : <prettyprint(t)>-\><prettyprint(runStateTypeOf(lift(lift(lookup_a(lookup(toGenerics(mapper)))))(t))(t))>");
-	// println("eval alpha of gens : <prettyprint(t)>-\><prettyprint(o(lift(lift(lookup_a(lookup(toGenerics(mapper)))))(t), lift(lift(eval_a(eval(toGenerics(mapper))))))(t))>");
-	//println("lookup alpha plus gens: 
-	//<prettyprint(
-	/*
-	v=
-		runStateTypeOf(lookup_a_PlusGens(lookup_func, 
-										 evaluation_func, 
-										 parameterize(evaluation_func, bounds_func), 
-										 parameterize(bounds_func, toGens, supertypes_func, declares_func),
-										 parameterize_lookup(bounds_func, toGens, supertypes_func, declares_func),
-										 filter_a(isParamDeclaredType(evaluation_func), evaluation_func),
-										 filter_a(isGenericDecl(), evaluation_func))(t))(t);
-	*/	
-	/*								 
-		cons = { <prettyprint(runSetTypeOf(c.lh)), prettyprint(runSetTypeOf(c.rh))> | c <-
-		constraints(lookup_a_PlusGens(lookup_func, 
-										 evaluation_func, 
-										 parameterize(evaluation_func, bounds_func), 
-										 parameterize(bounds_func, toGens, supertypes_func, declares_func),
-										 parameterize_lookup(bounds_func, toGens, supertypes_func, declares_func),
-										 filter_a(isParamDeclaredType(evaluation_func), evaluation_func),
-										 filter_a(isGenericDecl(), evaluation_func)),									 
-						lookup_a_PlusGens_Open(lookup_func, 
-										 evaluation_func, 
-										 parameterize(evaluation_func, bounds_func), 
-										 parameterize(bounds_func, toGens, supertypes_func, declares_func),
-										 parameterize_lookup(bounds_func, toGens, supertypes_func, declares_func),
-										 filter_a(isParamDeclaredType(evaluation_func), evaluation_func),
-										 filter_a(isGenericDecl(), evaluation_func)),
-						filter_a(isGenericDecl(), evaluation_func), lift(eval_a(parameterize(evaluation_func, bounds_func))), lookup_func, evaluation_func, supertypes_func, bounds_func, toGens)(t) };
-	*/
-	  // for(c <- cons) println("constraint: <c>");
-	//)>");
-};
+public void (AstNode) compute(CompilUnit facts, Mapper mapper) 
+	= void (AstNode t) {
+		/* tracer: */ tracer(true, "term: <prettyprint(t)>");
+		// println("Type computations: <prettyprint(execute(facts, mapper, t, bindinj(liftM(t), glookup)))>");	
+		ConsM[Constraint[M[PEntity]]] cons = cconstrain(inj(t));
+		set[MId[tuple[Constraint[M[PEntity]], AstNode]]] cons1 = execute(facts, mapper, t, cons);
+		set[tuple[Constraint[str], str]] cons2 = {};
+		set[MId[Constraint[PEntity]]] conscls = {};
+		for(MId[tuple[Constraint[M[PEntity]], AstNode]] c <-  cons1)
+			visit(c) { 
+				case <eq(M[PEntity] val1, M[PEntity] val2), AstNode tt>: {
+					set[TypeOf[tuple[PEntity, AstNode]]] val11 = execute(facts, mapper, tt, val1);
+					set[TypeOf[tuple[PEntity, AstNode]]] val22 = execute(facts, mapper, tt, val2);
+					lh = getOneFrom(val11).val; rh = getOneFrom(val22).val;
+					conscls += closure(facts, mapper, lh[1], rh[1], eq(lh[0], rh[0]));
+					// cons2 += { <eq(prettyrint(val11), prettyprint(val22)), "t"> };
+				}
+				case <subtype(M[PEntity] val1, M[PEntity] val2), AstNode tt>: { 
+					set[TypeOf[tuple[PEntity, AstNode]]] val11 = execute(facts, mapper, tt, val1);
+					set[TypeOf[tuple[PEntity, AstNode]]] val22 = execute(facts, mapper, tt, val2);
+					lh = getOneFrom(val11).val; rh = getOneFrom(val22).val;
+					conscls += closure(facts, mapper, lh[1], rh[1], subtype(lh[0], rh[0]));
+					// cons2 += { <eq(prettyrint(val11), prettyprint(val22)), "t"> };
+				}
+			}
+		println("Constraints computations: <{ prettyprint(c.val) | MId[Constraint[PEntity]] c <- conscls }>");
+								  
+	};
 
-private void testComputations(AstNode body, void (AstNode) ccompute) {
+private void testComputations(AstNode body, void (AstNode) f) {
 	top-down visit(body) {
 		case d:anonymousClassDeclaration(_): 
-				{ for(decl<-d.bodyDeclarations) testComputations(decl, ccompute); return; }
+				{ for(decl<-d.bodyDeclarations) testComputations(decl, f); return; }
 		case d:annotationTypeDeclaration(_,_,_): 
-				{ for(decl<-d.bodyDeclarations) testComputations(decl, ccompute); return; }
+				{ for(decl<-d.bodyDeclarations) testComputations(decl, f); return; }
 		case d:typeDeclaration(_,_,_,_,_,_,_): 
-				{ for(decl<-d.bodyDeclarations) testComputations(decl, ccompute); return; }		
-		case d:methodDeclaration(_,_,_,_,_,_, some(b)): { testComputations(b, ccompute); return; }
-	
-		case e:arrayAccess(_,_): ccompute(e); // arrayAccess(AstNode array, AstNode index)
-		case e:arrayCreation(_,_,_): ccompute(e); // arrayCreation(AstNode type, list[AstNode] dimensions, Option[AstNode] initializer)
-		case e:arrayInitializer(_): ccompute(e); // arrayInitializer(list[AstNode] expressions)
-		case e:assignment(_,_): ccompute(e); // assignment(AstNode left, AstNode right)
-		case e:booleanLiteral(_): ccompute(e); // _
-		case e:castExpression(_,_): ccompute(e); // castExpression(AstNode type, AstNode expression)
-		case e:characterLiteral(_): ccompute(e); // _
-		case e:classInstanceCreation(_,_,_,_,_): ccompute(e); // classInstanceCreation(Option[AstNode] optionalExpression, AstNode type, list[AstNode] genericTypes, list[AstNode] typedArguments, Option[AstNode] anonymousClassDeclaration)
-		case e:conditionalExpression(_,_,_): ccompute(e); // conditionalExpression(AstNode expression, AstNode thenBranch, AstNode elseBranch)
-		case s:constructorInvocation(_,_): ccompute(s); // constructorInvocation(list[AstNode] genericTypes, list[AstNode] typedArguments)
-		case e:fieldAccess(_,_): ccompute(e); // fieldAccess(AstNode expression, str name)
-		case e:infixExpression(_,_,_,_): ccompute(e); // infixExpression(str operator, AstNode leftSide, AstNode rightSide, list[AstNode] extendedOperands)
-		case e:instanceofExpression(_,_): ccompute(e); // instanceofExpression(AstNode left, AstNode right)
-		case e:markerAnnotation(_): ccompute(e); // _
-		case e:methodInvocation(_,_,_,_): ccompute(e); // methodInvocation(Option[AstNode] optionalExpression, list[AstNode] genericTypes, str name, list[AstNode] typedArguments)
-		case e:normalAnnotation(_,_): ccompute(e); // _
-		case e:nullLiteral(): ccompute(e); // _
-		case e:parenthesizedExpression(_): ccompute(e); // _
-		case e:postfixExpression(_,_): ccompute(e); // postfixExpression(AstNode operand, str operator)
-		case e:prefixExpression(_,_): ccompute(e); // prefixExpression(AstNode operand, str operator)
-		case e:qualifiedName(_,_): if("typeBinding" in e@bindings) ccompute(e); // qualifiedName(AstNode qualifier, str name)
-		
-		case e:simpleName(_): if("typeBinding" in e@bindings) ccompute(e); // _
-		
-		case e:singleMemberAnnotation(_,_): ccompute(e); // _
-		case e:stringLiteral(_): ccompute(e); // _
-		
-		case s:superConstructorInvocation(_,_,_): ccompute(s); // superConstructorInvocation(Option[AstNode] optionalExpression, list[AstNode] genericTypes, list[AstNode] typedArguments)
-		
-		case e:superFieldAccess(_,_): ccompute(e); // superFieldAccess(Option[AstNode] optionalQualifier, str name)
-		case e:superMethodInvocation(_,_,_,_): ccompute(e); // superMethodInvocation(Option[AstNode] optionalQualifier, list[AstNode] genericTypes, str name, list[AstNode] typedArguments)
-		case e:thisExpression(_): ccompute(e); // _
-		case e:typeLiteral(_): ccompute(e); // _
-		case e:variableDeclarationExpression(_,_,_): ccompute(e); // variableDeclarationExpression(_, AstNode type, list[AstNode] fragments)
-		
-		case d:singleVariableDeclaration(_,_,_,_,_): ccompute(d);
-		case d:variableDeclarationFragment(_,_): ccompute(d);
+				{ for(decl<-d.bodyDeclarations) testComputations(decl, f); return; }		
+		case d:methodDeclaration(_,_,_,_,_,_, some(b)): { testComputations(b, f); return; }
+		case e:arrayAccess(_,_): f(e); 
+		case e:arrayCreation(_,_,_): f(e);  
+		case e:arrayInitializer(_): f(e);  
+		case e:assignment(_,_): f(e);  
+		case e:booleanLiteral(_): f(e); 
+		case e:castExpression(_,_): f(e);  
+		case e:characterLiteral(_): f(e); 
+		case e:classInstanceCreation(_,_,_,_,_): f(e);  
+		case e:conditionalExpression(_,_,_): f(e);  
+		case s:constructorInvocation(_,_): f(s);  
+		case e:fieldAccess(_,_): f(e); 
+		case e:infixExpression(_,_,_,_): f(e);  
+		case e:instanceofExpression(_,_): f(e); 
+		case e:markerAnnotation(_): f(e); 
+		case e:methodInvocation(_,_,_,_): f(e); 
+		case e:normalAnnotation(_,_): f(e); 
+		case e:nullLiteral(): f(e); 
+		case e:parenthesizedExpression(_): f(e); 
+		case e:postfixExpression(_,_): f(e); 
+		case e:prefixExpression(_,_): f(e); 
+		case e:qualifiedName(_,_): if("typeBinding" in e@bindings) f(e); 
+		case e:simpleName(_): if("typeBinding" in e@bindings) f(e); 
+		case e:singleMemberAnnotation(_,_): f(e);
+		case e:stringLiteral(_): f(e);
+		case s:superConstructorInvocation(_,_,_): f(s); 
+		case e:superFieldAccess(_,_): f(e); 
+		case e:superMethodInvocation(_,_,_,_): f(e);  
+		case e:thisExpression(_): f(e); 
+		case e:typeLiteral(_): f(e); 
+		case e:variableDeclarationExpression(_,_,_): f(e); 
+		case d:singleVariableDeclaration(_,_,_,_,_): f(d);
+		case d:variableDeclarationFragment(_,_): f(d);
 	}
 }
-
-private set[ParameterizedEntity] decls = {};
-private set[ParameterizedEntity] decls_raw = {};
-
+/*
+- arrayAccess(AstNode array, AstNode index);
+- arrayCreation(AstNode type, list[AstNode] dimensions, Option[AstNode] initializer);
+- arrayInitializer(list[AstNode] expressions);
+- assignment(AstNode left, AstNode right);
+- castExpression(AstNode type, AstNode expression);
+- classInstanceCreation(Option[AstNode] optionalExpression, AstNode type, list[AstNode] genericTypes, list[AstNode] typedArguments, Option[AstNode] anonymousClassDeclaration);
+- conditionalExpression(AstNode expression, AstNode thenBranch, AstNode elseBranch);
+- constructorInvocation(list[AstNode] genericTypes, list[AstNode] typedArguments);
+- fieldAccess(AstNode expression, str name);
+- infixExpression(str operator, AstNode leftSide, AstNode rightSide, list[AstNode] extendedOperands);
+- instanceofExpression(AstNode left, AstNode right);
+- methodInvocation(Option[AstNode] optionalExpression, list[AstNode] genericTypes, str name, list[AstNode] typedArguments);
+- postfixExpression(AstNode operand, str operator);
+- prefixExpression(AstNode operand, str operator);
+- qualifiedName(AstNode qualifier, str name);
+- superConstructorInvocation(Option[AstNode] optionalExpression, list[AstNode] genericTypes, list[AstNode] typedArguments);
+- superFieldAccess(Option[AstNode] optionalQualifier, str name);
+- superMethodInvocation(Option[AstNode] optionalQualifier, list[AstNode] genericTypes, str name, list[AstNode] typedArguments);
+- variableDeclarationExpression(_, AstNode type, list[AstNode] fragments);
+*/

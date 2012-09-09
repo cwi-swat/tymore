@@ -5,7 +5,7 @@
   which accompanies this distribution, and is available at
   http://www.eclipse.org/legal/epl-v10.html
 }
-@contributor{Anastasia Izmaylova - A.Izmaylova@cwi.nl}
+@contributor{Anastasia Izmaylova - ai@cwi.nl}
 module lang::java::jdt::refactorings::Java
 
 import lang::java::jdt::Java;
@@ -21,7 +21,7 @@ data Id = method(list[Entity] genericTypes, str name, list[Entity] params, Entit
         | enumConstant(str name, Entity declaredType)
         | variable(str name, Entity declaredType, int id)
         
-        | typeParameter(str name, list[Entity] bounds) // Limitations: cycles in bounds
+        | typeParameter(str name, list[Entity] bs) // Limitations: cycles in bounds
         
         | anonymous(loc location, Entity declaredType) // represents an anonymous declared type
         | inherits(Entity declaredType) // indicates the declared inherited type
@@ -30,26 +30,25 @@ data Id = method(list[Entity] genericTypes, str name, list[Entity] params, Entit
         
         // Extension with type argument values that can be associated with two kinds of a context:
         // program element (node) or declaration type value
-        | typeArgument(str name, Entity context, ParameterizedEntity init, list[ParameterizedEntity] bounds)
-		| typeArgument(str name, AstNode context, ParameterizedEntity init, list[ParameterizedEntity] bounds)
+        | typeArgument(str name, Entity econtext, PEntity init, list[PEntity] bounds)
+		| typeArgument(str name, AstNode tcontext, PEntity init, list[PEntity] bounds)
         ;
 
-/*
- * Imported compilation unit facts format
- */
+public Entity object() = entity([package("java"), package("lang"), class("Object")]);
+public Entity zero() = entity([]);
+
+@doc{Imported compilation unit facts format}
 public alias CompilUnit = map[str, rel[Entity, Entity]];
-
 public alias Mapper = map[Entity, tuple[tuple[list[Entity], list[Entity]], Entity]];
-public alias CompilUnitGens = tuple[CompilUnit compilUnit, Mapper mapper];
 
-// Type values with explicit parameterization semantics        
-data ParameterizedEntity = pentity(Bindings bindings, Entity genval);
-data Bindings = bindings(list[ParameterizedEntity] args, list[Entity] params);
+@doc{Type values with explicit substitutions of parameterized types}        
+data PEntity = pentity(Bindings bindings, Entity genval);
+data Bindings = bindings(list[PEntity] args, list[Entity] params);
 
+public PEntity getGenericVal(PEntity val) = pentity(val.genval)[@paramval=val.genval];
 @doc{Annotation that encodes the inversible mapping between the parameterized type representations (with implicit and explicit substitutions)}
-anno Entity ParameterizedEntity@paramval;
+anno Entity PEntity@paramval;
 
-public ParameterizedEntity pentity(Entity genval) = pentity(bindings([],[]), genval);
-public ParameterizedEntity object() = pentity(bindings([], []), entity([package("java"), package("lang"), class("Object")]));
-public ParameterizedEntity zero() = pentity(bindings([], []), entity([]));
-
+public PEntity pentity(Entity genval) = pentity(bindings([],[]), genval)[@paramval=genval];
+public PEntity pobject() = pentity(bindings([], []), entity([package("java"), package("lang"), class("Object")]))[@paramval=entity([package("java"), package("lang"), class("Object")])];
+public PEntity pzero() = pentity(bindings([], []), entity([]))[@paramval=entity([package("java"), package("lang"), class("Object")])];

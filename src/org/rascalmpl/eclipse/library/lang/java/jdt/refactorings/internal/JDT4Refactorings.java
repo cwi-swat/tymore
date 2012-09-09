@@ -35,7 +35,7 @@ public class JDT4Refactorings {
     	this.values = values;
 	}
 	
-	public IValue createAstFromFile(ISourceLocation loc, IEvaluatorContext eval) {
+	public IValue createAstFromFileR(ISourceLocation loc, IEvaluatorContext eval) {
 		CompilationUnit cu = this.getCompilationUnit(loc);
 		BindingConverter bindingConverter = new BindingConverter();
 		converter = new JdtAstToRascalAstConverter(values, 

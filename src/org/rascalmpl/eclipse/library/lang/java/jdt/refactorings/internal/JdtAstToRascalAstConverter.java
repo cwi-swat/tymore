@@ -22,7 +22,6 @@ import org.eclipse.jdt.core.dom.ITypeBinding;
  */
 public class JdtAstToRascalAstConverter extends org.rascalmpl.eclipse.library.lang.java.jdt.internal.JdtAstToRascalAstConverter {
 	
-	public static final String ANNOTATION_SOURCE_LOCATION = "location";
 	public static final String ANNOTATION_SCOPE = "scope";
 	
 	private ITypeBinding scope;
@@ -48,16 +47,18 @@ public class JdtAstToRascalAstConverter extends org.rascalmpl.eclipse.library.la
 	
 	public JdtAstToRascalAstConverter getInstance() {
 		JdtAstToRascalAstConverter converter = new JdtAstToRascalAstConverter(this.values, this.typeStore, this.bindingConverter, this.bindingsImporter);
-		converter.set(compilUnit);
+		converter.set(this.compilUnit);
 		converter.set(this.loc);
 		return converter;
 	}
 	
 	public void set(CompilationUnit compilUnit) {
+		super.set(compilUnit);
 		this.compilUnit = compilUnit;
 	}
 	
 	public void set(ISourceLocation loc) {
+		super.set(loc);
 		this.loc = loc;
 	}
 	
@@ -68,12 +69,6 @@ public class JdtAstToRascalAstConverter extends org.rascalmpl.eclipse.library.la
 		
 	public void postVisit(ASTNode node) {
 		super.postVisit(node);
-		int start = node.getStartPosition();
-		int end = start + node.getLength() - 1;
-		setAnnotation(ANNOTATION_SOURCE_LOCATION, values.sourceLocation(loc.getURI(), 
-																		start, node.getLength(), 
-																		compilUnit.getLineNumber(start), compilUnit.getLineNumber(end), 
-																		compilUnit.getColumnNumber(start), compilUnit.getColumnNumber(end)));
 		if(scope != null) setAnnotation(ANNOTATION_SCOPE, this.bindingConverter.getEntity(this.scope));
 	}
 }

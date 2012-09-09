@@ -2,11 +2,9 @@ module typecomputations::tests::TestComputationModel
 
 import lang::java::jdt::Java;
 import lang::java::jdt::JavaADT;
-
 import lang::java::jdt::refactorings::Java;
 import lang::java::jdt::refactorings::JavaADT;
 import lang::java::jdt::refactorings::JDT4Refactorings;
-
 import IO;
 
 public alias CompilUnit = map[str, rel[Entity, Entity]];

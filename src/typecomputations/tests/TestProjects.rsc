@@ -1,6 +1,6 @@
 module typecomputations::tests::TestProjects
 
-public loc testcase = |project://LetsTryItOut/src|;
+public loc testcase1 = |project://LetsTryItOut/src|;
 public loc testcase2 = |project://LetsTryInitializersOut/src|;
 public loc testcase3 = |project://LetsTryLocalTypesOut/src|;
 public loc testcase4 = |project://LetsTryInitializerCounterOut/src|;
