@@ -14,7 +14,8 @@ import Prelude;
 
 
 public data Constraint[&M] = eq(&M lh, &M rh)
-					  		 | subtype(&M lh, &M rh);
+					  		 | subtype(&M lh, &M rh)
+					  		 | czero();
 
 public set[Constraint[BLogger[Entity]]] constrain(t:arrayAccess(_,_), CompilUnit facts, Mapper mapper) 
 	= {};	
@@ -94,249 +95,223 @@ public default set[Constraint[BLogger[Entity]]] constrain(AstNode t, CompilUnit 
 
 // ======================================================================================================================================
 
-public set[Constraint[BLogger[Entity]]] closure(CompilUnit facts, Mapper mapper, c:Constraint::subtype(BLogger[Entity] val1, BLogger[Entity] val2)) {
+public Constraint[BLogger[Entity]] evalC(CompilUnit facts, Mapper mapper, Constraint c) {	
 	BLogger[Entity] (Entity) eval__ = evalLogger(mapper) o eval_;
-	BLogger[bool] (CompilUnit, Entity, Entity) supertypes_ = superTypesLogger(mapper) o superTypesGens(mapper) o superTypes;
-	
-	Entity v1 = eval(val1);
-	Entity v2 = eval(val2);
-	
-	// tracer(true, "Subtyping in: <prettyprint(v1)> -- <prettyprint(v2)> -;- <prettyprint(evalb(val1))> -- <prettyprint(evalb(val2))>");
-	
-	// Bound that catches type argument constraints
-	BLogger[Entity] val1_ = bind(bind(val1, eval__), BLogger[Entity] (Entity v) { 
-									Entity gen = eval(mkSubstsExplicit(mapper, v1).genval);
-									return bind(bound(facts, mapper, gen), BLogger[Entity] (Entity b) {
-													return returnBL(b); }); });
-	BLogger[Entity] val2_ = bind(bind(val2, eval__), BLogger[Entity] (Entity v) { 
-									Entity gen = eval(mkSubstsExplicit(mapper, v2).genval);
-									return bind(bound(facts, mapper, gen), BLogger[Entity] (Entity b) {
-													return returnBL(b); }); });
-		
-	Entity v1_ = eval(val1_);
-	Entity v2_ = eval(val2_);
-	
-	// tracer(true, "Subtyping middle: <prettyprint(v1_)> -- <prettyprint(v2_)> -;- <prettyprint(evalb(val1_))> -- <prettyprint(evalb(val2_))>");
-	
-	// Bound that catches the generic types, the subtype relation can originate due to wild cards (Java covariance)
-	BLogger[Entity] val1__ = bind(bind(val1, eval__), BLogger[Entity] (Entity v) { 
-									Entity gen = eval(mkSubstsExplicit(mapper, v1).genval);
-									if(isTypeParameter(gen))
-										return bind(bound_(facts, mapper, gen), BLogger[Entity] (Entity b) {
-														return returnBL(b); });
-									return returnBL(eval(boundT(facts, eval(boundWildcard(facts, mapper, v))))); }); // does not seem to be necessary
-	BLogger[Entity] val2__ = bind(bind(val2, eval__), BLogger[Entity] (Entity v) { 
-									Entity gen = eval(mkSubstsExplicit(mapper, v2).genval);
-									if(isTypeParameter(gen))
-										return bind(bound_(facts, mapper, gen), BLogger[Entity] (Entity b) {
-														return returnBL(b); });
-									return returnBL(eval(boundT(facts, eval(boundWildcard(facts, mapper, v))))); }); // does not seem to be necessary
-		
-	Entity v1__ = eval(val1__);
-	Entity v2__ = eval(val2__);
-	
-	// tracer(true, "Subtyping out: <prettyprint(v1__)> -- <prettyprint(v2__)> -;- <prettyprint(evalb(val1__))> -- <prettyprint(evalb(val2__))>");
-	
-	// Handles raw types								
-	if((isTypeArgument(v1_) && (getInit(v1_) == zero())) 
-		|| (isTypeArgument(v2_) && (getInit(v2_) == zero()))) {
-		
-		if( (isTypeArgument(v1_) && getInit(v1_) == zero()) 
-			&& !(isTypeArgument(v2_) && getInit(v2_) == zero()) ) {
-			PEntity pval2 = mkSubstsExplicit(mapper, v2__);
-			Bindings logbs = parameterize(bindings([ pzero() | Entity _ <- pval2.bindings.params ], pval2.bindings.params), v1_);
-			return equalizeTypes(facts, mapper, bind(val1__, BLogger[Entity] (Entity _) {
-														return bind(log(logbs), BLogger[Entity] (value _) {
-																		return returnBL(v2__); }); }), 
-												val2__);
-		}
-		if( (isTypeArgument(v2_) && getInit(v2_) == zero()) 
-			&& !(isTypeArgument(v1_) && getInit(v1_) == zero()) ) {
-			PEntity pval1 = mkSubstsExplicit(mapper, v1__);
-			println("v1 : <prettyprint(v1__)>");
-			Bindings logbs = parameterize(bindings([ pzero() | Entity _ <- pval1.bindings.params ], pval1.bindings.params), v2_);
-			return equalizeTypes(facts, mapper, val1__, 
-												bind(val2__, BLogger[Entity] (Entity _) {
-														return bind(log(logbs), BLogger[Entity] (value _) {
-																		return returnBL(v1__); }); }));
-		}
-	}
-	
-	v1 = eval(val1);
-	v2 = eval(val2);
-	
-	Entity tv1 = eval(mkSubstsExplicit(mapper, v1).genval);
-	Entity tv2 = eval(mkSubstsExplicit(mapper, v2).genval);
-	
-	PEntity ptv1 = mkSubstsExplicit(mapper, tv1);
-	PEntity ptv2 = mkSubstsExplicit(mapper, tv2);
-	
-	PEntity ptv1__ = mkSubstsExplicit(mapper, v1__);
-	PEntity ptv2__ = mkSubstsExplicit(mapper, v2__);
-	
-	if(isEmpty(getTypeParamsOrArgs(ptv1.genval)) && !isTypeParameter(ptv1.genval) && !isEmpty(getTypeParamsOrArgs(ptv2__.genval))) {
-		return equalizeTypes(facts, mapper, bind(log(parameterize(bindings([ pzero() | Entity _ <- ptv2__.bindings.params ], ptv2__.bindings.params), v1)), BLogger[Entity] (value _) {
-													return returnBL(v2__); }),
-											val2__);	
-	} 
-	if(isEmpty(getTypeParamsOrArgs(ptv2.genval)) && !isTypeParameter(ptv2.genval) && !isEmpty(getTypeParamsOrArgs(ptv1__.genval))) {
-		return equalizeTypes(facts, mapper, val1__, 
-											bind(log(parameterize(bindings([ pzero() | Entity _ <- ptv1__.bindings.params ], ptv1__.bindings.params), v2)), BLogger[Entity] (value _) {
-													return returnBL(v1__); }));	
-	} 
-					
-	return equalizeTypes(facts, mapper, val1__, val2__);
+	BLogger[Entity] lh_ = bind(c.lh, eval__);
+	BLogger[Entity] rh_ = bind(c.rh, eval__);
+	switch(c) {
+		case eq(_,_) : return eq(lh_, rh_);
+		case subtype(_,_) : return subtype(lh_, rh_);
+	}	
 }
 
-public set[Constraint[BLogger[Entity]]] closure(CompilUnit facts, Mapper mapper, c:Constraint::eq(BLogger[Entity] val1, BLogger[Entity] val2)) {
-	BLogger[Entity] (Entity) eval__ = evalLogger(mapper) o eval_;
-	
-	Entity v1 = eval(val1);
-	Entity v2 = eval(val2);
-	
-	// Bound that catches type argument constraints
-	BLogger[Entity] val1_ = bind(bind(val1, eval__), BLogger[Entity] (Entity v) { 
-									Entity gen = eval(mkSubstsExplicit(mapper, v1).genval);
-									return bind(bound(facts, mapper, gen), BLogger[Entity] (Entity b) {
-													return returnBL(b); }); });
-	BLogger[Entity] val2_ = bind(bind(val2, eval__), BLogger[Entity] (Entity v) { 
-									Entity gen = eval(mkSubstsExplicit(mapper, v2).genval);
-									return bind(bound(facts, mapper, gen), BLogger[Entity] (Entity b) {
-													return returnBL(b); }); });
-		
-	Entity v1_ = eval(val1_);
-	Entity v2_ = eval(val2_);
-	
-	// Bound that catches the generic types, the subtype relation can originate due to wild cards (Java covariance)
-	BLogger[Entity] val1__ = bind(bind(val1, eval__), BLogger[Entity] (Entity v) { 
-									Entity gen = eval(mkSubstsExplicit(mapper, v1).genval);
-									if(isTypeParameter(gen))
-										return bind(bound_(facts, mapper, gen), BLogger[Entity] (Entity b) {
-														return returnBL(b); });
-									return returnBL(eval(boundT(facts, eval(boundWildcard(facts, mapper, v))))); }); // does not seem to be necessary
-	BLogger[Entity] val2__ = bind(bind(val2, eval__), BLogger[Entity] (Entity v) { 
-									Entity gen = eval(mkSubstsExplicit(mapper, v2).genval);
-									if(isTypeParameter(gen))
-										return bind(bound_(facts, mapper, gen), BLogger[Entity] (Entity b) {
-														return returnBL(b); });
-									return returnBL(eval(boundT(facts, eval(boundWildcard(facts, mapper, v))))); }); // does not seem to be necessary
-	
-	Entity v1__ = eval(val1__);
-	Entity v2__ = eval(val2__);
-	
-	// Handles raw types								
-	if((isTypeArgument(v1_) && (getInit(v1_) == zero())) 
-		|| (isTypeArgument(v2_) && (getInit(v2_) == zero()))) {
-		
-		if( (isTypeArgument(v1_) && getInit(v1_) == zero()) 
-			&& !(isTypeArgument(v2_) && getInit(v2_) == zero()) ) {
-			PEntity pval2 = mkSubstsExplicit(mapper, v2__);
-			Bindings logbs = parameterize(bindings([ pzero() | Entity _ <- pval2.bindings.params ], pval2.bindings.params), v1_);
-			return equalizeTypes(facts, mapper, bind(val1__, BLogger[Entity] (Entity _) {
-														return bind(log(logbs), BLogger[Entity] (value _) {
-																		return returnBL(v2__); }); }), 
-												val2__);
-		}
-		if( (isTypeArgument(v2_) && getInit(v2_) == zero()) 
-			&& !(isTypeArgument(v1_) && getInit(v1_) == zero()) ) {
-			PEntity pval1 = mkSubstsExplicit(mapper, v1__);
-			Bindings logbs = parameterize(bindings([ pzero() | Entity _ <- pval1.bindings.params ], pval1.bindings.params), v2_);
-			return equalizeTypes(facts, mapper, val1__, 
-												bind(val2__, BLogger[Entity] (Entity _) {
-														return bind(log(logbs), BLogger[Entity] (value _) {
-																		return returnBL(v1__); }); }));
-		}
-	}
-				
-	return equalizeTypes(facts, mapper, val1__, val2__);
+public Constraint[BLogger[Entity]] supertypesC(CompilUnit facts, Mapper mapper, Constraint c) {
+	BLogger[bool] (CompilUnit, Entity, Entity) supertypes_ = superTypesLogger(mapper) o superTypesGens(mapper) o superTypes;
+	Entity rh = mkSubstsExplicit(mapper, eval(c.rh)).genval;
+	BLogger[Entity] lh_ = bind(c.lh, BLogger[Entity] (Entity v) { 
+									return bind(supertypes_(facts, mkSubstsExplicit(mapper, v).genval, rh), BLogger[Entity] (bool b) {
+													assert(b);
+													return returnBL(rh); }); });
+	BLogger[Entity] rh_ = bind(c.rh, BLogger[Entity] (Entity _) { return returnBL(rh); });
+	switch(c) {
+		case eq(_,_) : return eq(lh_, rh_);
+		case subtype(_,_) : return eq(lh_, rh_);
+	}	
 }
 
-public set[Constraint[BLogger[Entity]]] equalizeTypes(CompilUnit facts, Mapper mapper, BLogger[Entity] val1, BLogger[Entity] val2) {
+public Constraint[BLogger[Entity]] boundUBLB(CompilUnit facts, Mapper mapper, Constraint c) {
+	BLogger[Entity] (Entity) eval__ = evalLogger(mapper) o eval_;
+	BLogger[Entity] lh_ = bind(c.lh, BLogger[Entity] (Entity lh) { 
+								return bind(eval__(lh), BLogger[Entity] (Entity _) { 
+									return boundUB(facts, mapper, eval(mkSubstsExplicit(mapper, lh).genval)); }); });
+	BLogger[Entity] rh_ = bind(c.rh, BLogger[Entity] (Entity rh) {
+								return bind(eval__(rh), BLogger[Entity] (Entity _) { 
+									return boundLB(facts, mapper, eval(mkSubstsExplicit(mapper, rh).genval)); }); });
+	switch(c) {
+		case eq(_,_) : return subtype(lh_, rh_);
+		case subtype(_,_) : return subtype(lh_, rh_);
+	}	
+}
+
+public Constraint[BLogger[Entity]] bound_ublb(CompilUnit facts, Mapper mapper, Constraint c) {
+	BLogger[Entity] (Entity) eval__ = evalLogger(mapper) o eval_;
+	BLogger[Entity] lh_ = bind(c.lh, BLogger[Entity] (Entity lh) {
+								return bind(eval__(lh), BLogger[Entity] (Entity _) { 
+									return bound_ub0(facts, mapper, eval(mkSubstsExplicit(mapper, lh).genval)); }); });
+	BLogger[Entity] rh_ = bind(c.rh, BLogger[Entity] (Entity rh) {
+								return bind(eval__(rh), BLogger[Entity] (Entity _) { 
+									return bound_lb(facts, mapper, eval(mkSubstsExplicit(mapper, rh).genval)); }); });
+	switch(c) {
+		case eq(_,_) : return subtype(lh_, rh_);
+		case subtype(_,_) : return subtype(lh_, rh_);
+	}		
+}
+
+public Constraint[BLogger[Entity]] boundUBUB(CompilUnit facts, Mapper mapper, Constraint c) {
+	BLogger[Entity] (Entity) eval__ = evalLogger(mapper) o eval_;
+	BLogger[Entity] lh_ = bind(c.lh, BLogger[Entity] (Entity lh) { 
+								return bind(eval__(lh), BLogger[Entity] (Entity _) { 
+									return boundUB(facts, mapper, eval(mkSubstsExplicit(mapper, lh).genval)); }); });
+	BLogger[Entity] rh_ = bind(c.rh, BLogger[Entity] (Entity rh) {
+								return bind(eval__(rh), BLogger[Entity] (Entity _) { 
+									return boundUB(facts, mapper, eval(mkSubstsExplicit(mapper, rh).genval)); }); });
+	switch(c) {
+		case eq(_,_) : return subtype(lh_, rh_);
+		case subtype(_,_) : return subtype(lh_, rh_);
+	}	
+}
+
+public Constraint[BLogger[Entity]] bound_ubub(CompilUnit facts, Mapper mapper, Constraint c) {
+	BLogger[Entity] (Entity) eval__ = evalLogger(mapper) o eval_;
+	BLogger[Entity] lh_ = bind(c.lh, BLogger[Entity] (Entity lh) {
+								return bind(eval__(lh), BLogger[Entity] (Entity _) { 
+									return bound_ub0(facts, mapper, eval(mkSubstsExplicit(mapper, lh).genval)); }); }); 
+	BLogger[Entity] rh_ = bind(c.rh, BLogger[Entity] (Entity rh) {
+								return bind(eval__(rh), BLogger[Entity] (Entity _) { 
+									return bound_ub(facts, mapper, eval(mkSubstsExplicit(mapper, rh).genval)); }); });
+	switch(c) {
+		case eq(_,_) : return subtype(lh_, rh_);
+		case subtype(_,_) : return subtype(lh_, rh_);
+	}		
+}
+
+public Constraint[BLogger[Entity]] boundLBLB(CompilUnit facts, Mapper mapper, Constraint c) {
+	BLogger[Entity] (Entity) eval__ = evalLogger(mapper) o eval_;
+	BLogger[Entity] lh_ = bind(c.lh, BLogger[Entity] (Entity lh) { 
+								return bind(eval__(lh), BLogger[Entity] (Entity _) { 
+									return boundLB(facts, mapper, eval(mkSubstsExplicit(mapper, lh).genval)); }); });
+	BLogger[Entity] rh_ = bind(c.rh, BLogger[Entity] (Entity rh) {
+								return bind(eval__(rh), BLogger[Entity] (Entity _) { 
+									return boundLB(facts, mapper, eval(mkSubstsExplicit(mapper, rh).genval)); }); });
+	switch(c) {
+		case eq(_,_) : return subtype(rh_, lh_);
+		case subtype(_,_) : return subtype(rh_, lh_);
+	}	
+}
+
+public Constraint[BLogger[Entity]] bound_lblb(CompilUnit facts, Mapper mapper, Constraint c) {
+	BLogger[Entity] (Entity) eval__ = evalLogger(mapper) o eval_;
+	BLogger[Entity] lh_ = bind(c.lh, BLogger[Entity] (Entity lh) {
+								return bind(eval__(lh), BLogger[Entity] (Entity v) { 
+									return bound_lb(facts, mapper, eval(mkSubstsExplicit(mapper, lh).genval)); }); }); 
+	BLogger[Entity] rh_ = bind(c.rh, BLogger[Entity] (Entity rh) {
+								return bind(eval__(rh), BLogger[Entity] (Entity v) { 
+									return bound_lb(facts, mapper, eval(mkSubstsExplicit(mapper, rh).genval)); }); });
+	switch(c) {
+		case eq(_,_) : return subtype(rh_, lh_);
+		case subtype(_,_) : return subtype(rh_, lh_);
+	}		
+}
+
+public set[Constraint[BLogger[Entity]]] closure(CompilUnit facts, Mapper mapper, c:Constraint::subtype(_,_)) { // tracer(true, "closure of <prettyprint(c)> -- <prettyprint(evalb(c.lh))> -- <prettyprint(evalb(c.rh))>");
+	Constraint[BLogger[Entity]] c_ = boundUBLB(facts, mapper, c);
+	Constraint[BLogger[Entity]] c__ = bound_ublb(facts, mapper, c);
+	set[Constraint[BLogger[Entity]]] cons = {};	
+	cons = cons + handleTypeArgumentsOfRawTypes(facts, mapper, c_, c__);
+	return cons + equalizeParamTypes(facts, mapper, c__);
+}
+public set[Constraint[BLogger[Entity]]] closure(CompilUnit facts, Mapper mapper, c:Constraint::eq(_,_)) = {};
+
+public set[Constraint[BLogger[Entity]]] handleTypeArgumentsOfRawTypes(CompilUnit facts, Mapper mapper, Constraint[BLogger[Entity]] c, Constraint[BLogger[Entity]] c_) {
+	Entity lh  = eval(c.lh);
+	Entity rh  = eval(c.rh);
+	Entity lh_ = eval(c_.lh);
+	Entity rh_ = eval(c_.rh);
+	if( ( isTypeArgument(lh) && getInit(lh) == zero() ) || ( isTypeArgument(rh) && getInit(rh) == zero() ) ) {
+
+		if( ( isTypeArgument(lh) && getInit(lh) == zero() ) && rh_ != zero() ) {
+			PEntity prh = mkSubstsExplicit(mapper, rh_);
+			Bindings logbs = parameterize(mapper, bindings([ pzero() | Entity _ <- prh.bindings.params ], prh.bindings.params), lh);
+			return equalizeParamTypes(facts, mapper, subtype(bind(c_.lh, BLogger[Entity] (Entity _) {
+																	return bind(log(logbs), BLogger[Entity] (value _) {
+																			return returnBL(rh_); }); }), 
+															 c_.rh));
+		}
+		if( lh_ != zero() && ( isTypeArgument(rh) && getInit(rh) == zero() ) ) {
+			println("handle raw types: <prettyprint(c)> --- <prettyprint(c_)>");
+			PEntity plh = mkSubstsExplicit(mapper, lh_);
+			Bindings logbs = parameterize(mapper, bindings([ pzero() | Entity _ <- plh.bindings.params ], plh.bindings.params), rh);
+			println("<prettyprint(logbs)>");
+			return equalizeParamTypes(facts, mapper, subtype(c_.lh, 
+															 bind(c_.rh, BLogger[Entity] (Entity _) {
+																	return bind(log(logbs), BLogger[Entity] (value _) {
+																			return returnBL(lh_); }); })));
+		}
+	}
+	return {};
+}
+
+public set[Constraint[BLogger[Entity]]] handleNonGenericTypes(CompilUnit facts, Mapper mapper, Constraint[BLogger[Entity]] c, Constraint[BLogger[Entity]] c_) {
+	Entity lh = eval(c.lh);
+	Entity rh = eval(c.rh);
+	Entity lh_ = eval(c_.lh);
+	Entity rh_ = eval(c_.rh);
 	
-	BLogger[bool] (CompilUnit, Entity, Entity) supertypes_ = superTypesLogger(mapper) o superTypesGens(mapper) o superTypes;
+	PEntity ptlh = mkSubstsExplicit(mapper, eval(mkSubstsExplicit(mapper, lh).genval));
+	PEntity ptrh = mkSubstsExplicit(mapper, eval(mkSubstsExplicit(mapper, rh).genval));
+	PEntity ptlh_ = mkSubstsExplicit(mapper, lh_);
+	PEntity ptrh_ = mkSubstsExplicit(mapper, rh_);
 	
+	if( isEmpty(getTypeParamsOrArgs(ptlh.genval)) && !isTypeParameter(ptlh.genval) && !isEmpty(getTypeParamsOrArgs(ptrh_.genval))) {
+		return equalizeParamTypes(facts, mapper, bind(log(parameterize(mapper, bindings([ pzero() | Entity _ <- ptrh_.bindings.params ], ptrh_.bindings.params), lh)), BLogger[Entity] (value _) {
+													return returnBL(rh_); }),
+											c_.rh);	
+	} 
+	if(isEmpty(getTypeParamsOrArgs(ptrh.genval)) && !isTypeParameter(ptrh.genval) && !isEmpty(getTypeParamsOrArgs(ptlh_.genval))) {
+		return equalizeParamTypes(facts, mapper, c_.lh, 
+											bind(log(parameterize(mapper, bindings([ pzero() | Entity _ <- ptlh_.bindings.params ], ptlh_.bindings.params), rh)), BLogger[Entity] (value _) {
+													return returnBL(c_.lh); }));	
+	} 
+	return {};
+}
+
+public set[Constraint[BLogger[Entity]]] equalizeParamTypes(CompilUnit facts, Mapper mapper, c:Constraint::subtype(_,_)) {
+	if(eval(c.lh) != zero() && eval(c.rh) != zero()) {  // tracer(true, "equalize parameterized types: <prettyprint(c)> ; <prettyprint(evalb(c.lh))> --- <prettyprint(evalb(c.rh))>");
+		Constraint[BLogger[Entity]] c_ = supertypesC(facts, mapper, c);
+		assert(eval(c_.lh) == eval(c_.rh));
+		PEntity pv = mkSubstsExplicit(mapper, eval(c.rh));
+		if(!isEmpty(pv.bindings.params))
+			return { *equalizeTBounds(facts, mapper, eq(bind(c_.lh, BLogger[Entity] (Entity v) { return returnBL(pv.bindings.params[i]); }),
+												  	  	bind(c_.rh, BLogger[Entity] (Entity v) { return returnBL(pv.bindings.params[i]); }))) 
+																	| int i <- [0..size(pv.bindings.params) - 1] };		
+	}
+	return {};
+}
+
+public set[Constraint[BLogger[Entity]]] equalizeTBounds(CompilUnit facts, Mapper mapper, c:Constraint::eq(_,_)) 
+	= equalizeTBounds_UB(facts, mapper, c) 
+	+ equalizeTBounds_LB(facts, mapper, c)
+	+ equalizeTBounds_ub(facts, mapper, c)  
+	+ equalizeTBounds_lb(facts, mapper, c);
+
+public set[Constraint[BLogger[Entity]]] equalizeTBounds_UB(CompilUnit facts, Mapper mapper, c:Constraint::eq(_,_)) {
 	set[Constraint[BLogger[Entity]]] cons = {};
-	
-	Entity v1 = eval(val1);
-	Entity v2 = eval(val2);
-	
-	// tracer(true, "Equalize in: <prettyprint(v1)> -- <prettyprint(v2)> -;- <prettyprint(evalb(val1))> -- <prettyprint(evalb(val2))>");
-		
-	// Bound that catches type argument constraints
-	BLogger[Entity] val1_ = bind(val1, BLogger[Entity] (Entity v) { 
-									return bound(facts, mapper, v); });
-	BLogger[Entity] val2_ = bind(val2, BLogger[Entity] (Entity v) { 
-									return bound(facts, mapper, v); });
-		
-	Entity v1_ = eval(val1_);
-	Entity v2_ = eval(val2_);
-	
-	// tracer(true, "Equalize middle: <prettyprint(v1_)> -- <prettyprint(v2_)> -;- <prettyprint(evalb(val1_))> -- <prettyprint(evalb(val2_))>");
-	
-	if(isTypeArgument(v1_) || isTypeArgument(v2_)) 
-		cons += eq(val1_, val2_);
-	
-	// Bound that catches the generic types, the subtype relation can originate due to wild cards (Java covariance)
-	BLogger[Entity] val1__ = bind(val1, BLogger[Entity] (Entity v) { 
-									return bound_(facts, mapper, v); });
-	BLogger[Entity] val2__ = bind(val2, BLogger[Entity] (Entity v) { 
-									return bound_(facts, mapper, v); });
-	
-	Entity v1__ = eval(val1__);
-	Entity v2__ = eval(val2__);
-	
-	// Handles raw types								
-	if((isTypeArgument(v1_) && getInit(v1_) == zero()) 
-		|| (isTypeArgument(v2_) && (getInit(v2_) == zero()))) {
-		if( (isTypeArgument(v1_) && getInit(v1_) == zero()) 
-			&& !(isTypeArgument(v2_) && getInit(v2_) == zero()) ) {
-			PEntity pval2 = mkSubstsExplicit(mapper, v2__);
-			Bindings logbs = parameterize(bindings([ pzero() | Entity _ <- pval2.bindings.params ], pval2.bindings.params), v1_);
-			return cons + equalizeTypes(facts, mapper, bind(val1__, BLogger[Entity] (Entity _) {
-																		return bind(log(logbs), BLogger[Entity] (value _) {
-																			return returnBL(v2__); }); }), 
-													   val2__);
-		}
-		if( (isTypeArgument(v2_) && getInit(v2_) == zero()) 
-			&& !(isTypeArgument(v1_) && getInit(v1_) == zero()) ) {
-			PEntity pval1 = mkSubstsExplicit(mapper, v1__);
-			Bindings logbs = parameterize(bindings([ pzero() | Entity _ <- pval1.bindings.params ], pval1.bindings.params), v2_);
-			return cons + equalizeTypes(facts, mapper, val1__, 
-													   bind(val2__, BLogger[Entity] (Entity _) {
-															return bind(log(logbs), BLogger[Entity] (value _) {
-																			return returnBL(v1__); }); }));
-		}
-	}
-	
-	bool b1 = false;
-	bool b2 = false;
-	
-	BLogger[Entity] val1___ = bind(val1__, BLogger[Entity] (Entity v) { 
-									return bind(supertypes_(facts, v, v2__), BLogger[Entity] (bool b) {
-													b1 = b;
-													if(b) return returnBL(v2__);
-													return val1__; }); });
-	BLogger[Entity] val2___ = bind(val2__, BLogger[Entity] (Entity v) { 
-									return bind(supertypes_(facts, v, v1__), BLogger[Entity] (bool b) {
-													b2 = b;
-													if(b) return returnBL(v1__);
-													return val2__; }); });
-	
-	Entity v1___ = eval(val1___);
-	Entity v2___ = eval(val2___);
-	
-	// tracer(true, "equalize out: <prettyprint(v1___)> -- <prettyprint(v2___)> -;- <prettyprint(evalb(val1___))> -- <prettyprint(evalb(val2___))>");
-		
-	assert(mkSubstsExplicit(mapper, v1___).genval == mkSubstsExplicit(mapper, v2___).genval);
-	
-	PEntity pval = mkSubstsExplicit(mapper, (b1) ? v1___ : v2___);
-	if(!isEmpty(pval.bindings.params))
-		cons = cons + { *equalizeTypes(facts, mapper, bind(val1___, BLogger[Entity] (Entity v) {
-															return returnBL(pval.bindings.params[i]); }),
-												  	  bind(val2___, BLogger[Entity] (Entity v) {
-															return returnBL(pval.bindings.params[i]); })) 
-																| int i <- [0..size(pval.bindings.params) - 1] };
+	Constraint[BLogger[Entity]] c_UBUB = boundUBUB(facts, mapper, c);
+	if(isTypeArgument(eval(c_UBUB.lh)) || isTypeArgument(eval(c_UBUB.rh)))
+		cons += c_UBUB;
+	if(isTypeArgument(eval(c_UBUB.lh)))
+		cons += subtype(bound_ub(facts, mapper, eval(c_UBUB.lh)), (parameterizer1(mapper) o substsLogger(mapper) o boundT)(facts, getTypeParameter(eval(c_UBUB.lh))));
+	if(isTypeArgument(eval(c_UBUB.rh)))
+		cons += subtype(bound_ub(facts, mapper, eval(c_UBUB.rh)), (parameterizer1(mapper) o substsLogger(mapper) o boundT)(facts, getTypeParameter(eval(c_UBUB.rh))));
+	cons = cons + handleTypeArgumentsOfRawTypes(facts, mapper, boundUBUB(facts, mapper, c), bound_ubub(facts, mapper, c));
 	return cons;
+}
+
+public set[Constraint[BLogger[Entity]]] equalizeTBounds_LB(CompilUnit facts, Mapper mapper, c:Constraint::eq(_,_)) {
+	set[Constraint[BLogger[Entity]]] cons = {};
+	Constraint[BLogger[Entity]] c_LBLB = boundLBLB(facts, mapper, c);
+	if(isTypeArgument(eval(c_LBLB.lh)) || isTypeArgument(eval(c_LBLB.rh)))
+		cons += c_LBLB;
+	cons = cons + handleTypeArgumentsOfRawTypes(facts, mapper, boundLBLB(facts, mapper, c), bound_lblb(facts, mapper, c));
+	return cons;
+}
+
+public set[Constraint[BLogger[Entity]]] equalizeTBounds_ub(CompilUnit facts, Mapper mapper, c:Constraint::eq(_,_)) {
+	return equalizeParamTypes(facts, mapper, bound_ubub(facts, mapper, c));
+}
+
+public set[Constraint[BLogger[Entity]]] equalizeTBounds_lb(CompilUnit facts, Mapper mapper, c:Constraint::eq(_,_)) {
+	return equalizeParamTypes(facts, mapper, bound_lblb(facts, mapper, c));
 }
 
 // ==================================================================================================

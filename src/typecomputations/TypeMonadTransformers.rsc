@@ -2,15 +2,18 @@
 	 remark: it provides a nice way of playing with incremental semantics of computations, however, one has to be careful}
 module typecomputations::TypeMonadTransformers
 
-import Prelude;
 import lang::java::jdt::Java;
 import lang::java::jdt::JavaADT;
 import lang::java::jdt::refactorings::Java;
 import lang::java::jdt::refactorings::JavaADT;
 import lang::java::jdt::refactorings::PrettyPrintUtil;
+
 import typecomputations::SemanticDomains;
 import typecomputations::TypeValues;
 import typecomputations::TypeValuesPlusGens;
+
+import Prelude;
+
 
 @doc{Fixed base monad}
 data TypeOf[&F] = typeof(&F val)
@@ -134,4 +137,4 @@ public default M[&F] liftM(&F val) = inclM(val);
 public set[TypeOf[tuple[&F, AstNode]]] execute(CompilUnit facts, Mapper mapper, AstNode t, M[&F] val) = run(run(t, run(facts, mapper, val)));
 
 @doc{Ordinary composition}
-public &F1 o(&F val, &F1 (&F) f) = f(val); 
+public &F1 comp(&F val, &F1 (&F) f) = f(val); 

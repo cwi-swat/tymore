@@ -1,16 +1,18 @@
 @doc{Monadic based type computations}
 module typecomputations::TypeComputations
 
-import Prelude;
 import lang::java::jdt::Java;
 import lang::java::jdt::JavaADT;
 import lang::java::jdt::refactorings::Java;
 import lang::java::jdt::refactorings::JavaADT;
 import lang::java::jdt::refactorings::PrettyPrintUtil;
+
 import typecomputations::SemanticDomains;
 import typecomputations::TypeMonadTransformers;
 import typecomputations::TypeValues;
 import typecomputations::TypeValuesPlusGens;
+
+import Prelude;
 
 
 @doc{The framework lifting mechanism :
@@ -62,20 +64,20 @@ public Option[AstNode] getScopeTerm(AstNode t) = subterm(t);
 public M[PEntity] geval(nestval(wrapval(PEntity val))) 
 	= bindinj(liftM(val), bind(liftM(getGenericVal(val)), M[PEntity] (PEntity v) { return geval(inj1(v)); }), parameterize11 )
 	;
-public M[PEntity] glookup(nestval(wrapval(AstNode t))) 
-	= (some(AstNode st) := getScopeTerm(t)) 
-		? bindinj( o( bindinj(bindinj(bindinj(liftM(st), glookup), filt2), geval), liftM(fetchv) ),
-			       bindinj( bind(liftM(t), M[PEntity] (AstNode tt) { return glookup(inj1(tt)); }), filt1),
-			       parameterize21
-		         )
-		: bindinj( bindinj( bind(liftM(t), M[PEntity] (AstNode tt) { return glookup(inj1(tt)); }), filt1),
-			       parameterize22
-		         )
-	;
+//public M[PEntity] glookup(nestval(wrapval(AstNode t))) 
+//	= (some(AstNode st) := getScopeTerm(t)) 
+//		? bindinj( o( bindinj(bindinj(bindinj(liftM(st), glookup), filt2), geval), liftM(fetchv) ),
+//			       bindinj( bind(liftM(t), M[PEntity] (AstNode tt) { return glookup(inj1(tt)); }), filt1),
+//			       parameterize21
+//		         )
+//		: bindinj( bindinj( bind(liftM(t), M[PEntity] (AstNode tt) { return glookup(inj1(tt)); }), filt1),
+//			       parameterize22
+//		         )
+//	;
 public M[PEntity] (PEntity) gparam(nestval(wrapval(int i))) 
 	= M[PEntity] (PEntity val) { return bindinj(gparam(inj1(i))(val), filt3); }
 	; 
-public M[PEntity] gdecl(nestval(wrapval(PEntity val))) { tracer(false, "gdecl 2nd level: "); return bindinj(gdecl(inj1(val)), filt3); }
+public M[PEntity] gdecl(nestval(wrapval(PEntity val))) { tracer(false, "gdecl 2nd level : "); return bindinj(gdecl(inj1(val)), filt3); }
 public M[PEntity] filt1(wrapval(PEntity val)) = filt(bool (PEntity v) { return false; }, inj(val));
 public M[PEntity] filt2(wrapval(PEntity val)) = filt(bool (PEntity v) { return false; }, inj(val));
 public M[PEntity] filt3(wrapval(PEntity val)) = filt(bool (PEntity v) { return true; }, inj(val));

@@ -36,22 +36,33 @@ public class BindingConverter extends org.rascalmpl.eclipse.library.lang.java.jd
 	/*
 	 * Java entities with enriched type information
 	 */
-	public static final Type CONS_GENERIC_METHOD = TF.constructor(store, ADT_ID, "method", TF.listType(ADT_ENTITY), "genericTypes", TF.stringType(), "name", TF.listType(ADT_ENTITY), "params", ADT_ENTITY, "returnType");
-	public static final Type CONS_GENERIC_CONSTRUCTOR = TF.constructor(store, ADT_ID, "constr", TF.listType(ADT_ENTITY), "genericTypes", TF.listType(ADT_ENTITY), "params");
-	public static final Type CONS_ENUM_CONSTANT_TYPED = TF.constructor(store, ADT_ID, "enumConstant", TF.stringType(), "name", ADT_ENTITY, "declaredType");
-	public static final Type CONS_FIELD_TYPED = TF.constructor(store, ADT_ID, "field", TF.stringType(), "name", ADT_ENTITY, "declaredType");
-	public static final Type CONS_PARAMETER_TYPED = TF.constructor(store, ADT_ID, "parameter", TF.stringType(), "name", ADT_ENTITY, "declaredType");
-	public static final Type CONS_VARIABLE_TYPED = TF.constructor(store, ADT_ID, "variable", TF.stringType(), "name", ADT_ENTITY, "declaredType", TF.integerType(), "id");
-	public static final Type CONS_TYPE_PARAMETER_BOUNDED = TF.constructor(store, ADT_ID, "typeParameter", TF.stringType(), "name", TF.listType(ADT_ENTITY), "bounds");
-	
-	public BindingConverter() {
-		super();
-	}
-	
+	public static final Type CONS_GENERIC_METHOD = TF.constructor(store, ADT_ID, "method", TF.listType(ADT_ENTITY), 
+																				 "genericTypes", TF.stringType(), // '+' generic types
+																				 "name", TF.listType(ADT_ENTITY), 
+																				 "params", ADT_ENTITY, 
+																				 "returnType");
+	public static final Type CONS_GENERIC_CONSTRUCTOR = TF.constructor(store, ADT_ID, "constr", TF.listType(ADT_ENTITY), 
+																					  "genericTypes", TF.listType(ADT_ENTITY), // '+' generics
+																					  "params");
+	public static final Type CONS_ENUM_CONSTANT_TYPED = TF.constructor(store, ADT_ID, "enumConstant", TF.stringType(), 
+																					  "name", ADT_ENTITY, 
+																					  "declaredType"); // '+' declared type
+	public static final Type CONS_FIELD_TYPED = TF.constructor(store, ADT_ID, "field", TF.stringType(), 
+																			  "name", ADT_ENTITY, 
+																			  "declaredType"); // '+' declared type
+	public static final Type CONS_PARAMETER_TYPED = TF.constructor(store, ADT_ID, "parameter", TF.stringType(), 
+																				  "name", ADT_ENTITY, 
+																				  "declaredType"); // '+' declared type
+	public static final Type CONS_VARIABLE_TYPED = TF.constructor(store, ADT_ID, "variable", TF.stringType(), 
+																				 "name", ADT_ENTITY, 
+																				 "declaredType", TF.integerType(),  // '+' declared type
+																				 "id");
+	public static final Type CONS_TYPE_PARAMETER_BOUNDED = TF.constructor(store, ADT_ID, "typeParameter", TF.stringType(), 
+																						 "name", TF.listType(ADT_ENTITY), 
+																						 "bounds"); // '+' bounds (problematic due to cycles)
+		
 	public IValue getId(IMethodBinding mb) {
-		/*
-		 * Takes into account type parameters and type arguments of generic and parameterized methods
-		 */	
+		 // Takes into account type parameters and type arguments of generic and parameterized methods	
 		if(mb.isGenericMethod()) {
 			if (mb.isConstructor()) 
 				return VF.constructor(CONS_GENERIC_CONSTRUCTOR, getEntities(mb.getTypeParameters()), getEntities(mb.getParameterTypes()));
@@ -62,17 +73,14 @@ public class BindingConverter extends org.rascalmpl.eclipse.library.lang.java.jd
 				return VF.constructor(CONS_GENERIC_CONSTRUCTOR, getEntities(mb.getTypeArguments()), getEntities(mb.getParameterTypes()));
 			else
 				return VF.constructor(CONS_GENERIC_METHOD, getEntities(mb.getTypeArguments()), VF.string(mb.getName()), getEntities(mb.getParameterTypes()), getEntity(mb.getReturnType()));
-		} else {
-			return super.getId(mb);
-		}
+		} 
+		return super.getId(mb);
 	}
 	
 	public IValue getId(ITypeBinding tb) {
 		if(!tb.isTypeVariable()) return super.getId(tb);
-		/*
-		 * Unique type parameter names
-		 */
-		return VF.constructor(CONS_TYPE_PARAMETER_BOUNDED, VF.string(tb.getName() + tb.getKey().hashCode()), getEntities(tb.getTypeBounds())); 
+		// Unique type parameter names '+' bounds (problematic due to cycles)
+		return VF.constructor(CONS_TYPE_PARAMETER_BOUNDED, VF.string(tb.getName() + tb.getKey().hashCode())); 
 	}
 	
 	public IValue getId(IVariableBinding vb) {
@@ -82,15 +90,15 @@ public class BindingConverter extends org.rascalmpl.eclipse.library.lang.java.jd
 			return VF.constructor(CONS_FIELD_TYPED, VF.string(vb.getName()), getEntity(vb.getType(), null));
 		} else if(vb.isParameter()) {
 			return VF.constructor(CONS_PARAMETER_TYPED, VF.string(vb.getName()), getEntity(vb.getType(), null));
-		} else {
-			// local variable
-			return VF.constructor(CONS_VARIABLE_TYPED, VF.string(vb.getName()), getEntity(vb.getType(), null), VF.integer(vb.getVariableId()));
-		}
+		} 
+		// local variable
+		return VF.constructor(CONS_VARIABLE_TYPED, VF.string(vb.getName()), getEntity(vb.getType(), null), VF.integer(vb.getVariableId()));
 	}
 	
 	private IList getEntities(ITypeBinding[] tbs) {
 		IListWriter params = VF.listWriter(ADT_ENTITY);
-		for(ITypeBinding tb : tbs) params.append(getEntity(tb));
+		for(ITypeBinding tb : tbs) 
+			params.append(getEntity(tb));
 		return params.done();
 	}
 	

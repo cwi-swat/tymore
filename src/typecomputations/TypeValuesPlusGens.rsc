@@ -1,17 +1,18 @@
 @doc{The module extends the domain of type values with explicit substitutions of parameterized types and type argument values}
 module typecomputations::TypeValuesPlusGens
 
-import Prelude;
 import lang::java::jdt::Java;
 import lang::java::jdt::JavaADT;
 import lang::java::jdt::refactorings::Java;
 import lang::java::jdt::refactorings::JavaADT;
 import lang::java::jdt::refactorings::PrettyPrintUtil;
 import lang::java::jdt::refactorings::ValuesUtil;
+
 import typecomputations::TypeValues;
 
-@doc{Extends the semantics with the explicit substitutions of parameterized types}
-public PEntity mkSubstsExplicit(Mapper mapper, Entity val) = toGens(mapper)(val);
+import Prelude;
+
+
 @doc{Entends the override semantics with the parameterized type semantics}
 public set[PEntity] overrides(CompilUnit facts, Mapper mapper, PEntity val) = { toGens(mapper)(v) | Entity v <- overrides(facts, val@paramval) };
 @doc{Extends the declaring type semantics with the parameterized type semantics}
@@ -29,28 +30,6 @@ public bool isDownCast(CompilUnit facts, Mapper mapper, t:castExpression(_, AstN
 public set[PEntity] supertypescls(CompilUnit facts, Mapper mapper, PEntity val) {
 	set[PEntity] sups = supertypes(facts, mapper, val);
 	return sups + { *supertypescls(facts, mapper, sup) | PEntity sup <- sups };
-}
-@doc{Recursive function that maps to the representation with explicit type parameter substitution}	
-public PEntity (Entity) toGens(Mapper mapper) 
-	= PEntity (Entity val) { 
-		if(isTypeParameter(val) || isWildCardType(val) || isTypeArgument(val)) return pentity(val)[@paramval=val];
-		if(val == zero()) return pzero(); // it could (should) be accounted for earlier
-		if(entity([ *ids, anonymous(_,_)]) := val) return pentity(val)[@paramval=val];
-		tuple[tuple[list[Entity], list[Entity]], Entity] v = mapper[val];
-		list[Entity] args = v[0][0];
-		list[Entity] params = v[0][1];
-		assert(size(args)==size(params));
-		if(isEmpty(params)) return pentity(bindings([], []), v[1])[@paramval=val];;
-		list[PEntity] pargs = [ (entity([]) := args[i]) ? pzero() : toGens(mapper)(args[i]) | int i <- [0..(size(params) - 1)] ];
-		return pentity(bindings(pargs, params), v[1])[@paramval=val]; 
-	};
-public Bindings concat(Bindings b1, Bindings b2) { 
-	assert(size(b1.args) == size(b1.params)); 
-	assert(size(b2.args) == size(b2.params));	
-	bs = bindings( ((!isEmpty(b1.params)) ? [ b1.args[i] | int i <- [0..size(b1.params)-1], b1.params[i] notin b2.params ] : []) + b2.args, 
-		    	   ((!isEmpty(b1.params)) ? [ b1.params[i] | int i <- [0..size(b1.params)-1], b1.params[i] notin b2.params ] : []) + b2.params );
-	assert(size(bs.args) == size(bs.params));
-	return bs;
 }
 @doc{The evaluation semantics is extended with type argument semantics, i.e. the type argument values are introduced in place of types}	
 public PEntity parameterize1(CompilUnit _, Mapper mapper, AstNode _, PEntity val1, PEntity val2) {	
@@ -111,6 +90,7 @@ public PEntity tpbound(Mapper mapper, pe:pentity(Bindings bs, tp:entity([ *ids, 
 	return tpbound(mapper, pentity(concat(bs, b.bindings), b.genval)[@paramval=b@paramval]); // NOTE: does not explicitly require pe@paramval
 }
 public PEntity tpbound(Mapper mapper, PEntity pe) = pe;
+
 @doc{Deep lookup for a bound in case of ([.], [.]) T}
 public PEntity bound(Mapper mapper, pe:pentity(Bindings bs, tp:entity([ *ids, typeParameter(str name, list[Entity] bounds)]))) {
 	map[Entity, PEntity] mapOfBindings = (!isEmpty(bs.params)) ? ( bs.params[i] : bs.args[i] | int i <- [0..size(bs.params) - 1] ) : ();
@@ -175,6 +155,7 @@ public set[PEntity] supertypesAll(CompilUnit facts, Mapper mapper, PEntity val) 
 	}
 	return sups + { *supertypesAll(facts, mapper, sup) | PEntity sup <- sups };	
 }
+
 /*
 public bool isGenericDecl(PEntity val) {
 			if(entity([ *ids,_ ]) := val.genval && id <- ids , ( class(_,_) := id || interface(_,_) := id ) ) return true;
@@ -193,26 +174,3 @@ public bool (PEntity) isParamDeclaredType(Mapper mapper)
 			return true;
 	};
 */	
-@doc{A function that returns the lookup subterm}
-public Option[AstNode] subterm(e:classInstanceCreation(none(),_,[],_,none())) = none();
-public Option[AstNode] subterm(e:classInstanceCreation(some(AstNode expr),_,[],_,none())) = some(rmvParentheses(expr));
-public Option[AstNode] subterm(e:classInstanceCreation(_,_,[],_,some(AstNode anonymClass))) = none(); 
-public Option[AstNode] subterm(e:fieldAccess(AstNode expr,_)) = some(rmvParentheses(expr)); 
-public Option[AstNode] subterm(e:methodInvocation(none(),_,_,_)) = some(this(e@scope));
-public Option[AstNode] subterm(e:methodInvocation(some(AstNode expr),_,_,_)) = some(rmvParentheses(expr));
-public Option[AstNode] subterm(e:qualifiedName(AstNode qname,_)) = (isVariableBinding(lookup(e))) ? some(qname) : none(); 
-public Option[AstNode] subterm(e:simpleName(_)) = (isFieldBinding(lookup(e)) && !isArrayType(getType(e))) ? some(this(e@scope)) : none();
-public Option[AstNode] subterm(e:superConstructorInvocation(none(),_,_)) = some(this(e@scope));
-public Option[AstNode] subterm(e:superConstructorInvocation(some(AstNode expr),_,_)) = some(rmvParentheses(expr));
-public Option[AstNode] subterm(e:superFieldAccess(none(),_)) = some(this(e@scope));
-public Option[AstNode] subterm(e:superFieldAccess(some(AstNode qualifier),_)) = some(qualifier); 
-public Option[AstNode] subterm(e:superMethodInvocation(none(),_,_,_)) = some(this(e@scope));
-public Option[AstNode] subterm(e:superMethodInvocation(some(AstNode qualifier),_,_,_)) = some(qualifier); 
-public default Option[AstNode] subterm(AstNode t) = none();
-
-public AstNode rmvParentheses(parenthesizedExpression(AstNode expression)) = rmvParentheses(expression);
-public default AstNode rmvParentheses(AstNode expression) = expression;
-
-public void tracer(bool condition, str msg) {
-	if(condition) println("TRACER: " + msg);
-}

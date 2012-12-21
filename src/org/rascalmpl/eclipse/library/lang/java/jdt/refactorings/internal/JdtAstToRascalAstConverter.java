@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009-2011 CWI
+ * Copyright (c) 2009-2012 CWI
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,65 +10,32 @@
 *******************************************************************************/
 package org.rascalmpl.eclipse.library.lang.java.jdt.refactorings.internal;
 
-import org.eclipse.imp.pdb.facts.ISourceLocation;
 import org.eclipse.imp.pdb.facts.IValueFactory;
 import org.eclipse.imp.pdb.facts.type.TypeStore;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 
 /*
- * Extends the JdtAstToRascalAstConverter to annotate a node with the location and scope information (refactoring-specific)
+ * Extends the JdtAstToRascalAstConverter to annotate a node with the scope information (refactoring-specific)
  */
 public class JdtAstToRascalAstConverter extends org.rascalmpl.eclipse.library.lang.java.jdt.internal.JdtAstToRascalAstConverter {
+	
+	public JdtAstToRascalAstConverter(final IValueFactory values, final TypeStore typeStore, final BindingConverter bindingConverter) {
+		super(values, typeStore, bindingConverter);
+	}
 	
 	public static final String ANNOTATION_SCOPE = "scope";
 	
 	private ITypeBinding scope;
 	
-	private CompilationUnit compilUnit;
-	private ISourceLocation loc;
-	
-	private final IValueFactory values;
-	private final TypeStore typeStore;
-	private final BindingConverter bindingConverter;
-	private final BindingsImporter bindingsImporter;
-	
-	public JdtAstToRascalAstConverter(final IValueFactory values, 
-									  final TypeStore typeStore, 
-									  final BindingConverter bindingConverter,
-									  final BindingsImporter bindingsImporter) {
-		super(values, typeStore, bindingConverter, bindingsImporter);
-		this.values = values;
-		this.typeStore = typeStore;
-		this.bindingConverter = bindingConverter;
-		this.bindingsImporter = bindingsImporter;
-	}
-	
-	public JdtAstToRascalAstConverter getInstance() {
-		JdtAstToRascalAstConverter converter = new JdtAstToRascalAstConverter(this.values, this.typeStore, this.bindingConverter, this.bindingsImporter);
-		converter.set(this.compilUnit);
-		converter.set(this.loc);
-		return converter;
-	}
-	
-	public void set(CompilationUnit compilUnit) {
-		super.set(compilUnit);
-		this.compilUnit = compilUnit;
-	}
-	
-	public void set(ISourceLocation loc) {
-		super.set(loc);
-		this.loc = loc;
-	}
-	
 	public void preVisit(ASTNode node) {
 		super.preVisit(node);
-		scope = this.bindingsImporter.getEnclosingType();
+		scope = this.getBindingsImporter().getEnclosingType();
 	}
 		
 	public void postVisit(ASTNode node) {
 		super.postVisit(node);
-		if(scope != null) setAnnotation(ANNOTATION_SCOPE, this.bindingConverter.getEntity(this.scope));
+		if(scope != null) 
+			this.setRascalAstNodeAnnotation(ANNOTATION_SCOPE, this.getBindingsImporter().getBindingConverter().getEntity(this.scope));
 	}
 }

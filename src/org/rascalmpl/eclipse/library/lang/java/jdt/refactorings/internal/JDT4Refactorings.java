@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009-2011 CWI
+ * Copyright (c) 2009-2012 CWI
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -40,8 +40,7 @@ public class JDT4Refactorings {
 		BindingConverter bindingConverter = new BindingConverter();
 		converter = new JdtAstToRascalAstConverter(values, 
 												   eval.getHeap().getModule("lang::java::jdt::refactorings::JDT4Refactorings").getStore(), 
-												   bindingConverter, 
-												   new JdtAstToRascalAstConverter.BindingsImporter(bindingConverter, values));
+												   bindingConverter);
 		converter.set(cu);
 		converter.set(loc);
 		cu.accept(converter);
@@ -51,7 +50,7 @@ public class JDT4Refactorings {
 		typeComputationModelBuilder.extract(this.getCompilationUnit(loc));
 		
 		compilUnitValue = ((IConstructor) compilUnitValue).setAnnotation("typeComputationModel", typeComputationModelBuilder.getTypeComputationModel());
-		compilUnitValue = ((IConstructor) compilUnitValue).setAnnotation("parameterizedTypesSemantics", typeComputationModelBuilder.getParameterizedTypesSemantics());
+		compilUnitValue = ((IConstructor) compilUnitValue).setAnnotation("semanticsOfParameterizedTypes", typeComputationModelBuilder.getSemanticsOfParameterizedTypes());
 		return compilUnitValue;
 	}
 	

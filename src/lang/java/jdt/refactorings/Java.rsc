@@ -1,18 +1,18 @@
 @license{
-  Copyright (c) 2009-2011 CWI
+  Copyright (c) 2009-2012 CWI
   All rights reserved. This program and the accompanying materials
   are made available under the terms of the Eclipse Public License v1.0
   which accompanies this distribution, and is available at
   http://www.eclipse.org/legal/epl-v10.html
 }
-@contributor{Anastasia Izmaylova - ai@cwi.nl}
+@contributor{Anastasia Izmaylova - A.Izmaylova@cwi.nl}
 module lang::java::jdt::refactorings::Java
 
 import lang::java::jdt::Java;
 import lang::java::jdt::JavaADT;
 import lang::java::jdt::refactorings::JavaADT;
 
-@doc{Extension of the Rascal Id with enriched type information}
+@doc{Extension of the Rascal 'Id' with enriched type information, used to uniformly represent types and constraint variables}
 data Id = method(list[Entity] genericTypes, str name, list[Entity] params, Entity returnType)
         | constr(list[Entity] genericTypes, list[Entity] params)
         
@@ -21,21 +21,35 @@ data Id = method(list[Entity] genericTypes, str name, list[Entity] params, Entit
         | enumConstant(str name, Entity declaredType)
         | variable(str name, Entity declaredType, int id)
         
-        | typeParameter(str name, list[Entity] bs) // Limitations: cycles in bounds
+        | typeParameter(str name, list[Entity] bs) // problematic due to possible cycles
         
-        | anonymous(loc location, Entity declaredType) // represents an anonymous declared type
-        | inherits(Entity declaredType) // indicates the declared inherited type
-        | decl() // indicates the declaring type of an entity
-        | parameter(int i) // indicates the declared parameter type of an entity
+        // all the declared types have to be uniquely represented 
+        | anonymous(loc location, Entity declaredType) // anonymous declared type, e.g., in the Java 'cast' extressions
+        | inherits(Entity declaredType)
+        | decl()
+        | parameter(int i)
         
-        // Extension with type argument values that can be associated with two kinds of a context:
-        // program element (node) or declaration type value
-        | typeArgument(str name, Entity econtext, PEntity init, list[PEntity] bounds)
-		| typeArgument(str name, AstNode tcontext, PEntity init, list[PEntity] bounds)
+        | typeArgument(str name, Entity vc, PEntity init)  // value context
+		| typeArgument(str name, AstNode tc, PEntity init) // term context
+		
+		| typeArgument(str name, Entity vc, Entity initv)  // value context
+		| typeArgument(str name, AstNode tc, Entity initv) // term context
+		
+		| upper()
+		| lower()
+		
+		| upper(Entity init)
+		| lower(Entity init)
+		
         ;
 
 public Entity object() = entity([package("java"), package("lang"), class("Object")]);
 public Entity zero() = entity([]);
+
+@doc{Declaring type semantics}
+public Entity decl(Entity val) = entity(val.id + decl());
+@doc{Declared parameter type semantics}
+public Entity (Entity) param(int i) = Entity (Entity val) { return entity(val.id + \parameter(i)); };
 
 @doc{Imported compilation unit facts format}
 public alias CompilUnit = map[str, rel[Entity, Entity]];
@@ -45,10 +59,13 @@ public alias Mapper = map[Entity, tuple[tuple[list[Entity], list[Entity]], Entit
 data PEntity = pentity(Bindings bindings, Entity genval);
 data Bindings = bindings(list[PEntity] args, list[Entity] params);
 
-public PEntity getGenericVal(PEntity val) = pentity(val.genval)[@paramval=val.genval];
+@doc{Type values with explicit substitutions of parameterized types}        
+data PEntity = pentity(Substs s, Entity genval);
+data Substs = substs(list[Entity] args, list[Entity] params);
+
 @doc{Annotation that encodes the inversible mapping between the parameterized type representations (with implicit and explicit substitutions)}
 anno Entity PEntity@paramval;
 
 public PEntity pentity(Entity genval) = pentity(bindings([],[]), genval)[@paramval=genval];
 public PEntity pobject() = pentity(bindings([], []), entity([package("java"), package("lang"), class("Object")]))[@paramval=entity([package("java"), package("lang"), class("Object")])];
-public PEntity pzero() = pentity(bindings([], []), entity([]))[@paramval=entity([package("java"), package("lang"), class("Object")])];
+public PEntity pzero() = pentity(bindings([], []), entity([]))[@paramval=zero()];

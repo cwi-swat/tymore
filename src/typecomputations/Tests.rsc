@@ -1,26 +1,35 @@
 module typecomputations::Tests
 
-import Prelude;
 import lang::java::jdt::Java;
 import lang::java::jdt::JavaADT;
+import lang::java::jdt::JDT;
 import lang::java::jdt::refactorings::Java;
 import lang::java::jdt::refactorings::JavaADT;
+import lang::java::jdt::refactorings::JavaADTVisitor;
 import lang::java::jdt::refactorings::JDT4Refactorings;
 import lang::java::jdt::refactorings::PrettyPrintUtil;
+import lang::java::jdt::refactorings::ValuesUtil;
+
 import typecomputations::TypeValues;
-import typecomputations::TypeValuesPlusGens;
-import typecomputations::SemanticDomains;
-import typecomputations::TypeMonadTransformers;
-import typecomputations::TypeComputations;
-import typecomputations::ConstraintMonadTransformers;
-import typecomputations::Constraints;
-import typecomputations::ConstraintComputations;
+//import typecomputations::TypeValuesPlusGens;
+//import typecomputations::SemanticDomains;
+//import typecomputations::TypeMonadTransformers;
+//import typecomputations::TypeComputations;
+//import typecomputations::ConstraintMonadTransformers;
+//import typecomputations::Constraints;
+//import typecomputations::ConstraintComputations;
+import typecomputations::mksubsts::TypeComputations;
+import typecomputations::mksubsts::Constraints;
 import typecomputations::tests::TestProjects;
 
-public void main1() { testComputations(testcase1); }
+import Prelude;
 
-public void testComputations(list[loc] projects) { for(project <- projects) testComputations(project); }	
 
+public void main1() { 
+	testConstraintSemantics(testcase5); 
+}
+
+public void testComputations(list[loc] projects) { for(project <- projects) testComputations(project); }
 private void testComputations(loc project) {
 	println("calculating facts and asts...");
 	set[AstNode] compilationUnits = createAstsFromProjectR(project); 
@@ -31,16 +40,166 @@ private void testComputations(loc project) {
 		println(cu@location);
 		
 		CompilUnit facts = cu@typeComputationModel;
-		Mapper mapper = cu@parameterizedTypesSemantics;
+		Mapper mapper = cu@semanticsOfParameterizedTypes;
 		
-		println("facts: <facts>");
-		println("mapper: <mapper>");
+		 println("facts: <facts>"); println("mapper: <mapper>");
 		
 		for(decl <- cu.typeDeclarations) 
 			testComputations(decl, compute(facts, mapper));
 	}
 	
 	println("cn: <cn>");
+}
+
+public void testLookupSemantics(list[loc] projects) { for(project <- projects) testLookupSemantics(project); }
+private void testLookupSemantics(loc project) {
+	println("calculating facts and asts...");
+	set[AstNode] compilationUnits = createAstsFromProjectR(project); 
+	println("done...");
+	for(AstNode cu <- compilationUnits) {
+
+		println(cu@location);
+		
+		(AstNode (AstNode) (AstNode (AstNode) super) {
+			return AstNode (AstNode n) {
+				println(lookup(n));
+				return super(n);
+			};
+		} o visitADT)(cu);
+		
+	}	
+}
+
+public void testConstraintSemantics(list[loc] projects) { for(project <- projects) testConstraintSemantics(project); }
+private void testConstraintSemantics(loc project) {
+	println("calculating facts and asts...");
+	set[AstNode] compilationUnits = createAstsFromProjectR(project); 
+	println("done...");
+	for(AstNode cu <- compilationUnits) {
+		println(cu@location);
+		
+		CompilUnit facts = cu@typeComputationModel;
+		Mapper mapper = cu@semanticsOfParameterizedTypes;
+		
+		// println("<{ "<prettyprint(t[0])> --- <prettyprint(t[1])>" | t <- facts["supertypes_func"], prettyprint(t[1]) == prettyprint(object()) }>");
+		
+		set[Constraint[BLogger[Entity]]] cons = {};
+		
+		(AstNode (AstNode) (AstNode (AstNode) super) {
+			return AstNode (AstNode n) {
+				cons += constrain(n, facts, mapper);
+				return super(n);
+			};
+		} o visitADT)(cu);
+		
+		set[Constraint[BLogger[Entity]]] cls = { *closure(facts, mapper, c) | Constraint[BLogger[Entity]] c <- cons };
+		
+		tracer(true, "Constraints <[ prettyprint(c) | Constraint[BLogger[Entity]] c <- cons ]>");
+		str print = "";
+		for(Constraint[BLogger[Entity]] c <- cls)
+			print = print + prettyprint(c) + "\n";
+		tracer(true, "Constraints (closure) <print>");
+		
+	}	
+}
+
+public void testLookupLoggerSemantics(list[loc] projects) { for(project <- projects) testLookupLoggerSemantics(project); }
+private void testLookupLoggerSemantics(loc project) {
+	println("calculating facts and asts...");
+	set[AstNode] compilationUnits = createAstsFromProjectR(project); 
+	println("done...");
+	for(AstNode cu <- compilationUnits) {
+		println(cu@location);
+		
+		CompilUnit facts = cu@typeComputationModel;
+		Mapper mapper = cu@semanticsOfParameterizedTypes;
+		
+		(AstNode (AstNode) (AstNode (AstNode) super) {
+			return AstNode (AstNode n) {
+				if(methodInvocation(Option[AstNode] optionalExpression,_,_,_) := n) {
+					println(prettyprint(n));
+					BLogger[Entity] tn = lookup_(facts, mapper, n);
+					tuple[Entity, Bindings] var = run(tn)(bindings([],[]));
+					println("lookup: <prettyprint(var[0])>");
+					if(var[1] != bindings([],[])) println("substs: <prettyprint(var[1])>");
+				}
+				return super(n);
+			};
+		} o visitADT)(cu);
+	}	
+}
+
+public void testEvalSemantics(list[loc] projects) { for(project <- projects) testEvalSemantics(project); }
+private void testEvalSemantics(loc project) {
+	println("calculating facts and asts...");
+	set[AstNode] compilationUnits = createAstsFromProjectR(project); 
+	println("done...");
+	for(AstNode cu <- compilationUnits) {
+		println(cu@location);
+		
+		CompilUnit facts = cu@typeComputationModel;
+		Mapper mapper = cu@semanticsOfParameterizedTypes;
+		
+		(AstNode (AstNode) (AstNode (AstNode) super) {
+			return AstNode (AstNode n) {
+				if(methodInvocation(Option[AstNode] optionalExpression,_,_,_) := n) {
+					BLogger[Entity] tn = (evalLogger(mapper) o eval_)(lookup(n));
+					if(some(AstNode oe) := optionalExpression) {
+						BLogger[Entity] toe = (evalLogger(mapper) o eval_)(lookup(oe));
+						Bindings bsoe = run(toe)(bindings([],[]))[1];
+						if(bsoe != bindings([],[])) {
+							println(prettyprint(lookup(oe)));
+							println(prettyprint(bsoe));
+						}
+					}
+					Bindings bsn = run(tn)(bindings([],[]))[1];
+					if(bsn != bindings([],[])) {
+						println(prettyprint(lookup(n)));
+						println(prettyprint(bsn));
+					}
+				}
+				return super(n);
+			};
+		} o visitADT)(cu);
+	}	
+}
+
+public void testSuperTypesSemantics(list[loc] projects) { for(project <- projects) testSuperTypesSemantics(project); }
+private void testSuperTypesSemantics(loc project) {
+	println("calculating facts and asts...");
+	set[AstNode] compilationUnits = createAstsFromProjectR(project); 
+	println("done...");
+	for(AstNode cu <- compilationUnits) {
+
+		println(cu@location);
+		
+		CompilUnit facts = cu@typeComputationModel;
+		Mapper mapper = cu@semanticsOfParameterizedTypes;
+		
+		(AstNode (AstNode) (AstNode (AstNode) super) {
+			return AstNode (AstNode n) {
+				if(methodInvocation(Option[AstNode] optionalExpression,_,_,_) := n) {
+					Entity dtype = eval(decl(lookup(n)));
+					Entity t = zero();
+					BLogger[bool] sups = returnBL(false);
+					if(some(AstNode oe) := optionalExpression) {
+						t = getType(oe);
+						sups = (superTypesLogger(mapper) o superTypes)(facts, t, dtype);
+					} else {
+						t = n@scope;
+						sups = (superTypesLogger(mapper) o superTypes)(facts, t, dtype);
+					}
+					Bindings bs = run(sups)(bindings([],[]))[1];
+					if(bs != bindings([],[])) {
+						println(lookup(n));
+						println(t);
+						println("supertypes: <prettyprint(bs)>");
+					}
+				}
+				return super(n);
+			};
+		} o visitADT)(cu);
+	}	
 }
 
 public void (AstNode) compute(CompilUnit facts, Mapper mapper) 

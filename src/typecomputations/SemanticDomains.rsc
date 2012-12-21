@@ -1,13 +1,15 @@
 module typecomputations::SemanticDomains
 
-import Prelude;
 import lang::java::jdt::Java;
 import lang::java::jdt::JavaADT;
 import lang::java::jdt::refactorings::Java;
 import lang::java::jdt::refactorings::JavaADT;
 import lang::java::jdt::refactorings::PrettyPrintUtil;
 
-@doc{Semantic domain that allows flexible overriding of the basic semantic functions on program terms}
+import Prelude;
+
+
+@doc{Semantic domain that allows overriding of the basic semantic functions on program terms}
 data TVal[&V] = wrapval(&V v)
 			  | nestval(TVal[&V] tv)
 			  ;

@@ -1,12 +1,12 @@
 module typecomputations::ConstraintComputations
 
-import Prelude;
 import lang::java::jdt::Java;
 import lang::java::jdt::JavaADT;
 import lang::java::jdt::refactorings::Java;
 import lang::java::jdt::refactorings::JavaADT;
 import lang::java::jdt::refactorings::JDT4Refactorings;
 import lang::java::jdt::refactorings::PrettyPrintUtil;
+
 import typecomputations::TypeValues;
 import typecomputations::TypeValuesPlusGens;
 import typecomputations::SemanticDomains;
@@ -14,6 +14,9 @@ import typecomputations::TypeMonadTransformers;
 import typecomputations::TypeComputations;
 import typecomputations::ConstraintMonadTransformers;
 import typecomputations::Constraints;
+
+import Prelude;
+
 
 public ConsM[&F1] bindinj(ConsM[&F] mval, ConsM[&F1] (TVal[&F]) f) 
 	= bind(mval, ConsM[&F1] (&F val) { return bind(f(inj(val)), ConsM[&F1] (&F1 v) { return liftConsM(prjAll(v)); }); })

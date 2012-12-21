@@ -1,18 +1,20 @@
 module typecomputations::Constraints
 
-import Prelude;
 import lang::java::jdt::Java;
 import lang::java::jdt::JavaADT;
 import lang::java::jdt::refactorings::Java;
 import lang::java::jdt::refactorings::JavaADT;
 import lang::java::jdt::refactorings::PrettyPrintUtil;
 import lang::java::jdt::refactorings::ValuesUtil;
+
 import typecomputations::TypeValues;
 import typecomputations::TypeValuesPlusGens;
 import typecomputations::SemanticDomains;
 import typecomputations::TypeMonadTransformers;
 import typecomputations::TypeComputations;
 import typecomputations::ConstraintMonadTransformers;
+
+import Prelude;
 
 
 alias Mon = M[PEntity];

@@ -5,8 +5,7 @@
   which accompanies this distribution, and is available at
   http://www.eclipse.org/legal/epl-v10.html
 }
-@contributor{Anastasia Izmaylova - ai@cwi.nl}
-
+@contributor{Anastasia Izmaylova - A.Izmaylova@cwi.nl}
 module lang::java::jdt::refactorings::JDT4Refactorings
 
 import lang::java::jdt::Java;

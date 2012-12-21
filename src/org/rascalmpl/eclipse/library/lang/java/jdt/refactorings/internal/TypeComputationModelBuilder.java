@@ -57,22 +57,24 @@ public class TypeComputationModelBuilder {
 	private static final String SUBTYPES_FUNCTION = "supertypes_func";
 	private static final String DECLARES_FUNCTION = "declares_func";
 	private static final String OVERRIDES_FUNCTION = "overrides_func";
+	private static final String BOUNDS_FUNCTION = "bounds_func";
 	
 	private IRelationWriter evaluation_func;
 	private IRelationWriter subtypes_func;
-	private IRelationWriter declares_func;
-	private IRelationWriter overrides_func;
+	private IRelationWriter declares_func;  // performs lookup into supertypes
+	private IRelationWriter overrides_func; // performs lookup into supertypes
+	private IRelationWriter bounds_func; 
+
 	
-	private IMapWriter paramaterized_types_semantics_func;
+	private IMapWriter semantics_of_paramaterized_types_func;
 	
 	private IValue typeComputationModel;
-	private IValue parameterizedTypesSemantics;
+	private IValue semanticsOfParameterizedTypes;
 	
 	private final org.eclipse.imp.pdb.facts.type.Type functionTupleType = ftypes.tupleType(ADT_ENTITY, ADT_ENTITY);
 	private final org.eclipse.imp.pdb.facts.type.Type 
-		paramaterized_types_semantics = ftypes.tupleType( ftypes.tupleType( ftypes.listType(ADT_ENTITY), 
-																			ftypes.listType(ADT_ENTITY) ), 
-														  ADT_ENTITY );
+		semantics_of_paramaterized_types = ftypes.tupleType( ftypes.tupleType( ftypes.listType(ADT_ENTITY), ftypes.listType(ADT_ENTITY) ), 
+														     ADT_ENTITY );
 	
 	private final IValueFactory values;
 	private final BindingConverter bindingConverter; 
@@ -85,8 +87,8 @@ public class TypeComputationModelBuilder {
 		subtypes_func = values.relationWriter(functionTupleType);
 		declares_func = values.relationWriter(functionTupleType);
 		overrides_func = values.relationWriter(functionTupleType);
-		
-		paramaterized_types_semantics_func = values.mapWriter(ADT_ENTITY, paramaterized_types_semantics);
+		bounds_func = values.relationWriter(functionTupleType);
+		semantics_of_paramaterized_types_func = values.mapWriter(ADT_ENTITY, semantics_of_paramaterized_types);
 	}
 	
 	public void extract(CompilationUnit cu) {
@@ -98,17 +100,18 @@ public class TypeComputationModelBuilder {
 		computations.put(values.string(SUBTYPES_FUNCTION), subtypes_func.done());
 		computations.put(values.string(DECLARES_FUNCTION), declares_func.done());
 		computations.put(values.string(OVERRIDES_FUNCTION), overrides_func.done());
+		computations.put(values.string(BOUNDS_FUNCTION), bounds_func.done());
 		
 		typeComputationModel = computations.done();
-		parameterizedTypesSemantics = paramaterized_types_semantics_func.done();
+		semanticsOfParameterizedTypes = semantics_of_paramaterized_types_func.done();
 	}
 	
 	public IValue getTypeComputationModel() { 
 		return this.typeComputationModel; 
 	}
 	
-	public IValue getParameterizedTypesSemantics() { 
-		return this.parameterizedTypesSemantics; 
+	public IValue getSemanticsOfParameterizedTypes() { 
+		return this.semanticsOfParameterizedTypes; 
 	}
 	
 	class TypeValuesCollector extends ASTVisitor {
@@ -129,12 +132,8 @@ public class TypeComputationModelBuilder {
 		}
 		
 		class BindingsImporter extends BindingsResolver {	
-			/*
-			 *  Types and declarations of a program type computation model
-			 */
-			private final Set<Object> types = new HashSet<Object>();
-			private final Set<Object> methods = new HashSet<Object>();
-			private final Set<Object> variables = new HashSet<Object>();
+
+			private final Set<Object> bindings = new HashSet<Object>();
 			private final Map<Object, Object> declares = new HashMap<Object, Object>();
 			private final Map<Object, Object> declaresChecks = new HashMap<Object, Object>();
 			private final Map<Object, Object> overridesChecks = new HashMap<Object, Object>();
@@ -142,13 +141,15 @@ public class TypeComputationModelBuilder {
 			public BindingsImporter(BindingConverter bindingConverter) {
 				super(bindingConverter);
 			}			
+			
 			/*
-			 * Imports the 'DECLARES' semantics 
+			 * Takes care of the 'DECLARES' semantics 
 			 */
 			public void resolveBindings(ClassInstanceCreation node) {
 				super.resolveBindings(node);
 				Expression e = node.getExpression();
-				if(e != null) importDeclaresSemantics(e.resolveTypeBinding(), node.resolveConstructorBinding().getDeclaringClass());
+				if(e != null) 
+					importDeclaresSemantics(e.resolveTypeBinding(), node.resolveConstructorBinding().getDeclaringClass());
 			}
 
 			public void resolveBindings(FieldAccess node) {
@@ -160,40 +161,48 @@ public class TypeComputationModelBuilder {
 			public void resolveBindings(SuperFieldAccess node) {
 				super.resolveBindings(node);
 				Name qualifier = node.getQualifier();
-				if(qualifier != null) importDeclaresSemantics(qualifier.resolveTypeBinding(), node.resolveFieldBinding());
+				if(qualifier != null) 
+					importDeclaresSemantics(qualifier.resolveTypeBinding(), node.resolveFieldBinding());
 				else {
 					ITypeBinding scope = getEnclosingType();
-					if(scope != null) importDeclaresSemantics(scope, node.resolveFieldBinding());
+					if(scope != null) 
+						importDeclaresSemantics(scope, node.resolveFieldBinding());
 				}
 			}
 
 			public void resolveBindings(MethodInvocation node) {
 				super.resolveBindings(node);
 				Expression e = node.getExpression();
-				if(e !=null) importDeclaresSemantics(e.resolveTypeBinding(), node.resolveMethodBinding());
+				if(e !=null) 
+					importDeclaresSemantics(e.resolveTypeBinding(), node.resolveMethodBinding());
 				else {
 					ITypeBinding scope = getEnclosingType();
-					if(scope != null) importDeclaresSemantics(scope, node.resolveMethodBinding());
+					if(scope != null) 
+						importDeclaresSemantics(scope, node.resolveMethodBinding());
 				}
 			}
 
 			public void resolveBindings(SuperMethodInvocation node) {
 				super.resolveBindings(node);
 				Name qualifier = node.getQualifier();
-				if(qualifier != null) importDeclaresSemantics(qualifier.resolveTypeBinding(), node.resolveMethodBinding());
+				if(qualifier != null) 
+					importDeclaresSemantics(qualifier.resolveTypeBinding(), node.resolveMethodBinding());
 				else {
 					ITypeBinding scope = getEnclosingType();
-					if(scope != null) importDeclaresSemantics(scope, node.resolveMethodBinding());
+					if(scope != null) 
+						importDeclaresSemantics(scope, node.resolveMethodBinding());
 				}
 			}
 			
 			public void resolveBindings(Name node) {
+				super.resolveBindings(node);
 				if(node instanceof QualifiedName) {
 					QualifiedName qn = (QualifiedName) node;
 					IBinding binding = qn.resolveBinding();
 					if(binding instanceof IVariableBinding) {
 						IVariableBinding vbinding = (IVariableBinding) binding;
-						if(vbinding.isField()) importDeclaresSemantics(qn.getQualifier().resolveTypeBinding(), vbinding);
+						if(vbinding.isField()) 
+							importDeclaresSemantics(qn.getQualifier().resolveTypeBinding(), vbinding);
 					}
 				}
 				if(node instanceof SimpleName && !(node.getParent() instanceof QualifiedName)) {
@@ -203,7 +212,8 @@ public class TypeComputationModelBuilder {
 						IVariableBinding vbinding = (IVariableBinding) binding;
 						if(vbinding.isField()) {
 							ITypeBinding scope = getEnclosingType();
-							if(scope != null) importDeclaresSemantics(scope, vbinding);
+							if(scope != null) 
+								importDeclaresSemantics(scope, vbinding);
 						}
 					}
 				}	
@@ -211,91 +221,91 @@ public class TypeComputationModelBuilder {
 			
 			public void resolveBindings(MethodDeclaration node) {	
 				super.resolveBindings(node);
-				/*
-				 * Imports the 'DECLARES' and 'OVERRIDES' semantics 
-				 */
 				importDeclaresSemantics(node.resolveBinding().getDeclaringClass(), node.resolveBinding());
 				importOverrideSemantics(node.resolveBinding(), node.resolveBinding().getDeclaringClass());
 			}
+			
 			/*
-			 * Imports the 'PARAMETERIZED TYPE' semantics
-			 * Imports the 'EVALUATION' semantics
-			 * 		into a Type Computation Model
+			 * Takes care of the 'PARAMETERIZED TYPES' and 'EVALUATION' semantics 
 			 */
 			public void importBinding(IMethodBinding binding) {
-				if(methods.contains(binding.getKey())) return ; 
-				methods.add(binding.getKey());
+				if(bindings.contains(binding.getKey())) return ; 
+				bindings.add(binding.getKey());
+				
 				importEvaluationSemantics(binding);	
 				importBinding(binding.getReturnType(), null);
-				for(ITypeBinding ptype : binding.getParameterTypes()) 
-					importBinding(ptype, null);
+				for(ITypeBinding ptype : binding.getParameterTypes()) importBinding(ptype, null);
 				importBinding(binding.getDeclaringClass(), null);
-				importParameterizedTypesSemantics(binding);
+				importSemanticsOfParameterizedTypes(binding);
 				importBinding(binding.getMethodDeclaration());
 			}
 			
 			public void importBinding(ITypeBinding binding, Initializer initializer) {
-				if(types.contains(binding.getKey())) return ;
-				types.add(binding.getKey());
+				if(bindings.contains(binding.getKey())) return ;
+				bindings.add(binding.getKey());
+				
 				if(binding.isTypeVariable() || binding.isCapture() || binding.isWildcardType()) {	
-					if(binding.getWildcard() != null) importBinding(binding.getWildcard(), null); // Captures  
-					if(binding.getBound() != null) importBinding(binding.getBound(), null);       // WildCards
-					for(ITypeBinding bound : binding.getTypeBounds()) importBinding(bound, null); // Type variables or captures
+					if(binding.getWildcard() != null)                   // Captures
+						importBinding(binding.getWildcard(), null);   
+					if(binding.getBound() != null)                      // WildCards
+						importBinding(binding.getBound(), null);       
+					for(ITypeBinding bound : binding.getTypeBounds()) { // Type variables or captures
+						importBinding(bound, null); 
+						bounds_func.insert(values.tuple(bindingConverter.getEntity(binding), bindingConverter.getEntity(bound)));
+					}
 					return ;
 				}
 				importSupertypesSemantics(binding, initializer);
-				importParameterizedTypesSemantics(binding, initializer);
+				importSemanticsOfParameterizedTypes(binding, initializer);
 				importBinding(binding.getTypeDeclaration(), null);
 			}
 			
 			public void importBinding(IVariableBinding binding, Initializer initializer) {
-				if(variables.contains(binding.getKey())) return ;
-				variables.add(binding.getKey());
+				if(bindings.contains(binding.getKey())) return ;
+				bindings.add(binding.getKey());
+				
 				importEvaluationSemantics(binding, initializer);
 				importBinding(binding.getType(), null);
-				if(binding.getDeclaringClass() != null) 
-					importBinding(binding.getDeclaringClass(), null);
-				importParameterizedTypesSemantics(binding, initializer);
+				if(binding.getDeclaringClass() != null) importBinding(binding.getDeclaringClass(), null);
+				importSemanticsOfParameterizedTypes(binding, initializer);
 				importBinding(binding.getVariableDeclaration(), null);
 			}
-			/*
-			 *  Imports the 'EVALUATION' semantics
-			 */
+
 			private void importEvaluationSemantics(IMethodBinding binding) {
 				evaluation_func.insert(values.tuple(bindingConverter.getEntity(binding), bindingConverter.getEntity(binding.getReturnType())));
 			}
+			
 			private void importEvaluationSemantics(IVariableBinding binding, Initializer initializer) {
 				evaluation_func.insert(values.tuple(bindingConverter.getEntity(binding, initializer), bindingConverter.getEntity(binding.getType())));
 			}
-			/*
-			 *  Imports the 'PARAMETERIZED TYPE' semantics
-			 */
+
 			private final IValue zerobindings = values.tuple(values.listWriter(ADT_ENTITY).done(), values.listWriter(ADT_ENTITY).done());
-			private void importParameterizedTypesSemantics(IMethodBinding binding) {
+			
+			private void importSemanticsOfParameterizedTypes(IMethodBinding binding) {
 				IValue bindings = zerobindings;
 				if(!binding.getKey().equals(binding.getMethodDeclaration().getKey())) 
 					bindings = values.tuple(getTypeArguments(binding), getTypeParameters(binding.getMethodDeclaration()));
-				paramaterized_types_semantics_func
+				semantics_of_paramaterized_types_func
 						.put(bindingConverter.getEntity(binding), values.tuple(bindings, bindingConverter.getEntity(binding.getMethodDeclaration())));
 			}
-			private void importParameterizedTypesSemantics(ITypeBinding binding, Initializer initializer) {
+			
+			private void importSemanticsOfParameterizedTypes(ITypeBinding binding, Initializer initializer) {
 				IValue bindings = zerobindings;
-				if(!(binding.isTypeVariable() || binding.isWildcardType() || binding.isCapture()) 
-				   && !binding.getKey().equals(binding.getTypeDeclaration().getKey())) 
-					bindings = values.tuple(getTypeArguments(binding), getTypeParameters(binding.getTypeDeclaration()));
-				paramaterized_types_semantics_func
+				if(!(binding.isTypeVariable() || binding.isWildcardType() || binding.isCapture())) 
+				   if(!binding.getKey().equals(binding.getTypeDeclaration().getKey())) 
+					   bindings = values.tuple(getTypeArguments(binding), getTypeParameters(binding.getTypeDeclaration()));
+				semantics_of_paramaterized_types_func
 						.put(bindingConverter.getEntity(binding, initializer), values.tuple(bindings, bindingConverter.getEntity(binding.getTypeDeclaration())));
 			}
-			private void importParameterizedTypesSemantics(IVariableBinding binding, Initializer initializer) {
+			
+			private void importSemanticsOfParameterizedTypes(IVariableBinding binding, Initializer initializer) {
 				IValue bindings = zerobindings;
 				if(!binding.getKey().equals(binding.getVariableDeclaration().getKey())) 
 					bindings = values.tuple(getTypeArguments(binding), getTypeParameters(binding.getVariableDeclaration()));
-				paramaterized_types_semantics_func
+				semantics_of_paramaterized_types_func
 						.put(bindingConverter.getEntity(binding, initializer), values.tuple(bindings, bindingConverter.getEntity(binding.getVariableDeclaration())));
 			}
-			/*
-			 *  Imports the 'TYPE ARGUMENT' semantics
-			 */
+
 			private IList getTypeArguments(IMethodBinding binding) {
 				IListWriter args = values.listWriter(ADT_ENTITY);
 				if(binding.getTypeArguments().length != 0) 
@@ -323,7 +333,8 @@ public class TypeComputationModelBuilder {
 					for(@SuppressWarnings("unused") ITypeBinding param : binding.getTypeDeclaration().getTypeParameters()) 
 						args.append(createZeroEntity());
 				
-				if(binding.getTypeDeclaration().isLocal()) return args.done(); // local type declaration
+				if(binding.getTypeDeclaration().isLocal()) 
+					return args.done(); 
 				if(binding.getDeclaringClass() != null) 
 					return getTypeArguments(binding.getDeclaringClass()).concat(args.done()); 
 				return args.done();
@@ -331,7 +342,8 @@ public class TypeComputationModelBuilder {
 			
 			private IList getTypeArguments(IVariableBinding binding) {
 				IListWriter args = values.listWriter(ADT_ENTITY);
-				if(binding.getDeclaringMethod() != null) return args.done();
+				if(binding.getDeclaringMethod() != null) 
+					return args.done();
 				if(binding.getDeclaringClass() != null) 
 					return getTypeArguments(binding.getDeclaringClass()).concat(args.done());
 				return args.done();
@@ -354,7 +366,8 @@ public class TypeComputationModelBuilder {
 					params.append(bindingConverter.getEntity(param));
 					importBinding(param, null);
 				}
-				if(binding.isLocal()) return params.done(); // local type declarations
+				if(binding.isLocal()) 
+					return params.done(); 
 				if(binding.getDeclaringClass() != null) 
 					return getTypeParameters(binding.getDeclaringClass()).concat(params.done());
 				return params.done();
@@ -362,14 +375,13 @@ public class TypeComputationModelBuilder {
 			
 			private IList getTypeParameters(IVariableBinding binding) {
 				IListWriter params = values.listWriter(ADT_ENTITY);
-				if(binding.getDeclaringMethod() != null) return params.done(); // local variable declarations
+				if(binding.getDeclaringMethod() != null) 
+					return params.done(); 
 				if(binding.getDeclaringClass() != null) 
 					return getTypeParameters(binding.getDeclaringClass()).concat(params.done());
 				return params.done();
 			}
-			/*
-			 *  Imports the 'SUPERTYPES' semantics
-			 */
+
 			private void importSupertypesSemantics(ITypeBinding binding, Initializer initializer) {
 				ITypeBinding supType = binding.getSuperclass();
 				if(supType != null) {
@@ -381,13 +393,12 @@ public class TypeComputationModelBuilder {
 					importBinding(sup, null);
 				}
 			}	
-			/*
-			 *  Imports the 'DECLARES' semantics (transitive)
-			 */
+
 			private boolean importDeclaresSemantics(ITypeBinding decl, IMethodBinding binding) {
 				String keyofdecl = decl.getKey();
 				if(declaresChecks.containsKey(keyofdecl) && declaresChecks.get(keyofdecl).equals(binding.getKey())) {
-					if(declares.containsKey(keyofdecl) && declares.get(keyofdecl).equals(binding.getKey())) return true;
+					if(declares.containsKey(keyofdecl) && declares.get(keyofdecl).equals(binding.getKey())) 
+						return true;
 					else return false;
 				}
 				boolean found = false;
@@ -411,7 +422,8 @@ public class TypeComputationModelBuilder {
 			private boolean importDeclaresSemantics(ITypeBinding decl, ITypeBinding binding) {
 				String keyofdecl = decl.getKey();
 				if(declaresChecks.containsKey(keyofdecl) && declaresChecks.get(keyofdecl).equals(binding.getKey())) {
-					if(declares.containsKey(keyofdecl) && declares.get(keyofdecl).equals(binding.getKey())) return true;
+					if(declares.containsKey(keyofdecl) && declares.get(keyofdecl).equals(binding.getKey())) 
+						return true;
 					else return false;
 				}
 				boolean found = false;
@@ -435,7 +447,8 @@ public class TypeComputationModelBuilder {
 			private boolean importDeclaresSemantics(ITypeBinding decl, IVariableBinding binding) {
 				String keyofdecl = decl.getKey();
 				if(declaresChecks.containsKey(keyofdecl) && declaresChecks.get(keyofdecl).equals(binding.getKey())) {
-					if(declares.containsKey(keyofdecl) && declares.get(keyofdecl).equals(binding.getKey())) return true;
+					if(declares.containsKey(keyofdecl) && declares.get(keyofdecl).equals(binding.getKey())) 
+						return true;
 					else return false;
 				}
 				boolean found = false;
@@ -455,9 +468,7 @@ public class TypeComputationModelBuilder {
 				declaresChecks.put(keyofdecl, binding.getKey());
 				return found;
 			}			
-			/*
-			 *  Imports the 'OVERRIDES' semantics
-			 */
+
 			private void importOverrideSemantics(IMethodBinding binding, ITypeBinding type) {
 				String keyofbinding = binding.getKey();
 				if(overridesChecks.containsKey(keyofbinding) && overridesChecks.get(binding.getKey()).equals(type.getKey())) return ;

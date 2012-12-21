@@ -2,16 +2,19 @@
 	 remark: it provides a nice way of playing with incremental semantics of computations, however, one has to be careful}
 module typecomputations::ConstraintMonadTransformers
 
-import Prelude;
 import lang::java::jdt::Java;
 import lang::java::jdt::JavaADT;
 import lang::java::jdt::refactorings::Java;
 import lang::java::jdt::refactorings::JavaADT;
 import lang::java::jdt::refactorings::PrettyPrintUtil;
+
 import typecomputations::SemanticDomains;
 import typecomputations::TypeValues;
 import typecomputations::TypeValuesPlusGens;
 import typecomputations::TypeMonadTransformers;
+
+import Prelude;
+
 
 data Constraint[&Mon] = eq(&Mon lh, &Mon rh)
 					  | subtype(&Mon lh, &Mon rh);
