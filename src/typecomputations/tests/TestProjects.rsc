@@ -16,7 +16,6 @@ public list[loc] eclipseIMPSources = [
 										|project://org.eclipse.imp.runtime/src|
 									 ];
 //public list[loc] antlrSources = [|project://ANTLR/src|];
-
 public list[loc] apacheAntSources = [|project://apache-ant/src/src/main|];
 
 public list[loc] bcelSources = [|project://bcel/src/java|];
@@ -30,32 +29,32 @@ public list[loc] xmlCommonsExternalSources = [|project://xml-commons-external/sr
 public list[loc] eclipseSources = [ 
 									|project://org.eclipse.core.resources.compatibility/src|
 									,
-									//
+									
 									|project://org.eclipse.e4.core.commands/src|,
-									//
+									
 									|project://org.eclipse.e4.core.contexts/src|,
-									//|project://org.eclipse.e4.core.contexts.debug/src|,
-									//|project://org.eclipse.e4.core.deeplink/src|,
-									//|project://org.eclipse.e4.core.deeplink.handler/src|,
-									//|project://org.eclipse.e4.core.deeplink.launchproxy/src|,
-									//|project://org.eclipse.e4.core.deeplink.typehandler.extensionpt/src|,
+									|project://org.eclipse.e4.core.contexts.debug/src|,
+									|project://org.eclipse.e4.core.deeplink/src|,
+									|project://org.eclipse.e4.core.deeplink.handler/src|,
+									|project://org.eclipse.e4.core.deeplink.launchproxy/src|,
+									|project://org.eclipse.e4.core.deeplink.typehandler.extensionpt/src|,
 									|project://org.eclipse.e4.core.di/src|,
-									|project://org.eclipse.e4.core.di.extensions/src|//,
-									//|project://org.eclipse.e4.core.functionalprog/src|,
-									//|project://org.eclipse.e4.core.javascript/src|,
-									//|project://org.eclipse.e4.core.metaconfig/src|,
-									//|project://org.eclipse.e4.core.services/src|,
-									//|project://org.eclipse.e4.emf.javascript/src|,
-									//
-									//|project://org.eclipse.e4.emf.javascript.ui/src|//,
-									//|project://org.eclipse.e4.emf.xpath/src|,
-									//|project://org.eclipse.e4.enterprise.installer/src|,
-									//|project://org.eclipse.e4.enterprise.installer.ui.swt/src|,
-									//|project://org.eclipse.e4.javascript/src|,
-									//|project://org.eclipse.e4.javascript.registry/src|,
-									//|project://org.eclipse.e4.languages.javascript/src|,
-									//|project://org.eclipse.e4.languages.javascript.debug.connect/src|,
-									//|project://org.eclipse.e4.languages.javascript.debug.jsdi/src|,
+									|project://org.eclipse.e4.core.di.extensions/src|,
+									|project://org.eclipse.e4.core.functionalprog/src|,
+									|project://org.eclipse.e4.core.javascript/src|,
+									|project://org.eclipse.e4.core.metaconfig/src|,
+									|project://org.eclipse.e4.core.services/src|,
+									|project://org.eclipse.e4.emf.javascript/src|,
+									
+									|project://org.eclipse.e4.emf.javascript.ui/src|,
+									|project://org.eclipse.e4.emf.xpath/src|,
+									|project://org.eclipse.e4.enterprise.installer/src|,
+									|project://org.eclipse.e4.enterprise.installer.ui.swt/src|,
+									|project://org.eclipse.e4.javascript/src|,
+									|project://org.eclipse.e4.javascript.registry/src|,
+									|project://org.eclipse.e4.languages.javascript/src|,
+									|project://org.eclipse.e4.languages.javascript.debug.connect/src|,
+									|project://org.eclipse.e4.languages.javascript.debug.jsdi/src|//,
 									//|project://org.eclipse.e4.languages.javascript.debug.jsdi.rhino/src|,
 									//|project://org.eclipse.e4.languages.javascript.debug.model/src|,
 									//|project://org.eclipse.e4.languages.javascript.debug.rhino/src|,

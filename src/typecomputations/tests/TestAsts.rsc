@@ -20,13 +20,16 @@ public void testAsts(list[loc] projects) {
 
 private void testAsts(loc project) {
 	println("calculating facts and asts...");
-	//set[AstNode] compilationUnits = createAstsFromProject(project);
-	cu = extractProject(project); 
+	//set[AstNode] cus = createAstsFromProject(project, collectBindings = false);
+	cus = extractProject(project, fillASTBindings = false); 
 	println("done...");
-//	iprintln(cu@methodBodies);
-	//for(AstNode cu <- compilationUnits) {
-	//	iprintln(cu);
-//		;
+//	iprintln(cus);
+	//for(AstNode cu <- cus) {
+	//	visit(cu) {
+	//		case AstNode n: println(n@bindings);
+	//	}
+	////	//iprintln(cu);
+	//}
 //		for(/AstNode n := cu) {
 //			visit(n@bindings) {
 //				case entity([*ids, package(str name)]): ;

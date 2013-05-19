@@ -30,10 +30,10 @@ import Set;
 import IO;
 
 //@doc{Evaluates the left and right hand side of a constraint}
-//public set[Constraint[SubstsT[Entity]]] gevalc(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
-//	= { apply(SubstsT[Entity] (Entity v) { 
-//				return bind(gevalc(mapper, v), SubstsT[Entity] (Entity v_) {
-//								return returnS(eval(getGenV(mapper, v))); }); })(c) }; 
+public set[Constraint[SubstsT[Entity]]] gevalc(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+	= { apply(SubstsT[Entity] (Entity v) { 
+				return bind(gevalc(mapper, v), SubstsT[Entity] (Entity v_) {
+								return returnS(eval(getGenV(mapper, v))); }); })(c) }; 
 
 @doc{Overrides the left hand side evaluation to account for wildcards}
 public set[Constraint[SubstsT[Entity]]] gevalc(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 

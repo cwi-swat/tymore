@@ -31,7 +31,7 @@ import Prelude;
 
 
 public void main1() { 
-	testConstraintSemantics(eclipseSources); 
+	testLookupSemantics(eclipseSources); 
 }
 
 public void testComputations(list[loc] projects) { for(project <- projects) testComputations(project); }
@@ -104,10 +104,12 @@ private void testLookupSemantics(loc project) {
 		(AstNode (AstNode) (AstNode (AstNode) super) {
 			return AstNode (AstNode n) {
 				if(methodInvocation(Option[AstNode] optionalExpression,_,_,_) := n) {
-					println(prettyprint(n));
 					SubstsT[Entity] tn = glookupc(facts, mapper, n);
 					TypeOf[tuple[Entity, Substs]] v = run(tn)(substs([],[]));
-					/*if(v.v[1] != substs([],[]))*/ println("substs: <prettyprint(v.v[1])>");
+					if(v.v[1] != substs([],[])) {
+						println(prettyprint(n));
+						println("substs: <prettyprint(v.v[1])>");
+					}
 				}
 				return super(n);
 			};
@@ -165,23 +167,25 @@ private void testSupertypesSemantics(loc project) {
 		(AstNode (AstNode) (AstNode (AstNode) super) {
 			return AstNode (AstNode n) {
 				if(methodInvocation(Option[AstNode] optionalExpression,_,_,_) := n) {
-					// println(prettyprint(n));
 					Entity dtype = eval(decl(lookup(n)));
-					Entity t = zero();
+					list[Entity] t = [];
 					SubstsT_[bool] sups = returnS_(false);
-					if(some(AstNode oe) := optionalExpression) {
-						t = getType(oe);
-						sups = supertypec_(facts, mapper, <t, dtype>);
-					} else {
-						t = n@scope;
-						sups = supertypec_(facts, mapper, <t, dtype>);
-					}
-					list[tuple[bool, Substs]] s = run(sups)(substs([],[]));
-						for(<bool b, Substs s_> <- s, s_ != substs([],[])) {
-							println(prettyprint(lookup(n)));
-							println(prettyprint(t));
+					if(some(AstNode oe) := optionalExpression) t = [ getType(oe) ];
+					else t = n@scopes;
+					if(size(t) > 1) println("NESTING : ");
+					for(Entity tt <- t) {
+						sups = supertypec_(facts, mapper, <tt, dtype>);
+						list[tuple[bool, Substs]] s = run(sups)(substs([],[]));
+						list[bool] ss = supertype(facts, mapper, <tt, dtype>);
+						for(<bool b, Substs s_> <- s, s_ != substs([],[]) ) {
+							println("supertype : <ss>");
+							println("supertypec_ : ");
+							println(prettyprint(n));
+							println(prettyprint(eval(decl(lookup(n)))));
+							println(prettyprint(tt));
 							println("supertypes: <b> --- <prettyprint(s_)>");
 						}
+					}
 				}
 				return super(n);
 			};

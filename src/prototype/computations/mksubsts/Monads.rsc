@@ -35,6 +35,7 @@ public data SubstsT[&T] = substs( TypeOf[tuple[&T, Substs]] (Substs) v );
 public SubstsT[&T] returnS(&T v) = substs(TypeOf[tuple[&T, Substs]] (Substs s) { return returnT(<v, s>); });
 public TypeOf[tuple[&T, Substs]] (Substs) run(SubstsT[&T] mv) = TypeOf[tuple[&T, Substs]] (Substs s) { return mv.v(s); };
 public TypeOf[&T] eval(SubstsT[&T] mv) = bind(mv.v(substs([],[])), TypeOf[&T] (tuple[&T, Substs] v) { return returnT(v[0]); });
+
 public SubstsT[&T] discard(SubstsT[&T] mv)
 	= substs( TypeOf[tuple[&T, Substs]] (Substs s) {
 				TypeOf[tuple[&T, Substs]] v = run(mv)(substs([],[]));
@@ -87,12 +88,17 @@ public SubstsT_[&T] lift(list[&T] vs) = !isEmpty(vs) ? substs_( list[tuple[&T, S
 public SubstsT_[&T] tau(SubstsT[&T] mv) 
 	= substs_( list[tuple[&T, Substs]] (Substs s) {
 		TypeOf[tuple[&T, Substs]] v = run(mv)(s);
-		return typeof(tuple[&T1, Substs] tpl) := v ? [tpl] : [] ; });
+		return tau(v); });
 public SubstsT[&T] tauInv(SubstsT_[&T] mv) 
 	= substs( TypeOf[tuple[&T, Substs]] (Substs s) {
 		list[tuple[&T, Substs]] v = run(mv)(s);
-		if(isEmpty(v)) return tzero();
-		return typeof(head(v)) ; });
+		return tauInv(v); });
+		
+// tau: TypeOf -> list
+public list[&T] tau(TypeOf[&T] mv) 
+	= typeof(&T v) := mv ? [ v ] : [];
+public TypeOf[&T] tauInv(list[&T] mv) 
+	= isEmpty(mv) ? tzero() : returnT(head(mv));
 		
 public str prettyprint(typeof(&T v)) = prettyprint(v);
 public str prettyprint(tzero()) = "zero";

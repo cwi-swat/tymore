@@ -19,4 +19,4 @@ anno map[str, rel[Entity, Entity]] AstNode@typeComputationModel;
 anno map[Entity, tuple[tuple[list[Entity], list[Entity]], Entity]] AstNode@semanticsOfParameterizedTypes;
 
 @doc{Certain AstNode are associated with a declaring class scope}
-anno Entity AstNode@scope;
+anno list[Entity] AstNode@scopes;

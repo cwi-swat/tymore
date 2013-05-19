@@ -10,6 +10,8 @@
 *******************************************************************************/
 package prototype.org.rascalmpl.eclipse.library.lang.java.jdt.refactorings.internal;
 
+import java.util.Stack;
+
 import org.eclipse.imp.pdb.facts.IValueFactory;
 import org.eclipse.imp.pdb.facts.type.TypeStore;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -20,22 +22,26 @@ import org.eclipse.jdt.core.dom.ITypeBinding;
  */
 public class JdtAstToRascalAstConverter extends org.rascalmpl.eclipse.library.lang.java.jdt.internal.JdtAstToRascalAstConverter {
 	
+	private final BindingConverter bindingConverter;
+	
 	public JdtAstToRascalAstConverter(final IValueFactory values, final TypeStore typeStore, final BindingConverter bindingConverter) {
 		super(values, typeStore, bindingConverter);
+		this.bindingConverter = bindingConverter;
 	}
 	
-	public static final String ANNOTATION_SCOPE = "scope";
+	public static final String ANNOTATION_SCOPES = "scopes";
 	
-	private ITypeBinding scope;
+	private Stack<ITypeBinding> scopes;
 	
 	public void preVisit(ASTNode node) {
 		super.preVisit(node);
-		scope = this.getBindingsImporter().getEnclosingType();
+		scopes = this.getBindingsImporter().getEnclosingTypes();
 	}
 		
 	public void postVisit(ASTNode node) {
 		super.postVisit(node);
-		if(scope != null) 
-			this.setRascalAstNodeAnnotation(ANNOTATION_SCOPE, this.getBindingsImporter().getBindingConverter().getEntity(this.scope));
+		if(!scopes.isEmpty())
+			this.setRascalAstNodeAnnotation(ANNOTATION_SCOPES, 
+					bindingConverter.getEntities(scopes.toArray(new ITypeBinding[] {})));
 	}
 }

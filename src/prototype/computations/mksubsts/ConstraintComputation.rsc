@@ -127,7 +127,7 @@ public Constraint[SubstsT[&T1]] (Constraint[SubstsT[&T]]) apply(SubstsT[&T1] (&T
 				case eq(SubstsT[&T] lh, SubstsT[&T] rh): return eq(bind(lh, f1), bind(rh, f2));
 			}
 	  }; 
-
+	  
 @doc{Cathces a zero computation at the right or left of a constraint and discard this constraint}
 public set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c) {
 	TypeOf[tuple[&T, Substs]] lh_ = run(c.lh)(substs([],[]));
@@ -135,12 +135,10 @@ public set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c) {
 	TypeOf[tuple[&T, Substs]] rh_ = run(c.rh)(substs([],[]));
 	if(tzero() := rh_) return {};
 	switch(c) {
-		case subtype(_,_):
-			return { subtype(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
-							 substs( TypeOf[tuple[&T, Substs]] (Substs s) { return rh_; } )) };
-		case eq(_,_): 			
-			return { eq(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
-						substs( TypeOf[tuple[&T, Substs]] (Substs s) { return rh_; } )) };
+		case subtype(_,_): return { subtype(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
+							 				substs( TypeOf[tuple[&T, Substs]] (Substs s) { return rh_; } )) };
+		case eq(_,_): return { eq(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
+								  substs( TypeOf[tuple[&T, Substs]] (Substs s) { return rh_; } )) };
 	}
 }
 	  

@@ -8,7 +8,8 @@
 @contributor{Anastasia Izmaylova - A.Izmaylova@cwi.nl}
 module prototype::computations::tests::TestProjects
 
-public loc testcases = |project://TyMoReTestCases/src|;
+public loc testcases1 = |project://TyMoReTestCases/src|;
+public loc testcases2 = |project://TyMoReTestCasesWithoutWildCards/src|;
 public loc testcase1 = |project://LetsTryItOut/src|;
 public loc testcase2 = |project://LetsTryInitializersOut/src|;
 public loc testcase3 = |project://LetsTryLocalTypesOut/src|;
@@ -28,21 +29,21 @@ public list[loc] tomcat70Sources = [|project://Tomcat70/src|];
 public list[loc] xmlCommonsExternalSources = [|project://xml-commons-external/src|];
 public list[loc] eclipseSources = [ 
 									//|project://org.eclipse.core.resources.compatibility/src|,
-									|project://org.eclipse.e4.core.commands/src|,
-									|project://org.eclipse.e4.core.contexts/src|,
+									//|project://org.eclipse.e4.core.commands/src|,
+									//|project://org.eclipse.e4.core.contexts/src|,
 									//|project://org.eclipse.e4.core.contexts.debug/src|,
 									//|project://org.eclipse.e4.core.deeplink/src|,
 									//|project://org.eclipse.e4.core.deeplink.handler/src|,
 									//|project://org.eclipse.e4.core.deeplink.launchproxy/src|,
 									//|project://org.eclipse.e4.core.deeplink.typehandler.extensionpt/src|,
-									|project://org.eclipse.e4.core.di/src|,
-									|project://org.eclipse.e4.core.di.extensions/src|//,
+									//|project://org.eclipse.e4.core.di/src|,
+									//|project://org.eclipse.e4.core.di.extensions/src|,
 									//|project://org.eclipse.e4.core.functionalprog/src|,
 									//|project://org.eclipse.e4.core.javascript/src|,
 									//|project://org.eclipse.e4.core.metaconfig/src|,
 									//|project://org.eclipse.e4.core.services/src|,
 									//|project://org.eclipse.e4.emf.javascript/src|,
-									//|project://org.eclipse.e4.emf.javascript.ui/src|//,
+									//|project://org.eclipse.e4.emf.javascript.ui/src|,
 									//|project://org.eclipse.e4.emf.xpath/src|,
 									//|project://org.eclipse.e4.enterprise.installer/src|,
 									//|project://org.eclipse.e4.enterprise.installer.ui.swt/src|,
@@ -75,12 +76,12 @@ public list[loc] eclipseSources = [
 									//|project://org.eclipse.e4.ui.di/src|,
 									//|project://org.eclipse.e4.ui.di/src|,
 									//|project://org.eclipse.e4.ui.gadgets/src|,
-									//|project://org.eclipse.e4.ui.model.workbench/src|,
-									//|project://org.eclipse.e4.ui.model.workbench.edit/src|,
-									//|project://org.eclipse.e4.ui.services/src|,
-									//|project://org.eclipse.e4.ui.swtdialogs/src|,
-									//|project://org.eclipse.e4.ui.web/src|,
-									//|project://org.eclipse.e4.ui.widgets/src|,
+									|project://org.eclipse.e4.ui.model.workbench/src|,
+									|project://org.eclipse.e4.ui.model.workbench.edit/src|,
+									|project://org.eclipse.e4.ui.services/src|,
+									|project://org.eclipse.e4.ui.swtdialogs/src|,
+									|project://org.eclipse.e4.ui.web/src|,
+									|project://org.eclipse.e4.ui.widgets/src|//,
 									//|project://org.eclipse.e4.ui.workbench/src|, // huge
 									//|project://org.eclipse.e4.ui.workbench.addons.swt/src|,
 									//|project://org.eclipse.e4.ui.workbench.renderers.swt/src|,

@@ -62,12 +62,12 @@ public default Entity lookup(AstNode t) { println("The term <t> does not have th
 public Entity getType(AstNode t) = t@bindings["typeBinding"];
 
 @doc{Overrides semantics}
-public set[Entity] overrides(CompilUnit facts, Entity val) = facts["overrides_func"][val];
+public set[Entity] overrides(CompilUnit facts, Entity v) = facts["overrides_func"][v];
 
 @doc{Supertypes semantics}
-public list[Entity] supertypes(CompilUnit facts, Entity val) { 
-	list[Entity] sups = [ sup | Entity sup <- facts["supertypes_func"][val]]; 
-	return isEmpty(sups) ? [ object() ] : sups;
+public list[Entity] supertypes(CompilUnit facts, Entity v) { 
+	list[Entity] sups = [ sup | Entity sup <- facts["supertypes_func"][v]]; 
+	return isEmpty(sups) ? ( v != object() ? [ object() ] : [] ) : sups;
 }
 
 @doc{Bound semantics}
