@@ -39,11 +39,12 @@ public Entity zero() = entity([]);
 
 @doc{Imported compilation unit facts format}
 public alias CompilUnit = map[str, rel[Entity, Entity]];
-public alias Mapper = map[Entity, tuple[tuple[list[Entity], list[Entity]], Entity]];
 
 @doc{Type values with explicit substitutions of parameterized types}        
 data PEntity = pentity(Substs s, Entity genval);
 data Substs = substs(list[Entity] args, list[Entity] params);
+
+public PEntity pzero() = pentity(substs([],[]), zero());
 
 @doc{Annotation that encodes the inversible mapping between the parameterized type representations with implicit and explicit substitutions}
 anno Entity PEntity@paramval;

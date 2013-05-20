@@ -92,28 +92,34 @@ private bool hasRawTypeArgument(Mapper mapper, Entity init) {
 }
 
 public PEntity (Entity) toGensNonRec(Mapper mapper) 
-	= PEntity (Entity v) { 
-		if(v == zero()) return pentity(substs([],[]), zero())[@paramval=zero()]; 
-		if(isTypeParameter(v) || isWildCardType(v) || isTypeArgument(v)) return pentity(substs([],[]), v)[@paramval=v];
-		if(entity([ *ids, anonymous(_,_)]) := v) return pentity(substs([],[]), v)[@paramval=v];
-		if(entity([ *ids, decl() ]) := v) {
-			PEntity pv = toGensNonRec(mapper)(entity(ids));
-			return pentity(pv.s, decl(pv.genval))[@paramval = v];
-		}
-		if(entity([ *ids, \parameter(int i) ]) := v) {
-			PEntity pv = toGensNonRec(mapper)(entity(ids));
-			return pentity(pv.s, param(i)(pv.genval))[@paramval = v];
-		}
-		tuple[tuple[list[Entity], list[Entity]], Entity] v_ = mapper[v];
-		Entity genval = v_[1]; 
-		list[Entity] args = v_[0][0]; 
-		list[Entity] params = v_[0][1];	
-		
-		assert(size(args)==size(params));
-		
-		if(isEmpty(params)) return pentity(substs([], []), genval)[@paramval=v];
-		list[Entity] pargs = [ (entity([]) := args[i]) ? zero() : args[i] | int i <- [0..(size(params) - 1)] ];
-		return pentity(substs(pargs, params), genval)[@paramval=v]; 
+	= PEntity (Entity val) { 
+		return toGensNonRecByCase(mapper, val); 
 	};
 	
+public PEntity toGensNonRecByCase(Mapper mapper, val::zero()) = pzero()[@paramval=val];
+public PEntity toGensNonRecByCase(Mapper mapper, val::entity([ *ids, anonymous(_,_)])) = pentity(substs([],[]), val)[@paramval=val];
+public PEntity toGensNonRecByCase(Mapper mapper, val::entity([ *ids, decl() ])) {
+	PEntity pval = toGensNonRec(mapper)(entity(ids));
+	return pentity(pval.s, decl(pval.genval))[@paramval = val];
+}
+public PEntity toGensNonRecByCase(Mapper mapper, val::entity([ *ids, \parameter(int i) ])) {
+	PEntity pval = toGensNonRec(mapper)(entity(ids));
+	return pentity(pval.s, param(i)(pval.genval))[@paramval = val];
+}
+public default PEntity toGensNonRecByCase(Mapper mapper, Entity val) {
+	if(isTypeParameter(val) || isWildCardType(val) || isTypeArgument(val)) 
+		return pentity(substs([],[]), val)[@paramval=val];
+	
+	Substitutions val_ = mapper[val];
+	Entity genval = val_.val; 
+	list[Entity] args = val_.substs.targs; 
+	list[Entity] params = val_.substs.tparams;	
+		
+	assert(size(args)==size(params));
+		
+	if(isEmpty(params)) return pentity(substs([],[]), genval)[@paramval=val];
+	list[Entity] pargs = [ (entity([]) := args[i]) ? zero() : args[i] | int i <- [0..(size(params) - 1)] ];
+	return pentity(substs(pargs, params), genval)[@paramval=val];
+}
+
 public Substs idS(Substs s) = s;

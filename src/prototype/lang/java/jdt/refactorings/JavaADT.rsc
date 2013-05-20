@@ -15,8 +15,12 @@ import prototype::lang::java::jdt::refactorings::Java;
 @doc{Type computation model of a compilation unit}
 anno map[str, rel[Entity, Entity]] AstNode@typeComputationModel;
 
+public alias TArgsToTParams = tuple[list[Entity] targs, list[Entity] tparams];
+public alias Substitutions = tuple[TArgsToTParams substs, Entity val];
+public alias Mapper = map[Entity val, Substitutions substs];
+
 @doc{Extension of a type computation model of a compilation unit with the explicit semantics of parameterized types}
-anno map[Entity, tuple[tuple[list[Entity], list[Entity]], Entity]] AstNode@semanticsOfParameterizedTypes;
+anno Mapper AstNode@semanticsOfParameterizedTypes;
 
 @doc{Certain AstNode are associated with a declaring class scope}
 anno list[Entity] AstNode@scopes;
