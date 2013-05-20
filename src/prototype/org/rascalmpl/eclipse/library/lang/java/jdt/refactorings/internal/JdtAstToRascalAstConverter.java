@@ -25,7 +25,7 @@ public class JdtAstToRascalAstConverter extends org.rascalmpl.eclipse.library.la
 	private final BindingConverter bindingConverter;
 	
 	public JdtAstToRascalAstConverter(final IValueFactory values, final TypeStore typeStore, final BindingConverter bindingConverter) {
-		super(values, typeStore, bindingConverter);
+		super(values, typeStore, bindingConverter, true);
 		this.bindingConverter = bindingConverter;
 	}
 	

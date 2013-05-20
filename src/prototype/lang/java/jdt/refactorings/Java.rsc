@@ -20,8 +20,9 @@ data Id = method(list[Entity] genericTypes, str name, list[Entity] params, Entit
         | enumConstant(str name, Entity declaredType)
         | variable(str name, Entity declaredType, int id)
         
-        // all the declared types have to be uniquely represented 
-        | anonymous(loc location, Entity declaredType) // anonymous declared type, e.g., in the Java 'cast' extressions
+        // all the declared types have to be uniquely represented,
+        // 		e.g., anonymous declared types in the Java 'cast' extressions 
+        | anonymous(loc location, Entity declaredType)
         | inherits(Entity declaredType)
         | decl()
         | parameter(int i)
