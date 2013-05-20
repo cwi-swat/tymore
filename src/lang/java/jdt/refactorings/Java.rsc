@@ -29,8 +29,8 @@ data Id = method(list[Entity] genericTypes, str name, list[Entity] params, Entit
         | decl()
         | parameter(int i)
         
-        | typeArgument(str name, Entity vc, PEntity init)  // value context
-		| typeArgument(str name, AstNode tc, PEntity init) // term context
+        | typeArgument(str name, Entity vc, PEntity pinit)  // value context
+		| typeArgument(str name, AstNode tc, PEntity pinit) // term context
 		
 		| typeArgument(str name, Entity vc, Entity initv)  // value context
 		| typeArgument(str name, AstNode tc, Entity initv) // term context

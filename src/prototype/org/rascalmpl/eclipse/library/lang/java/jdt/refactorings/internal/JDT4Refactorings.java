@@ -54,6 +54,7 @@ public class JDT4Refactorings {
 		return compilUnitValue;
 	}
 	
+	@SuppressWarnings({ "deprecation"})
 	public CompilationUnit getCompilationUnit(ISourceLocation loc) {	
 		IFile file = new JDT(values).getJavaIFileForLocation(loc);	
 		ICompilationUnit icu = JavaCore.createCompilationUnitFrom(file);

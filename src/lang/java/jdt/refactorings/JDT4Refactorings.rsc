@@ -16,7 +16,7 @@ import lang::java::jdt::JDT;
 
 import util::Resources;
 
-@javaClass{org.rascalmpl.eclipse.library.lang.java.jdt.refactorings.internal.JDT4Refactorings}
+@javaClass{prototype.org.rascalmpl.eclipse.library.lang.java.jdt.refactorings.internal.JDT4Refactorings}
 @reflect
 public java AstNode createAstFromFileR(loc file);
 

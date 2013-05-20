@@ -95,6 +95,7 @@ public class BindingConverter extends org.rascalmpl.eclipse.library.lang.java.jd
 		return VF.constructor(CONS_VARIABLE_TYPED, VF.string(vb.getName()), getEntity(vb.getType(), null), VF.integer(vb.getVariableId()));
 	}
 	
+	@SuppressWarnings("deprecation")
 	public IList getEntities(ITypeBinding[] tbs) {
 		IListWriter params = VF.listWriter(ADT_ENTITY);
 		for(ITypeBinding tb : tbs) 
