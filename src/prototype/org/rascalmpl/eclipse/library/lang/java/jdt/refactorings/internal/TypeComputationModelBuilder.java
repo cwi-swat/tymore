@@ -14,6 +14,7 @@ import static org.rascalmpl.eclipse.library.lang.java.jdt.internal.Java.ADT_ENTI
 import static org.rascalmpl.eclipse.library.lang.java.jdt.internal.Java.CONS_ENTITY;
 import static org.rascalmpl.eclipse.library.lang.java.jdt.internal.Java.ADT_ID;
 
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -59,11 +60,14 @@ public class TypeComputationModelBuilder {
 	private static final String OVERRIDES_FUNCTION = "overrides_func";
 	private static final String BOUNDS_FUNCTION = "bounds_func";
 	
+	private static final String IsSTATIC_DECL_FUNCTION = "isStaticDecl_func";
+	
 	private ISetWriter evaluation_func;
 	private ISetWriter subtypes_func;
 	private ISetWriter declares_func;  // performs lookup into supertypes
 	private ISetWriter overrides_func; // performs lookup into supertypes
 	private ISetWriter bounds_func; 
+	private ISetWriter isStaticDecl_func;
 
 	
 	private IMapWriter semantics_of_paramaterized_types_func;
@@ -89,6 +93,7 @@ public class TypeComputationModelBuilder {
 		declares_func = values.setWriter(functionTupleType);
 		overrides_func = values.setWriter(functionTupleType);
 		bounds_func = values.setWriter(functionTupleType);
+		isStaticDecl_func = values.setWriter(functionTupleType);
 		semantics_of_paramaterized_types_func = values.mapWriter(ADT_ENTITY, semantics_of_paramaterized_types);
 	}
 	
@@ -103,6 +108,7 @@ public class TypeComputationModelBuilder {
 		computations.put(values.string(DECLARES_FUNCTION), declares_func.done());
 		computations.put(values.string(OVERRIDES_FUNCTION), overrides_func.done());
 		computations.put(values.string(BOUNDS_FUNCTION), bounds_func.done());
+		computations.put(values.string(IsSTATIC_DECL_FUNCTION), isStaticDecl_func.done());
 		
 		typeComputationModel = computations.done();
 		semanticsOfParameterizedTypes = semantics_of_paramaterized_types_func.done();
@@ -240,6 +246,8 @@ public class TypeComputationModelBuilder {
 				importBinding(binding.getDeclaringClass(), null);
 				importSemanticsOfParameterizedTypes(binding);
 				importBinding(binding.getMethodDeclaration());
+				importStaticSemantics(binding);
+				importStaticSemantics(binding.getMethodDeclaration());
 			}
 			
 			public void importBinding(ITypeBinding binding, Initializer initializer) {
@@ -271,6 +279,8 @@ public class TypeComputationModelBuilder {
 				if(binding.getDeclaringClass() != null) importBinding(binding.getDeclaringClass(), null);
 				importSemanticsOfParameterizedTypes(binding, initializer);
 				importBinding(binding.getVariableDeclaration(), null);
+				importStaticSemantics(binding, initializer);
+				importStaticSemantics(binding.getVariableDeclaration(), null);
 			}
 
 			private void importEvaluationSemantics(IMethodBinding binding) {
@@ -499,6 +509,20 @@ public class TypeComputationModelBuilder {
 						importOverrideSemantics(binding, i);
 				}
 				overridesChecks.put(binding.getKey(), type.getKey());
+			}
+			
+			private void importStaticSemantics(IMethodBinding binding) {
+				if(Modifier.isStatic(binding.getModifiers())) {
+					IValue mb = bindingConverter.getEntity(binding);
+					isStaticDecl_func.insert(values.tuple(mb, mb));
+				}
+			}
+			
+			private void importStaticSemantics(IVariableBinding binding, Initializer initializer) {
+				if(Modifier.isStatic(binding.getModifiers())) {
+					IValue vb = bindingConverter.getEntity(binding, initializer);
+					isStaticDecl_func.insert(values.tuple(vb, vb));
+				}
 			}
 			
 			@SuppressWarnings("deprecation")

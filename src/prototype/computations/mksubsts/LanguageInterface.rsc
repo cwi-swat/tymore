@@ -70,5 +70,10 @@ public list[Entity] supertypes(CompilUnit facts, Entity v) {
 	return isEmpty(sups) ? ( v != object() ? [ object() ] : [] ) : sups;
 }
 
+@doc{Static semantics}
+public bool isStatic(CompilUnit facts, Entity v) {
+	!isEmpty(facts["isStaticDecl_func"][v]);
+}
+
 @doc{Bound semantics}
 public list[Entity] typeParamBounds(CompilUnit facts, Entity val) = [ v | <Entity k, Entity v> <- facts["bounds_func"], k == val];

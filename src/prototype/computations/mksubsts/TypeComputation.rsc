@@ -68,11 +68,11 @@ public SubstsT[Entity] glookupc(CompilUnit facts, Mapper mapper, AstNode t)
 						  				return returnS(v); }); } ); });
 @doc{Contextual sublookup}
 public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)
-	= bind(lift(subterm(facts, mapper, t)), SubstsT[Entity] (AstNode t_) {
-			return bind(glookupc(facts, mapper, t_), SubstsT[Entity] (Entity v_) { 
-						return bind(gevalc(mapper, v_), SubstsT[Entity] (Entity v__) { 
-								return bind(boundLkp(facts, mapper, v_), SubstsT[Entity] (Entity _) { 
-										return lift(eval(boundEnv(facts, mapper, v__))); }); }); }); });
+	= bind(lift(subterm(facts, mapper, t)), SubstsT[Entity] (AstNode t0) {
+			return bind(glookupc(facts, mapper, t0), SubstsT[Entity] (Entity v0) { 
+						return bind(gevalc(mapper, v0), SubstsT[Entity] (Entity vT0) { 
+								return bind(boundLkp(facts, mapper, v0), SubstsT[Entity] (Entity _) { 
+										return lift(eval(boundEnv(facts, mapper, vT0))); }); }); }); });
 
 @doc{Overrides the contextual sublookup to account for wildcards and captures}
 //public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)
@@ -151,25 +151,25 @@ public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:classInstanceC
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:classInstanceCreation(_,_,[],_,some(AstNode anonymClass))) = tzero(); 
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:fieldAccess(AstNode expr,_)) = returnT(rmv(expr)); 
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:methodInvocation(none(),_,_,_)) 
-	= bind(contextType(facts, mapper, e), TypeOf[AstNode] (Entity scope) { 
+	= bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) { 
 			return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); });
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:methodInvocation(some(AstNode expr),_,_,_)) = returnT(rmv(expr));
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:qualifiedName(AstNode qname,_)) = (isVariableBinding(lookup(e))) ? returnT(qname) : tzero(); 
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:simpleName(_)) 
 	= (isFieldBinding(lookup(e)) && !isArrayType(getType(e))) 
-		? bind(contextType(facts, mapper, e), TypeOf[AstNode] (Entity scope) { 
+		? bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) { 
 				return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); }) 
 		: tzero();
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:superConstructorInvocation(none(),_,_)) 
-	= bind(contextType(facts, mapper, e), TypeOf[AstNode] (Entity scope) { 
+	= bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) { 
 		return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); });
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:superConstructorInvocation(some(AstNode expr),_,_)) = returnT(rmv(expr));
 public TypeOf[AstNode] subterm(CompilUnit facts, e:superFieldAccess(none(),_)) 
-	= bind(contextType(facts, mapper, e), TypeOf[AstNode] (Entity scope) {
+	= bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) {
 		return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); });
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:superFieldAccess(some(AstNode qualifier),_)) = returnT(qualifier); 
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:superMethodInvocation(none(),_,_,_)) 
-	= bind(contextType(facts, mapper, e), TypeOf[AstNode] (Entity scope) {
+	= bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) {
 	 	return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); });
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:superMethodInvocation(some(AstNode qualifier),_,_,_)) = returnT(qualifier); 
 public default TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, AstNode t) = tzero();
@@ -178,15 +178,10 @@ public AstNode rmv(parenthesizedExpression(AstNode expr)) = rmv(expr);
 public default AstNode rmv(AstNode expr) = expr;
 
 @doc{Imposed by the contextual semantics}
-public TypeOf[Entity] contextType(CompilUnit facts, Mapper mapper, AstNode e) {
+public TypeOf[Entity] scopec(CompilUnit facts, Mapper mapper, AstNode e) {
 	list[Entity] scopes = [ scope | Entity scope <- e@scopes, 
 									bool b <- supertype(facts, mapper, <scope, eval(decl(lookup(e)))>), 
 									b ];
-	//if(size(e@scopes) > 1) { 
-	//	println("NESTING : ");
-	//	println(prettyprint(lookup(e)));
-	//	for(Entity scope <- scopes) 
-	//		println("scope: " + prettyprint(scope));
-	//}
+	// DEBUG: if(size(e@scopes) > 1) { println("NESTING : "); println(prettyprint(lookup(e))); for(Entity scope <- scopes) println("scope: " + prettyprint(scope)); }
 	return tauInv(scopes);
 }
