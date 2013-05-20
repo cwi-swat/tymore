@@ -66,7 +66,7 @@ public SubstsT[Entity] glookupc(CompilUnit facts, Mapper mapper, AstNode t)
 						  	   Substs s = getExprSubsts(mapper, v);
 						  	return bind(appnd(paramSubstsWith(mapper, t)(s)), SubstsT[Entity] (value _) {
 						  				return returnS(v); }); } ); });
-@doc{Contextual sublookup}
+@doc{Contextual sublookup: t = t0.<...>}
 public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)
 	= bind(lift(subterm(facts, mapper, t)), SubstsT[Entity] (AstNode t0) {
 			return bind(glookupc(facts, mapper, t0), SubstsT[Entity] (Entity v0) { 
@@ -94,9 +94,13 @@ public Substs getExprSubsts(Mapper mapper, Entity v) {
 	return substs(args_, params_);
 }
 	
-@doc{Lookup bind semantics against explicit substitution composed with the bound against type environment}	
+@doc{Lookup bind semantics against explicit substitution or bounds of the global type environment;
+	the latter takes care of the cases when either the type parameter is not found in the substitution,
+	or it binds to a raw type}	
 public SubstsT[Entity] boundLkp(CompilUnit facts, Mapper mapper, Entity v) {
-	Entity vT = eval(getGenV(mapper, v)); // tracer(true, "boundLkp: <prettyprint(vT)>; <prettyprint(v)>");
+	Entity vT = eval(getGenV(mapper, v)); 
+	// DEBUG: tracer(true, "boundLkp: <prettyprint(vT)>; <prettyprint(v)>");
+	
 	return catchZ(boundS(mapper, vT), boundEnv(facts, mapper, vT));
 }
 
@@ -149,29 +153,34 @@ public SubstsT_[bool] supertypec_(CompilUnit facts, Mapper mapper, tuple[Entity,
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:classInstanceCreation(none(),_,[],_,none())) = tzero();
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:classInstanceCreation(some(AstNode expr),_,[],_,none())) = returnT(rmv(expr));
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:classInstanceCreation(_,_,[],_,some(AstNode anonymClass))) = tzero(); 
-public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:fieldAccess(AstNode expr,_)) = returnT(rmv(expr)); 
+public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:fieldAccess(AstNode expr,_)) 
+	= isStatic(facts, lookup(e)) ? tzero() : returnT(rmv(expr)); 
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:methodInvocation(none(),_,_,_)) 
-	= bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) { 
-			return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); });
-public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:methodInvocation(some(AstNode expr),_,_,_)) = returnT(rmv(expr));
-public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:qualifiedName(AstNode qname,_)) = (isVariableBinding(lookup(e))) ? returnT(qname) : tzero(); 
+	= isStatic(facts, lookup(e)) ? tzero() : bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) { 
+													return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); });
+public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:methodInvocation(some(AstNode expr),_,_,_)) 
+	= isStatic(facts, lookup(e)) ? tzero() : returnT(rmv(expr));
+public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:qualifiedName(AstNode qname,_)) 
+	= isVariableBinding(lookup(e)) ? isStatic(lookup(e)) ? tzero() : returnT(qname) : tzero(); 
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:simpleName(_)) 
 	= (isFieldBinding(lookup(e)) && !isArrayType(getType(e))) 
-		? bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) { 
-				return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); }) 
+		? isStatic(facts, lookup(e)) ? tzero() : bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) { 
+														return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); }) 
 		: tzero();
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:superConstructorInvocation(none(),_,_)) 
 	= bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) { 
 		return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); });
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:superConstructorInvocation(some(AstNode expr),_,_)) = returnT(rmv(expr));
 public TypeOf[AstNode] subterm(CompilUnit facts, e:superFieldAccess(none(),_)) 
-	= bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) {
-		return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); });
-public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:superFieldAccess(some(AstNode qualifier),_)) = returnT(qualifier); 
+	= isStatic(facts, lookup(e)) ? tzero() : bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) {
+													return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); });
+public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:superFieldAccess(some(AstNode qualifier),_)) 
+	= isStatic(facts, lookup(e)) ? tzero() : returnT(qualifier); 
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:superMethodInvocation(none(),_,_,_)) 
-	= bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) {
-	 	return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); });
-public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:superMethodInvocation(some(AstNode qualifier),_,_,_)) = returnT(qualifier); 
+	= isStatic(facts, lookup(e)) ? tzero() : bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) {
+	 												return returnT(thisExpression(none())[@bindings = ("typeBinding" : scope)]); });
+public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:superMethodInvocation(some(AstNode qualifier),_,_,_)) 
+	= isStatic(facts, lookup(e)) ? tzero() : returnT(qualifier); 
 public default TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, AstNode t) = tzero();
 
 public AstNode rmv(parenthesizedExpression(AstNode expr)) = rmv(expr);
