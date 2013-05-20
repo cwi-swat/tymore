@@ -29,17 +29,9 @@ import Set;
 @doc{Base computations lifted to SubstsT}
 public SubstsT[Entity] evalc(Entity v) = returnS(eval(v));
 public SubstsT[Entity] lookupc(AstNode t) = returnS(lookup(t));
+
 public SubstsT[Entity] gdeclc(Entity v) = returnS(decl(v));
 public SubstsT[Entity] (Entity) gparamc(int i) = SubstsT[Entity] (Entity v) { return returnS(param(i)(v)); };
-
-@doc{Split of the evaluation semantics into 'left' (capturing) and 'right'} 
-public SubstsT[Entity] gevalcRight(Mapper mapper, Entity v)
-	= bind(evalc(v), SubstsT[Entity] (Entity vT) { 
-			Entity vg = getGenV(mapper, v);
-			Entity vgT = eval(vg);
-			if(vg == vgT) return returnS(vT);
-			return bind(pushSubsts(paramSubstsWith(mapper, vg))(mapper, vgT), SubstsT[Entity] (Entity _) { 
-						return returnS(vT); }); });
 
 @doc{Evaluation in presence of plain generics}
 public SubstsT[Entity] gevalc(Mapper mapper, Entity v)
@@ -50,20 +42,22 @@ public SubstsT[Entity] gevalc(Mapper mapper, Entity v)
 			return bind(pushSubsts(paramSubstsWith(mapper, vg))(mapper, vgT), SubstsT[Entity] (Entity _) { 
 						return returnS(vT); }); });
 
-@doc{Overrides the evaluation to account for wildcards and captures}
-//public SubstsT[Entity] gevalc(Mapper mapper, Entity v)
-//	= bind(evalc(v), SubstsT[Entity] (Entity vT) { 
-//			Entity vg = getGenV(mapper, v);
-//			Entity vgT = eval(vg);
-//			if(vg == vgT) return returnS(vT);
-//			return bind(pushSubsts(paramSubstsWithCapture(mapper, vg))(mapper, vgT), SubstsT[Entity] (Entity _) { 
-//						return returnS(vT); }); });
+@doc{Split of the evaluation semantics into 'left' (capturing) and 'right'} 
+public SubstsT[Entity] gevalcRight(Mapper mapper, Entity v)
+	= bind(evalc(v), SubstsT[Entity] (Entity vT) { 
+			Entity vg = getGenV(mapper, v);
+			Entity vgT = eval(vg);
+			if(vg == vgT) return returnS(vT);
+			// TODO: right-hand side evaluation semantics, which should not capture wildcards
+			return bind(pushSubsts(paramSubstsWithNoCapture(mapper, vg))(mapper, vgT), SubstsT[Entity] (Entity _) { 
+						return returnS(vT); }); });
 
 @doc{Lookup semantics}
 public SubstsT[Entity] glookupc(CompilUnit facts, Mapper mapper, AstNode t)
 	= bind(lookupc(t), SubstsT[Entity] (Entity v) { 
 			return bind(catchZ(bind(subLookupc(facts, mapper, t), SubstsT[Entity] (Entity vT_) {
-									SubstsT[bool] isSup = tauInv(supertypec_(facts, mapper, <vT_, eval(decl(v))>)); // if(tzero() := eval(isSup)) println("SUPERTYPE: <prettyprint(vT_)> \<: <prettyprint(eval(decl(v)))>");
+									SubstsT[bool] isSup = tauInv(supertypec_(facts, mapper, <vT_, eval(decl(v))>)); 
+									// DEBUG: if(tzero() := eval(isSup)) println("SUPERTYPE: <prettyprint(vT_)> \<: <prettyprint(eval(decl(v)))>");
 									assert(!(tzero() := eval(isSup))); 
 									return bind(isSup, SubstsT[Entity] (bool b) {
 												assert(b);
