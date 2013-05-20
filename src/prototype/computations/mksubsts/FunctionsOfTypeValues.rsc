@@ -69,19 +69,21 @@ public Substs (Substs) paramSubstsWith(Mapper mapper, &C c)
 		list[Entity] pargs = [ typeArgument(mapper, s.params[i], s.args[i], c) | int i <- [0..size(s.params) - 1] ];
 		return substs(pargs, s.params);
 	};
-public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), Entity init, &C c)
-	 = ( isTypeParameter(init) || !hasRawTypeArgument(mapper, init) ) ? init : entity([ typeArgument(name, c, init) ]);
 
-@doc{Overrides to account for captures}
-public Substs (Substs) paramSubstsWithCapture(Mapper mapper, &C c) 
-	= Substs (Substs s) {
-		if(size(s.params) == size(s.args) && isEmpty(s.params)) return s;
-		list[Entity] pargs = [ typeArgumentCapture(mapper, s.params[i], s.args[i], c) | int i <- [0..size(s.params) - 1] ];
-		return substs(pargs, s.params);
-	};
-public Entity typeArgumentCapture(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), Entity init, &C c)
-	 = ( (isTypeParameter(init) || !hasRawTypeArgument(mapper, init)) && !isWildCardType(init) ) ? init 
-	 	: entity([ captureof(entity([ typeArgument(name, c, init) ])) ]); // wildcard types get also parameterized
+@doc{EXTENSION with wildcards: extends to account for wildcards and capture variables}
+public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard() ]), &C c) 
+	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
+public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard(_) ]), &C c)
+	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
+public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, captureof(_) ]), &C c)
+	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
+@doc{Cases of type parameters as inits}
+public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *ids, typeParameter(_) ]), &C c) 
+	= init;
+public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *ids, typeParameter(_,_) ]), &C c) 
+	= init;
+public default Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), Entity init, &C c)
+	 = !hasRawTypeArgument(mapper, init) ? init : entity([ typeArgument(name, c, init) ]);
 
 private bool hasRawTypeArgument(Mapper mapper, zero()) = true;
 private default bool hasRawTypeArgument(Mapper mapper, Entity init) {
@@ -96,13 +98,13 @@ public PEntity (Entity) toGensNonRec(Mapper mapper)
 		return toGensNonRecByCase(mapper, val); 
 	};
 	
-public PEntity toGensNonRecByCase(Mapper mapper, val::zero()) = pzero()[@paramval=val];
-public PEntity toGensNonRecByCase(Mapper mapper, val::entity([ *ids, anonymous(_,_)])) = pentity(substs([],[]), val)[@paramval=val];
-public PEntity toGensNonRecByCase(Mapper mapper, val::entity([ *ids, decl() ])) {
+public PEntity toGensNonRecByCase(Mapper mapper, val:zero()) = pzero()[@paramval=val];
+public PEntity toGensNonRecByCase(Mapper mapper, val:entity([ *ids, anonymous(_,_)])) = pentity(substs([],[]), val)[@paramval=val];
+public PEntity toGensNonRecByCase(Mapper mapper, val:entity([ *ids, decl() ])) {
 	PEntity pval = toGensNonRec(mapper)(entity(ids));
 	return pentity(pval.s, decl(pval.genval))[@paramval = val];
 }
-public PEntity toGensNonRecByCase(Mapper mapper, val::entity([ *ids, \parameter(int i) ])) {
+public PEntity toGensNonRecByCase(Mapper mapper, val:entity([ *ids, \parameter(int i) ])) {
 	PEntity pval = toGensNonRec(mapper)(entity(ids));
 	return pentity(pval.s, param(i)(pval.genval))[@paramval = val];
 }
