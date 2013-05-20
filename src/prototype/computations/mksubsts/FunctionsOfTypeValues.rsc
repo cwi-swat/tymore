@@ -83,8 +83,8 @@ public Entity typeArgumentCapture(Mapper mapper, tp:entity([ *ids, typeParameter
 	 = ( (isTypeParameter(init) || !hasRawTypeArgument(mapper, init)) && !isWildCardType(init) ) ? init 
 	 	: entity([ captureof(entity([ typeArgument(name, c, init) ])) ]); // wildcard types get also parameterized
 
-private bool hasRawTypeArgument(Mapper mapper, Entity init) {
-	if(init == zero()) return true;
+private bool hasRawTypeArgument(Mapper mapper, zero()) = true;
+private default bool hasRawTypeArgument(Mapper mapper, Entity init) {
 	PEntity pinit = mkSubsts(mapper, init);
 	if(isWildCardType(init)) pinit = mkSubsts(mapper, boundWildcardUB(init));
 	if(Entity arg <- pinit.s.args, arg == zero() || hasRawTypeArgument(mapper, arg)) return true;
