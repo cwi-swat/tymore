@@ -22,7 +22,7 @@ import java.util.Set;
 import org.eclipse.imp.pdb.facts.IList;
 import org.eclipse.imp.pdb.facts.IListWriter;
 import org.eclipse.imp.pdb.facts.IMapWriter;
-import org.eclipse.imp.pdb.facts.IRelationWriter;
+import org.eclipse.imp.pdb.facts.ISetWriter;
 import org.eclipse.imp.pdb.facts.IValue;
 import org.eclipse.imp.pdb.facts.IValueFactory;
 import org.eclipse.imp.pdb.facts.type.TypeFactory;
@@ -59,11 +59,11 @@ public class TypeComputationModelBuilder {
 	private static final String OVERRIDES_FUNCTION = "overrides_func";
 	private static final String BOUNDS_FUNCTION = "bounds_func";
 	
-	private IRelationWriter evaluation_func;
-	private IRelationWriter subtypes_func;
-	private IRelationWriter declares_func;  // performs lookup into supertypes
-	private IRelationWriter overrides_func; // performs lookup into supertypes
-	private IRelationWriter bounds_func; 
+	private ISetWriter evaluation_func;
+	private ISetWriter subtypes_func;
+	private ISetWriter declares_func;  // performs lookup into supertypes
+	private ISetWriter overrides_func; // performs lookup into supertypes
+	private ISetWriter bounds_func; 
 
 	
 	private IMapWriter semantics_of_paramaterized_types_func;
@@ -79,18 +79,20 @@ public class TypeComputationModelBuilder {
 	private final IValueFactory values;
 	private final BindingConverter bindingConverter; 
 		
+	@SuppressWarnings("deprecation")
 	public TypeComputationModelBuilder(final IValueFactory values, final BindingConverter bindingConverter) {	
 		this.values = values;
 		this.bindingConverter = bindingConverter;
 		
-		evaluation_func = values.relationWriter(functionTupleType);
-		subtypes_func = values.relationWriter(functionTupleType);
-		declares_func = values.relationWriter(functionTupleType);
-		overrides_func = values.relationWriter(functionTupleType);
-		bounds_func = values.relationWriter(functionTupleType);
+		evaluation_func = values.setWriter(functionTupleType);
+		subtypes_func = values.setWriter(functionTupleType);
+		declares_func = values.setWriter(functionTupleType);
+		overrides_func = values.setWriter(functionTupleType);
+		bounds_func = values.setWriter(functionTupleType);
 		semantics_of_paramaterized_types_func = values.mapWriter(ADT_ENTITY, semantics_of_paramaterized_types);
 	}
 	
+	@SuppressWarnings("deprecation")
 	public void extract(CompilationUnit cu) {
 		IMapWriter computations = values.mapWriter(ftypes.stringType(), ftypes.relTypeFromTuple(functionTupleType));
 		TypeValuesCollector collector = new TypeValuesCollector(this.bindingConverter);
@@ -279,6 +281,7 @@ public class TypeComputationModelBuilder {
 				evaluation_func.insert(values.tuple(bindingConverter.getEntity(binding, initializer), bindingConverter.getEntity(binding.getType())));
 			}
 
+			@SuppressWarnings("deprecation")
 			private final IValue zerobindings = values.tuple(values.listWriter(ADT_ENTITY).done(), values.listWriter(ADT_ENTITY).done());
 			
 			private void importSemanticsOfParameterizedTypes(IMethodBinding binding) {
@@ -306,6 +309,7 @@ public class TypeComputationModelBuilder {
 						.put(bindingConverter.getEntity(binding, initializer), values.tuple(bindings, bindingConverter.getEntity(binding.getVariableDeclaration())));
 			}
 
+			@SuppressWarnings("deprecation")
 			private IList getTypeArguments(IMethodBinding binding) {
 				IListWriter args = values.listWriter(ADT_ENTITY);
 				if(binding.getTypeArguments().length != 0) 
@@ -322,6 +326,7 @@ public class TypeComputationModelBuilder {
 				return args.done();
 			}
 			
+			@SuppressWarnings("deprecation")
 			private IList getTypeArguments(ITypeBinding binding) {
 				IListWriter args = values.listWriter(ADT_ENTITY);
 				if(binding.getTypeArguments().length != 0) 
@@ -340,6 +345,7 @@ public class TypeComputationModelBuilder {
 				return args.done();
 			}
 			
+			@SuppressWarnings("deprecation")
 			private IList getTypeArguments(IVariableBinding binding) {
 				IListWriter args = values.listWriter(ADT_ENTITY);
 				if(binding.getDeclaringMethod() != null) 
@@ -349,6 +355,7 @@ public class TypeComputationModelBuilder {
 				return args.done();
 			}
 			
+			@SuppressWarnings("deprecation")
 			private IList getTypeParameters(IMethodBinding binding) {
 				IListWriter params = values.listWriter(ADT_ENTITY);
 				for(ITypeBinding param: binding.getTypeParameters()) {
@@ -360,6 +367,7 @@ public class TypeComputationModelBuilder {
 				return params.done();
 			}
 			
+			@SuppressWarnings("deprecation")
 			private IList getTypeParameters(ITypeBinding binding) {
 				IListWriter params = values.listWriter(ADT_ENTITY);
 				for(ITypeBinding param: binding.getTypeParameters()) {
@@ -373,6 +381,7 @@ public class TypeComputationModelBuilder {
 				return params.done();
 			};
 			
+			@SuppressWarnings("deprecation")
 			private IList getTypeParameters(IVariableBinding binding) {
 				IListWriter params = values.listWriter(ADT_ENTITY);
 				if(binding.getDeclaringMethod() != null) 
@@ -492,6 +501,7 @@ public class TypeComputationModelBuilder {
 				overridesChecks.put(binding.getKey(), type.getKey());
 			}
 			
+			@SuppressWarnings("deprecation")
 			private IValue createZeroEntity() {
 				return values.constructor(CONS_ENTITY, values.listWriter(ADT_ID).done());
 			}
