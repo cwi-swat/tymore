@@ -27,7 +27,7 @@ import List;
 import Map;
 import Set;
 
-@doc{The upper bind semantics that introduces new type argument variables and uses the extended bind semantics}
+@doc{EXTENSION with wildcards: the upper bind semantics that introduces new type argument variables and uses the extended bind semantics}
 public SubstsT[Entity] boundSu(Mapper mapper, tp:entity([ *ids, typeParameter(str _)]))
 	= bind(popSubsts(), SubstsT[Entity] (Substs s) {
 			Entity b = lookupSubsts(s, tp);
@@ -35,31 +35,30 @@ public SubstsT[Entity] boundSu(Mapper mapper, tp:entity([ *ids, typeParameter(st
 			return bind(pushSubsts(idS)(mapper, b), SubstsT[Entity] (Entity b_) { 
 						return boundSu(mapper, b_); });
 			});
-public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, ta:typeArgument(str _, _, entity([ *ids, wildcard() ]))])) // case of 'Ta'
+public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard() ]))])) // case of 'Ta'
 	= boundSu(mapper, entity( ids + ta + upper(zero()) ));
-public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
+public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSu(mapper, entity( ids + ta + upper(wcb) ));
-public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
+public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSu(mapper, entity( ids + ta + upper(zero()) ));
 public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-	= boundSu(mapper, entity( ids + ta + upper(init)));
+	= boundSu(mapper, entity( ids + ta + upper(init) ));
 
 public SubstsT[Entity] boundSu(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) // case of 'Ta_u'
 	= boundS(mapper, ta);
 public SubstsT[Entity] boundSu(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) // case of 'Ta_l'
 	= boundS(mapper, ta);
 
-public SubstsT[Entity] boundSu(Mapper mapper, entity([])) = lift(tzero());
-public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero());
-public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) 
-	= bind(pushSubsts(idS)(mapper, wcb), SubstsT[Entity] (Entity _) { return boundSu(mapper, wcb); });
-public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) = lift(tzero());
-
-public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, captureof(Entity wcd) ])) = boundSu(mapper, wcd); // captures
+public SubstsT[Entity] boundSu(Mapper mapper, zero()) = lift(tzero());
+public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
+public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) // wildcard value
+	= bind(pushSubsts(idS)(mapper, wcb), SubstsT[Entity] (Entity _) { return boundSu(mapper, wcb); }); // wildcard value
+public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) = lift(tzero()); // wildcard value
+public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, captureof(Entity wcd) ])) = boundSu(mapper, wcd); // capture value
 
 public default SubstsT[Entity] boundSu(Mapper mapper, Entity v) = returnS(v);
 
-@doc{The upper bind semantics that introduces new type argument variables but does not bind type argument variables}
+@doc{EXTENSION with wildcards: the upper bind semantics that introduces new type argument variables but does not bind type argument variables}
 public SubstsT[Entity] boundSu_(Mapper mapper, tp:entity([ *ids, typeParameter(str _)]))
 	= bind(popSubsts(), SubstsT[Entity] (Substs s) {
 			Entity b = lookupSubsts(s, tp);
@@ -67,26 +66,25 @@ public SubstsT[Entity] boundSu_(Mapper mapper, tp:entity([ *ids, typeParameter(s
 			return bind(pushSubsts(idS)(mapper, b), SubstsT[Entity] (Entity b_) { 
 						return boundSu_(mapper, b_); });
 			});
-public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, ta:typeArgument(str _, _, entity([ *ids, wildcard() ]))])) // case of 'Ta'
+public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard() ]))])) // case of 'Ta'
 	= boundSu_(mapper, entity( ids + ta + upper(zero()) ));
-public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
+public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSu_(mapper, entity( ids + ta + upper(wcb) ));
-public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
+public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSu_(mapper, entity( ids + ta + upper(zero()) ));
 public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
 	= boundSu_(mapper, entity( ids + ta + upper(init)));
 
-public SubstsT[Entity] boundSu_(Mapper mapper, entity([])) = lift(tzero());
-public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero());
-public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) 
-	= bind(pushSubsts(idS)(mapper, wcb), SubstsT[Entity] (Entity _) { return boundSu_(mapper, wcb); });
-public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) = lift(tzero());
-
-public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, captureof(Entity wcd) ])) = boundSu_(mapper, wcd); // captures
+public SubstsT[Entity] boundSu_(Mapper mapper, zero()) = lift(tzero());
+public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
+public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) // wildcard value
+	= bind(pushSubsts(idS)(mapper, wcb), SubstsT[Entity] (Entity _) { return boundSu_(mapper, wcb); }); // wildcard value
+public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) = lift(tzero()); // wildcard value
+public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, captureof(Entity wcd) ])) = boundSu_(mapper, wcd); // capture value
 
 public default SubstsT[Entity] boundSu_(Mapper mapper, Entity v) = returnS(v);
 	
-@doc{The lower bind semantics that introduces new type argument variables and uses the extended bind semantics}
+@doc{EXTENSION with wildcards: the lower bind semantics that introduces new type argument variables and uses the extended bind semantics}
 public SubstsT[Entity] boundSl(Mapper mapper, tp:entity([ *ids, typeParameter(str _)]))
 	= bind(popSubsts(), SubstsT[Entity] (Substs s) {
 			Entity b = lookupSubsts(s, tp);
@@ -94,11 +92,11 @@ public SubstsT[Entity] boundSl(Mapper mapper, tp:entity([ *ids, typeParameter(st
 			return bind(pushSubsts(idS)(mapper, b), SubstsT[Entity] (Entity b_) { 
 						return boundSl(mapper, b_); });
 			});
-public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, ta:typeArgument(str _, _, entity([ *ids, wildcard() ]))])) // case of 'Ta'
+public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard() ]))])) // case of 'Ta'
 	= boundSl(mapper, entity( ids + ta + lower(zero()) ));
-public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
+public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSl(mapper, entity( ids + ta + lower(zero()) ));
-public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
+public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSl(mapper, entity( ids + ta + lower(wcb) ));
 public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
 	= boundSl(mapper, entity( ids + ta + lower(init)));
@@ -108,17 +106,16 @@ public SubstsT[Entity] boundSl(Mapper mapper, ta:entity([ *ids, typeArgument(str
 public SubstsT[Entity] boundSl(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) // case of 'Ta_u'
 	= boundS(mapper, ta);
 
-public SubstsT[Entity] boundSl(Mapper mapper, entity([])) = lift(tzero());
-public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero());
-public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) = lift(tzero());
-public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) 
-	= bind(pushSubsts(idS)(mapper, wcb), SubstsT[Entity] (Entity _) { return boundSl(mapper, wcb); });
-	
-public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, captureof(Entity wcd) ])) = boundSl(mapper, wcd); // captures
+public SubstsT[Entity] boundSl(Mapper mapper, zero()) = lift(tzero());
+public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
+public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) = lift(tzero()); // wildcard value
+public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) // wildcard value
+	= bind(pushSubsts(idS)(mapper, wcb), SubstsT[Entity] (Entity _) { return boundSl(mapper, wcb); }); // wildcard value
+public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, captureof(Entity wcd) ])) = boundSl(mapper, wcd); // capture value
 	
 public default SubstsT[Entity] boundSl(Mapper mapper, Entity v) = returnS(v);
 
-@doc{The lower bind semantics that introduces new type argument variables but does not bind type argument variables}
+@doc{EXTENSION with wildcards: the lower bind semantics that introduces new type argument variables but does not bind type argument variables}
 public SubstsT[Entity] boundSl_(Mapper mapper, tp:entity([ *ids, typeParameter(str _)]))
 	= bind(popSubsts(), SubstsT[Entity] (Substs s) {
 			Entity b = lookupSubsts(s, tp);
@@ -135,13 +132,11 @@ public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(st
 public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
 	= boundSl_(mapper, entity( ids + ta + lower(init)));
 
-public SubstsT[Entity] boundSl_(Mapper mapper, entity([])) = lift(tzero());
-public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero());
-public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) = lift(tzero());
-public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) 
-	= bind(pushSubsts(idS)(mapper, wcb), SubstsT[Entity] (Entity _) { return boundSl_(mapper, wcb); });
-	
-public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, captureof(Entity wcd) ])) = boundSl_(mapper, wcd); // captures
+public SubstsT[Entity] boundSl_(Mapper mapper, zero()) = lift(tzero());
+public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
+public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) = lift(tzero()); // wildcard value
+public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) // wildcard value
+	= bind(pushSubsts(idS)(mapper, wcb), SubstsT[Entity] (Entity _) { return boundSl_(mapper, wcb); }); // wildcard value
+public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, captureof(Entity wcd) ])) = boundSl_(mapper, wcd); // capture value
 	
 public default SubstsT[Entity] boundSl_(Mapper mapper, Entity v) = returnS(v);
-

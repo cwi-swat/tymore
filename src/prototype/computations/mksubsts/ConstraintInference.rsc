@@ -177,11 +177,11 @@ public set[Constraint[SubstsT[Entity]]] catchCaptureVariable(CompilUnit facts, M
 						   						return returnS(<isCapturedTypeArgument(lv),isCapturedTypeArgument(rv)>); }); });
 	
 	return { *( { *(areCaptures.l ? 
-						{ eq(cl_.lh, cu_.lh) } + { *(areCaptures.r ? { eq(cl_.rh, cu_.rh) } : {}) } 
-								  : areCaptures.r ? 
+						({ eq(cl_.lh, cu_.lh) } + { *(areCaptures.r ? { eq(cl_.rh, cu_.rh) } : {}) }) 
+								  : (areCaptures.r ? 
 										{ eq(cl_.rh, cu_.rh) } 
-												  : {}) } 
-			   + { *((areCaptures.l && areCaptures.r) ? 
+												  : {}) ) } 
+			   + { *( (areCaptures.l && areCaptures.r) ? 
 			   							{ eq(cl_.lh, cl_.rh) } + { eq(cu_.lh, cu_.rh) } 
 			   				                          : {}) } ) 
 			   				                          
