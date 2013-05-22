@@ -29,6 +29,9 @@ public TypeOf[&T] returnT(&T v) = typeof(v);
 public TypeOf[&T2] bind(typeof(&T1 v), TypeOf[&T2] (&T1) f) = f(v);
 public TypeOf[&T2] bind(tzero(), TypeOf[&T2] (&T1) f) = tzero();
 
+public bool isZero(tzero()) = true;
+public default bool isZero(TypeOf[&T] mv) = false;
+
 // SubstsT monad
 public data SubstsT[&T] = substs( TypeOf[tuple[&T, Substs]] (Substs) v );
 
@@ -36,16 +39,19 @@ public SubstsT[&T] returnS(&T v) = substs(TypeOf[tuple[&T, Substs]] (Substs s) {
 public TypeOf[tuple[&T, Substs]] (Substs) run(SubstsT[&T] mv) = TypeOf[tuple[&T, Substs]] (Substs s) { return mv.v(s); };
 public TypeOf[&T] eval(SubstsT[&T] mv) = bind(mv.v(substs([],[])), TypeOf[&T] (tuple[&T, Substs] v) { return returnT(v[0]); });
 
+@doc{Drops the substitution part}
 public SubstsT[&T] discard(SubstsT[&T] mv)
 	= substs( TypeOf[tuple[&T, Substs]] (Substs s) {
 				TypeOf[tuple[&T, Substs]] v = run(mv)(substs([],[]));
-				return (typeof(<&T v_,_ /* discards substitution */>) := v) ? returnT(<v_,s>) : tzero() ; } );
+				return (typeof(<&T v_,_>) := v) ? returnT(<v_,s>) : tzero() ; } );
 
 public SubstsT[&T2] bind(SubstsT[&T1] mv, SubstsT[&T2] (&T1) f)
 	= substs( TypeOf[tuple[&T2, Substs]] (Substs s) {
 				TypeOf[tuple[&T1, Substs]] v = run(mv)(s);
 				return (typeof(tuple[&T1, Substs] tpl) := v) ? run(f(tpl[0]))(tpl[1]) : tzero();
 			  } );
+			  
+public bool isZero(SubstsT[&T] mv) = isZero(eval(mv));
 			  
 public SubstsT[&T] catchZ(SubstsT[&T] mv1, SubstsT[&T] mv2) 
 	= substs( TypeOf[tuple[&T, Substs]] (Substs s) {
@@ -83,6 +89,17 @@ public SubstsT_[&T2] bind(SubstsT_[&T1] mv, SubstsT_[&T2] (&T1) f)
 			  
 public SubstsT_[&T] lift(list[&T] vs) = !isEmpty(vs) ? substs_( list[tuple[&T, Substs]] (Substs s) { return [ <v, s> | &T v <- vs ]; })
 													 : substs_( list[tuple[&T, Substs]] (Substs s) { return []; });
+													 
+// SubstsTLog monad
+public data SubstsTL[&T] = substsl( &T v, list[Substs] l );
+
+public SubstsTL[&T] returnSL(&T v) = substsl(v, []);
+public &T eval(SubstsTL[&T] mv:substsl(&T v, _)) = v;
+
+public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl(&T1 v, list[Substs] l), SubstsTL[&T2] (&T1) f) {
+	SubstsTL[&T2] mv = f(v);
+	return substsl(mv.v, l + mv.l);
+}
 
 // tau: SubstsT -> SubstsT'
 public SubstsT_[&T] tau(SubstsT[&T] mv) 

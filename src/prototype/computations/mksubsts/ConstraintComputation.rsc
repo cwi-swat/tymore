@@ -106,7 +106,7 @@ public default set[Constraint[SubstsT[Entity]]] constrain(AstNode t, CompilUnit 
 
 public bool isDownCast(CompilUnit facts, Mapper mapper, t:castExpression(_, AstNode e)) {
 	TypeOf[bool] b = eval(tauInv(supertypec_(facts, mapper, <getType(t), getType(e)>)));
-	if(tzero() := b) return false;
+	if(isZero(b)) return false;
 	return true;
 }
 
@@ -128,18 +128,22 @@ public Constraint[SubstsT[&T1]] (Constraint[SubstsT[&T]]) apply(SubstsT[&T1] (&T
 			}
 	  }; 
 	  
-@doc{Cathces a zero computation at the right or left of a constraint and discard this constraint}
-public set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c) {
-	TypeOf[tuple[&T, Substs]] lh_ = run(c.lh)(substs([],[]));
-	if(tzero() := lh_) return {};
-	TypeOf[tuple[&T, Substs]] rh_ = run(c.rh)(substs([],[]));
-	if(tzero() := rh_) return {};
-	switch(c) {
-		case subtype(_,_): return { subtype(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
+@doc{Catches zero computation at the right or left of a constraint and discard this constraint}
+public set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c:subtype(lh,rh)) {
+	TypeOf[tuple[&T, Substs]] lh_ = run(lh)(substs([],[]));
+	if(isZero(lh_)) return {};
+	TypeOf[tuple[&T, Substs]] rh_ = run(rh)(substs([],[]));
+	if(isZero(rh_)) return {};
+	return { subtype(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
 							 				substs( TypeOf[tuple[&T, Substs]] (Substs s) { return rh_; } )) };
-		case eq(_,_): return { eq(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
+}
+public set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c:eq(lh,rh)) {
+	TypeOf[tuple[&T, Substs]] lh_ = run(lh)(substs([],[]));
+	if(isZero(lh_)) return {};
+	TypeOf[tuple[&T, Substs]] rh_ = run(rh)(substs([],[]));
+	if(isZero(rh_)) return {};
+	return { eq(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
 								  substs( TypeOf[tuple[&T, Substs]] (Substs s) { return rh_; } )) };
-	}
 }
 	  
 

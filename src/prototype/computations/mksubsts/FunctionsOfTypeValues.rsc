@@ -71,12 +71,13 @@ public Substs (Substs) paramSubstsWith(Mapper mapper, &C c)
 	};
 
 @doc{EXTENSION with wildcards: extends to account for wildcards, capture variables and capture mechanism}
-public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard() ]), &C c) 
-	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
-public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard(_) ]), &C c)
-	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
-public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, captureof(_) ]), &C c)
-	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
+//public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard() ]), &C c) 
+//	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
+//public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard(_) ]), &C c)
+//	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
+//public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, captureof(_) ]), &C c)
+//	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
+	
 @doc{Cases of type parameters as inits}
 public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *ids, typeParameter(_) ]), &C c) 
 	= init;

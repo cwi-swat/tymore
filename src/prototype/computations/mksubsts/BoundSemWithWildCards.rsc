@@ -126,7 +126,7 @@ public SubstsT[Entity] boundSl_(Mapper mapper, tp:entity([ *ids, typeParameter(s
 			return bind(pushSubsts(idS)(mapper, b), SubstsT[Entity] (Entity b_) { 
 						return boundSl_(mapper, b_); });
 			});
-public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _, _, entity([ *ids, wildcard() ]))])) // case of 'Ta'
+public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, entity([ *ids, wildcard() ]))])) // case of 'Ta'
 	= boundSl_(mapper, entity( ids + ta + lower(zero()) ));
 public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSl_(mapper, entity( ids + ta + lower(zero()) ));
