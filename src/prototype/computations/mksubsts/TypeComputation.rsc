@@ -42,16 +42,6 @@ public SubstsT[Entity] gevalc(Mapper mapper, Entity v)
 			return bind(pushSubsts(paramSubstsWith(mapper, vg))(mapper, vgT), SubstsT[Entity] (Entity _) { 
 						return returnS(vT); }); });
 
-@doc{Split of the evaluation semantics into 'left' (capturing) and 'right'} 
-public SubstsT[Entity] gevalcRight(Mapper mapper, Entity v)
-	= bind(evalc(v), SubstsT[Entity] (Entity vT) { 
-			Entity vg = getGenV(mapper, v);
-			Entity vgT = eval(vg);
-			if(vg == vgT) return returnS(vT);
-			// TODO: right-hand side evaluation semantics, which should not capture wildcards
-			return bind(pushSubsts(paramSubstsWithNoCapture(mapper, vg))(mapper, vgT), SubstsT[Entity] (Entity _) { 
-						return returnS(vT); }); });
-
 @doc{Lookup semantics}
 public SubstsT[Entity] glookupc(CompilUnit facts, Mapper mapper, AstNode t)
 	= bind(lookupc(t), SubstsT[Entity] (Entity v) { 
@@ -74,11 +64,6 @@ public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)
 								return bind(boundLkp(facts, mapper, v0), SubstsT[Entity] (Entity _) {  
 										return lift(eval(boundEnv(facts, mapper, vT0))); }); }); }); });
 
-@doc{EXTENSION with wildcards: extends/overrides the contextual sublookup to account for wildcards and captures}
-//public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)
-//	= bind(subLookupc(facts, mapper, t), SubstsT[Entity] (Entity v0T) { 
-//			return lift(eval(boundEnv(facts, mapper, boundWildcardUB(v0T)))); });
-
 @doc{Explicit substitution of type arguments locally scoped to a term}
 public Substs getExprSubsts(Mapper mapper, Entity v) {
 	PEntity pv = mkSubsts(mapper, v);
@@ -87,11 +72,11 @@ public Substs getExprSubsts(Mapper mapper, Entity v) {
 	if(isEmpty(params_)) return substs([],[]);
 	list[Entity] params = pv.s.params;
 	list[Entity] args = pv.s.args;
-	list[Entity] args_ = [ args[i] | int i <- [0..size(params) - 1], params[i] in params_ ];
+	list[Entity] args_ = [ args[i] | int i <- [0..size(params)], params[i] in params_ ];
 	return substs(args_, params_);
 }
 	
-@doc{Lookup bind semantics against explicit substitution or bounds of the global type environment;
+@doc{Lookup-bind semantics against explicit substitution or bounds of the global type environment;
 	the latter takes care of the cases when either the type parameter is not found in the substitution,
 	or it binds to a raw type}	
 public SubstsT[Entity] boundLkp(CompilUnit facts, Mapper mapper, Entity v) {
@@ -100,15 +85,9 @@ public SubstsT[Entity] boundLkp(CompilUnit facts, Mapper mapper, Entity v) {
 	return catchZ(boundS(mapper, vT), boundEnv(facts, mapper, vT));
 }
 
-@doc{Overrides the lookup bind semantics to account for wildcards: the upper bind replaces the previous bind}
-//public SubstsT[Entity] boundLkp(CompilUnit facts, Mapper mapper, Entity v) {
-//	Entity vT = eval(getGenV(mapper, v)); // tracer(true, "boundLkp: <prettyprint(vT)>; <prettyprint(v)>");
-//	return catchZ(boundSu(mapper, vT), boundEnv(facts, mapper, vT));
-//}
-
 @doc{Supertype predicate that checks subtype relation}
-public list[bool] supertype(CompilUnit facts, Mapper mapper, tuple[Entity, Entity] ts) {
-	if(isSub(mapper, ts[0], ts[1])) return [ true ];
+public list[bool] supertype(CompilUnit facts, Mapper mapper, tuple[Entity l, Entity r] ts) {
+	if(isSub(mapper, ts.l, ts.r)) return [ true ];
 	return [ b | Entity vS <- supertypes(facts, ts[0]), 
 		   		 bool b <- supertype(facts, mapper, <vS, ts[1]>) ];
 }
@@ -135,13 +114,13 @@ public SubstsT_[Entity] supertypes_(CompilUnit facts, Mapper mapper, Entity v) {
 }
 
 @doc{Supertype predicate under substitution computation that checks subtype relation}
-public SubstsT_[bool] supertypec_(CompilUnit facts, Mapper mapper, tuple[Entity val1, Entity val2] ts) {
-	if(isSub(mapper, ts.val1, ts.val2)) return returnS_(true);
-	return bind(supertypes_(facts, mapper, ts.val1), SubstsT_[bool] (Entity vS) { 
-			return bind(supertypec_(facts, mapper, <vS, ts.val2>), SubstsT_[bool] (bool b) {
+public SubstsT_[bool] supertypec_(CompilUnit facts, Mapper mapper, tuple[Entity l, Entity r] ts) {
+	if(isSub(mapper, ts.l, ts.r)) return returnS_(true);
+	return bind(supertypes_(facts, mapper, ts.l), SubstsT_[bool] (Entity vS) { 
+			return bind(supertypec_(facts, mapper, <vS, ts.r>), SubstsT_[bool] (bool b) {
 						return returnS_(b); }); });
 }
-@doc{Supertype predicate under substitution computation that checks subtype relation: FACTORED OUT, see above}
+//@doc{Supertype predicate under substitution computation that checks subtype relation: FACTORED OUT, see above}
 //public SubstsT_[bool] supertypec_(CompilUnit facts, Mapper mapper, tuple[Entity, Entity] ts) {
 //	if(ts[0] == object()) return returnS_(ts[0] == ts[1] ? true : false);
 //	if(isSub(mapper, ts[0],ts[1])) return returnS_(true);
@@ -199,3 +178,25 @@ public TypeOf[Entity] scopec(CompilUnit facts, Mapper mapper, AstNode e) {
 	// DEBUG: if(size(e@scopes) > 1) { println("NESTING : "); println(prettyprint(lookup(e))); for(Entity scope <- scopes) println("scope: " + prettyprint(scope)); }
 	return tauInv(scopes);
 }
+
+@doc{EXTENSION with wildcards: split of the evaluation semantics into 'left' (capturing) and 'right'} 
+public SubstsT[Entity] gevalcNoCapture(Mapper mapper, Entity v)
+	= bind(evalc(v), SubstsT[Entity] (Entity vT) { 
+			Entity vg = getGenV(mapper, v);
+			Entity vgT = eval(vg);
+			if(vg == vgT) return returnS(vT);
+			// TODO: right-hand side evaluation semantics, which should not capture wildcards
+			return bind(pushSubsts(paramSubstsWithNoCapture(mapper, vg))(mapper, vgT), SubstsT[Entity] (Entity _) { 
+						return returnS(vT); }); });
+						
+//@doc{EXTENSION with wildcards: extends/overrides the contextual sublookup to account for wildcards and captures}
+//public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)
+//	= bind(subLookupc(facts, mapper, t), SubstsT[Entity] (Entity v0T) { 
+//			return lift(eval(boundEnv(facts, mapper, boundWildcardUB(v0T)))); });
+
+//@doc{EXTENSION with wildcards: overrides the lookup bind semantics to account for wildcards: the upper bind replaces the previous bind}
+//public SubstsT[Entity] boundLkp(CompilUnit facts, Mapper mapper, Entity v) {
+//	Entity vT = eval(getGenV(mapper, v)); 
+//	// DEBUG: tracer(true, "boundLkp: <prettyprint(vT)>; <prettyprint(v)>");
+//	return catchZ(boundSu(mapper, vT), boundEnv(facts, mapper, vT));
+//}

@@ -103,8 +103,8 @@ public default Entity boundWildcardLB(Entity val) = val;
 @doc{Concatenates substitutions}
 public Substs concat(Substs s1, Substs s2) { 
 	assert(size(s1.args) == size(s1.params)); assert(size(s2.args) == size(s2.params));		
-	Substs s = substs( ((!isEmpty(s1.params)) ? [ s1.args[i] | int i <- [0..size(s1.params)-1], s1.params[i] notin s2.params ] : []) + s2.args, 
-		    	       ((!isEmpty(s1.params)) ? [ s1.params[i] | int i <- [0..size(s1.params)-1], s1.params[i] notin s2.params ] : []) + s2.params );
+	Substs s = substs( ((!isEmpty(s1.params)) ? [ s1.args[i] | int i <- [0..size(s1.params)], s1.params[i] notin s2.params ] : []) + s2.args, 
+		    	       ((!isEmpty(s1.params)) ? [ s1.params[i] | int i <- [0..size(s1.params)], s1.params[i] notin s2.params ] : []) + s2.params );
 	assert(size(s.args) == size(s.params));
 	return s;
 }

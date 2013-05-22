@@ -48,11 +48,11 @@ public set[Constraint[SubstsT[Entity]]] constrain(t:castExpression(_, AstNode e)
 public set[Constraint[SubstsT[Entity]]] constrain(t:classInstanceCreation(none(),_, [], [],_), CompilUnit facts, Mapper mapper) 
 	= {};
 public set[Constraint[SubstsT[Entity]]] constrain(t:classInstanceCreation(none(),_, [], list[AstNode] args,_), CompilUnit facts, Mapper mapper) 
-	= { subtype(glookupc(facts, mapper, rmv(args[i])), bind(glookupc(facts, mapper, t), gparamc(i))) | int i <- [0..size(args) - 1], args[i] != nullLiteral() }
+	= { subtype(glookupc(facts, mapper, rmv(args[i])), bind(glookupc(facts, mapper, t), gparamc(i))) | int i <- [0..size(args)], args[i] != nullLiteral() }
 	;
 public set[Constraint[SubstsT[Entity]]] constrain(t:classInstanceCreation(some(AstNode e),_, [], list[AstNode] args, none()), CompilUnit facts, Mapper mapper) {
 	if(isEmpty(args)) return {};
-	return  { subtype(glookupc(facts, mapper, rmv(args[i])), bind(glookupc(facts, mapper, t), gparamc(i))) | int i <- [0..size(args) - 1], args[i] != nullLiteral() } 
+	return  { subtype(glookupc(facts, mapper, rmv(args[i])), bind(glookupc(facts, mapper, t), gparamc(i))) | int i <- [0..size(args)], args[i] != nullLiteral() } 
 		  + { subtype(glookupc(facts, mapper, rmv(e)), bind(glookupc(facts, mapper, t), gdeclc)) };
 }	
 public set[Constraint[SubstsT[Entity]]] constrain(t:classInstanceCreation(_,_, [], list[AstNode] args, some(AstNode anonym)), CompilUnit facts, Mapper mapper) 
@@ -63,19 +63,19 @@ public set[Constraint[SubstsT[Entity]]] constrain(t:conditionalExpression(AstNod
 	;
 public set[Constraint[SubstsT[Entity]]] constrain(t:constructorInvocation(_, list[AstNode] args), CompilUnit facts, Mapper mapper) {
 	if(isEmpty(args)) return {};
-	return { subtype(glookupc(facts, mapper, rmv(args[i])), bind(glookupc(facts, mapper, t), gparamc(i))) | int i <- [0..size(args) - 1], args[i] != nullLiteral() };
+	return { subtype(glookupc(facts, mapper, rmv(args[i])), bind(glookupc(facts, mapper, t), gparamc(i))) | int i <- [0..size(args)], args[i] != nullLiteral() };
 }
 public set[Constraint[SubstsT[Entity]]] constrain(t:fieldAccess(AstNode e,_), CompilUnit facts, Mapper mapper) 
 	= { eq(glookupc(facts, mapper, rmv(e)), bind(glookupc(facts, mapper, t), gdeclc)) }
 	;
 public set[Constraint[SubstsT[Entity]]] constrain(t:methodInvocation(none(),_,_, list[AstNode] args), CompilUnit facts, Mapper mapper) {
 	if(isEmpty(args)) return {};
-	return { subtype(glookupc(facts, mapper, rmv(args[i])), bind(glookupc(facts, mapper, t), gparamc(i))) | int i <- [0..size(args) - 1], args[i] != nullLiteral() };
+	return { subtype(glookupc(facts, mapper, rmv(args[i])), bind(glookupc(facts, mapper, t), gparamc(i))) | int i <- [0..size(args)], args[i] != nullLiteral() };
 }
 public set[Constraint[SubstsT[Entity]]] constrain(t:methodInvocation(some(AstNode e),_,_, list[AstNode] args), CompilUnit facts, Mapper mapper) { 
 	set[Constraint[SubstsT[Entity]]] cons = { subtype(glookupc(facts, mapper, rmv(e)), bind(glookupc(facts, mapper, t), gdeclc)) };
 	if(isEmpty(args)) return cons; 
-	set[Constraint[SubstsT[Entity]]] cons_ = { subtype(glookupc(facts, mapper, rmv(args[i])), bind(glookupc(facts, mapper, t), gparamc(i))) | int i <- [0..size(args) - 1], args[i] != nullLiteral() };
+	set[Constraint[SubstsT[Entity]]] cons_ = { subtype(glookupc(facts, mapper, rmv(args[i])), bind(glookupc(facts, mapper, t), gparamc(i))) | int i <- [0..size(args)], args[i] != nullLiteral() };
 	return cons + cons_;
 }
 public set[Constraint[SubstsT[Entity]]] constrain(t:qualifiedName(_,_), CompilUnit facts, Mapper mapper) 
@@ -83,14 +83,14 @@ public set[Constraint[SubstsT[Entity]]] constrain(t:qualifiedName(_,_), CompilUn
 public set[Constraint[SubstsT[Entity]]] constrain(t:superConstructorInvocation(some(AstNode e), _, list[AstNode] args), CompilUnit facts, Mapper mapper) {
 	set[Constraint[SubstsT[Entity]]] cons = { subtype(glookupc(facts, mapper, rmv(e)), bind(glookupc(facts, mapper, t), gdeclc)) };
 	if(isEmpty(args)) return cons;
-	set[Constraint[SubstsT[Entity]]] cons_ = { subtype(glookupc(facts, mapper, rmv(args[i])), bind(lookup(facts, mapper, t), gparamc(i))) | int i <- [0..size(args) - 1], args[i] != nullLiteral() };
+	set[Constraint[SubstsT[Entity]]] cons_ = { subtype(glookupc(facts, mapper, rmv(args[i])), bind(lookup(facts, mapper, t), gparamc(i))) | int i <- [0..size(args)], args[i] != nullLiteral() };
 	return cons + cons_;
 }
 public set[Constraint[SubstsT[Entity]]] constrain(t:superFieldAccess(_,_), CompilUnit facts, Mapper mapper) 
 	= {};
 public set[Constraint[SubstsT[Entity]]] constrain(t:superMethodInvocation(_,_,_, list[AstNode] args), CompilUnit facts, Mapper mapper) {
 	if(isEmpty(args)) return {};
-	return { subtype(glookupc(facts, mapper, rmv(args[i])), bind(glookupc(facts, mapper, t), gparamc(i))) | int i <- [0..size(args) - 1], args[i] != nullLiteral() };
+	return { subtype(glookupc(facts, mapper, rmv(args[i])), bind(glookupc(facts, mapper, t), gparamc(i))) | int i <- [0..size(args)], args[i] != nullLiteral() };
 }
 public set[Constraint[SubstsT[Entity]]] constrain(t:singleVariableDeclaration(str name,_,_, some(nullLiteral()),_), CompilUnit facts, Mapper mapper) 
 	= {};

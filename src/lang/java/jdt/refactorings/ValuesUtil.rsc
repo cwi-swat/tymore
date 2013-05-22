@@ -111,8 +111,8 @@ public PEntity getGenericVal(PEntity val) = pentity(val.genval)[@paramval=val.ge
 public Bindings concat(Bindings b1, Bindings b2) { 
 	assert(size(b1.args) == size(b1.params)); 
 	assert(size(b2.args) == size(b2.params));		
-	bs = bindings( ((!isEmpty(b1.params)) ? [ b1.args[i] | int i <- [0..size(b1.params)-1], b1.params[i] notin b2.params ] : []) + b2.args, 
-		    	   ((!isEmpty(b1.params)) ? [ b1.params[i] | int i <- [0..size(b1.params)-1], b1.params[i] notin b2.params ] : []) + b2.params );
+	bs = bindings( ((!isEmpty(b1.params)) ? [ b1.args[i] | int i <- [0..size(b1.params)], b1.params[i] notin b2.params ] : []) + b2.args, 
+		    	   ((!isEmpty(b1.params)) ? [ b1.params[i] | int i <- [0..size(b1.params)], b1.params[i] notin b2.params ] : []) + b2.params );
 	assert(size(bs.args) == size(bs.params));
 	return bs;
 }
@@ -121,8 +121,8 @@ public Bindings concat(Bindings b1, Bindings b2) {
 public Substs concat(Substs s1, Substs s2) { 
 	assert(size(s1.args) == size(s1.params)); 
 	assert(size(s2.args) == size(s2.params));		
-	s = substs( ((!isEmpty(s1.params)) ? [ s1.args[i] | int i <- [0..size(s1.params)-1], s1.params[i] notin s2.params ] : []) + s2.args, 
-		    	((!isEmpty(s1.params)) ? [ s1.params[i] | int i <- [0..size(s1.params)-1], s1.params[i] notin s2.params ] : []) + s2.params );
+	s = substs( ((!isEmpty(s1.params)) ? [ s1.args[i] | int i <- [0..size(s1.params)], s1.params[i] notin s2.params ] : []) + s2.args, 
+		    	((!isEmpty(s1.params)) ? [ s1.params[i] | int i <- [0..size(s1.params)], s1.params[i] notin s2.params ] : []) + s2.params );
 	assert(size(s.args) == size(s.params));
 	return s;
 }
@@ -155,7 +155,7 @@ public PEntity (Entity) toGens(Mapper mapper)
 		if(isEmpty(params)) 
 			return pentity(bindings([], []), genval)[@paramval=val];
 			
-		list[PEntity] pargs = [ (entity([]) := args[i]) ? pzero() : toGens(mapper)(args[i]) | int i <- [0..(size(params) - 1)] ];
+		list[PEntity] pargs = [ (entity([]) := args[i]) ? pzero() : toGens(mapper)(args[i]) | int i <- [0..size(params)] ];
 		return pentity(bindings(pargs, params), genval)[@paramval=val]; 
 	};
 public map[Entity, PEntity] memoMkSubstsExplicit = ();

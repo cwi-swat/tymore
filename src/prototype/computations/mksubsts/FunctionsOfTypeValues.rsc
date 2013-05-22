@@ -66,17 +66,9 @@ public Substs getSubsts(Mapper mapper, Entity v) = mkSubsts(mapper, v).s;
 public Substs (Substs) paramSubstsWith(Mapper mapper, &C c) 
 	= Substs (Substs s) {
 		if(size(s.params) == size(s.args) && isEmpty(s.params)) return s;
-		list[Entity] pargs = [ typeArgument(mapper, s.params[i], s.args[i], c) | int i <- [0..size(s.params) - 1] ];
+		list[Entity] pargs = [ typeArgument(mapper, s.params[i], s.args[i], c) | int i <- [0..size(s.params)] ];
 		return substs(pargs, s.params);
 	};
-
-@doc{EXTENSION with wildcards: extends to account for wildcards, capture variables and capture mechanism}
-//public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard() ]), &C c) 
-//	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
-//public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard(_) ]), &C c)
-//	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
-//public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, captureof(_) ]), &C c)
-//	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
 	
 @doc{Cases of type parameters as inits}
 public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *ids, typeParameter(_) ]), &C c) 
@@ -87,22 +79,6 @@ public default Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParamete
 	 = !hasRawTypeArgument(mapper, init) ? init : entity([ typeArgument(name, c, init) ]);
 
 private bool hasRawTypeArgument(Mapper mapper, zero()) = true;
-@doc{EXTENSION with wildcards}
-private bool hasRawTypeArgument(Mapper mapper, init:entity([ *_, wildcard() ])) {
-	PEntity pinit = mkSubsts(mapper, boundWildcardUB(init));
-	if(Entity arg <- pinit.s.args, arg == zero() || hasRawTypeArgument(mapper, arg)) return true;
-	return false;
-}
-private bool hasRawTypeArgument(Mapper mapper, init:entity([ *_, wildcard(_) ])) {
-	PEntity pinit = mkSubsts(mapper, boundWildcardUB(init));
-	if(Entity arg <- pinit.s.args, arg == zero() || hasRawTypeArgument(mapper, arg)) return true;
-	return false;
-}
-private bool hasRawTypeArgument(Mapper mapper, init:entity([ *_, captureof(_) ])) {
-	PEntity pinit = mkSubsts(mapper, boundWildcardUB(init));
-	if(Entity arg <- pinit.s.args, arg == zero() || hasRawTypeArgument(mapper, arg)) return true;
-	return false;
-}
 private default bool hasRawTypeArgument(Mapper mapper, Entity init) {
 	PEntity pinit = mkSubsts(mapper, init);
 	if(Entity arg <- pinit.s.args, arg == zero() || hasRawTypeArgument(mapper, arg)) return true;
@@ -136,8 +112,33 @@ public default PEntity toGensNonRecByCase(Mapper mapper, Entity val) {
 	assert(size(args)==size(params));
 		
 	if(isEmpty(params)) return pentity(substs([],[]), genval)[@paramval=val];
-	list[Entity] pargs = [ (entity([]) := args[i]) ? zero() : args[i] | int i <- [0..(size(params) - 1)] ];
+	list[Entity] pargs = [ (entity([]) := args[i]) ? zero() : args[i] | int i <- [0..size(params)] ];
 	return pentity(substs(pargs, params), genval)[@paramval=val];
 }
 
 public Substs idS(Substs s) = s;
+
+//@doc{EXTENSION with wildcards: extends to account for wildcards, capture variables and capture mechanism}
+//public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard() ]), &C c) 
+//	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
+//public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard(_) ]), &C c)
+//	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
+//public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, captureof(_) ]), &C c)
+//	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
+
+//@doc{EXTENSION with wildcards}
+//private bool hasRawTypeArgument(Mapper mapper, init:entity([ *_, wildcard() ])) {
+//	PEntity pinit = mkSubsts(mapper, boundWildcardUB(init));
+//	if(Entity arg <- pinit.s.args, arg == zero() || hasRawTypeArgument(mapper, arg)) return true;
+//	return false;
+//}
+//private bool hasRawTypeArgument(Mapper mapper, init:entity([ *_, wildcard(_) ])) {
+//	PEntity pinit = mkSubsts(mapper, boundWildcardUB(init));
+//	if(Entity arg <- pinit.s.args, arg == zero() || hasRawTypeArgument(mapper, arg)) return true;
+//	return false;
+//}
+//private bool hasRawTypeArgument(Mapper mapper, init:entity([ *_, captureof(_) ])) {
+//	PEntity pinit = mkSubsts(mapper, boundWildcardUB(init));
+//	if(Entity arg <- pinit.s.args, arg == zero() || hasRawTypeArgument(mapper, arg)) return true;
+//	return false;
+//}

@@ -38,7 +38,7 @@ public set[Constraint[SubstsT[Entity]]] gevalc(CompilUnit facts, Mapper mapper, 
 				return bind(gevalc(mapper, v), SubstsT[Entity] (Entity v_) {
 								return returnS(eval(getGenV(mapper, v))); }); })(c) }; 
 
-@doc{Overrides the left hand side evaluation to account for wildcards}
+@doc{EXTENSION with wildcards: overrides the left hand side evaluation to account for wildcards}
 //public set[Constraint[SubstsT[Entity]]] gevalc(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 //	= { apply(SubstsT[Entity] (Entity v) { 
 //				return bind(gevalc(mapper, v), SubstsT[Entity] (Entity v_) {
@@ -58,7 +58,7 @@ public set[Constraint[SubstsT[Entity]]] boundS(CompilUnit facts, Mapper mapper, 
 	= { apply(SubstsT[Entity] (Entity v) { 
 				return boundS(mapper, v); })(c) }; 
 
-@doc{Extends the bind semantics to account for wildcards and splits it into the lower and upper bind semantics }
+@doc{EXTENSION with wildcards: extends the bind semantics to account for wildcards and splits it into the lower and upper bind semantics }
 //public set[Constraint[SubstsT[Entity]]] boundSu_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 //	= { apply(SubstsT[Entity] (Entity v) { 
 //				return boundSu_(mapper, v); })(c) }; 
@@ -136,16 +136,16 @@ public set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapper mappe
 }
 
 @doc{EXTENSION with wildcards: extends the invariant function to also impose covariance and contravariance}
-public set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
-	return { *catchCaptureVariable(facts, mapper, c2) // 
-				| Entity rv <- tau(eval(c.rh)),
-				  Entity param <- getTypeParamsOrArgs(getGenV(mapper, rv)), 
-				  Constraint[SubstsT[Entity]] c1 := apply(SubstsT[Entity] (Entity _) { return returnS(param); })(c),
-				  Constraint[SubstsT[Entity]] c2  <- boundS_(facts, mapper, eq(c1.lh, c1.rh)) 
-		   } 
-		   + covariant(facts, mapper, c) 
-		   + contravariant(facts, mapper, c);
-}
+//public set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
+//	return { *catchCaptureVariable(facts, mapper, c2) // 
+//				| Entity rv <- tau(eval(c.rh)),
+//				  Entity param <- getTypeParamsOrArgs(getGenV(mapper, rv)), 
+//				  Constraint[SubstsT[Entity]] c1 := apply(SubstsT[Entity] (Entity _) { return returnS(param); })(c),
+//				  Constraint[SubstsT[Entity]] c2  <- boundS_(facts, mapper, eq(c1.lh, c1.rh)) 
+//		   } 
+//		   + covariant(facts, mapper, c) 
+//		   + contravariant(facts, mapper, c);
+//}
 
 @doc{EXTENSION with wildcards: adds constraints to account for covariance}
 public set[Constraint[SubstsT[Entity]]] covariant(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
