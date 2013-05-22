@@ -30,30 +30,8 @@ import prototype::computations::mksubsts::FunctionsOfTypeValues;
 import Prelude;
 
 
-public void main1() { 
+public void testit() { 
 	testLookupSemantics(eclipseSources); 
-}
-
-public void testComputations(list[loc] projects) { for(project <- projects) testComputations(project); }
-private void testComputations(loc project) {
-	println("calculating facts and asts...");
-	set[AstNode] compilationUnits = createAstsFromProjectR(project); 
-	println("done...");
-	int cn = 0;
-	for(AstNode cu <- compilationUnits) {
-		cn += 1;
-		println(cu@location);
-		
-		CompilUnit facts = cu@typeComputationModel;
-		Mapper mapper = cu@semanticsOfParameterizedTypes;
-		
-		 println("facts: <facts>"); println("mapper: <mapper>");
-		
-		for(decl <- cu.typeDeclarations) 
-			testComputations(decl, compute(facts, mapper));
-	}
-	
-	println("cn: <cn>");
 }
 
 public void testConstraintSemantics(list[loc] projects) { for(project <- projects) testConstraintSemantics(project); }
@@ -69,12 +47,16 @@ private void testConstraintSemantics(loc project) {
 		
 		set[Constraint[SubstsT[Entity]]] cons = {};
 		
-		(AstNode (AstNode) (AstNode (AstNode) super) {
-			return AstNode (AstNode n) {
-				cons += constrain(n, facts, mapper);
-				return super(n);
-			};
-		} o visitADT)(cu);
+		//(AstNode (AstNode) (AstNode (AstNode) super) {
+		//	return AstNode (AstNode n) {
+		//		cons += constrain(n, facts, mapper);
+		//		return super(n);
+		//	};
+		//} o visitADT)(cu);
+		
+		top-down visit(cu) {
+			case AstNode n: { cons += constrain(n, facts, mapper); insert n; }
+		}
 		
 		set[Constraint[SubstsT[Entity]]] cls = { *inferTAs(facts, mapper, c) | Constraint[SubstsT[Entity]] c <- cons };
 		
@@ -101,8 +83,22 @@ private void testLookupSemantics(loc project) {
 		CompilUnit facts = cu@typeComputationModel;
 		Mapper mapper = cu@semanticsOfParameterizedTypes;
 		
-		(AstNode (AstNode) (AstNode (AstNode) super) {
-			return AstNode (AstNode n) {
+		//(AstNode (AstNode) (AstNode (AstNode) super) {
+		//	return AstNode (AstNode n) {
+		//		if(methodInvocation(Option[AstNode] optionalExpression,_,_,_) := n) {
+		//			SubstsT[Entity] tn = glookupc(facts, mapper, n);
+		//			TypeOf[tuple[Entity, Substs]] v = run(tn)(substs([],[]));
+		//			if(v.v[1] != substs([],[])) {
+		//				println(prettyprint(n));
+		//				println("substs: <prettyprint(v.v[1])>");
+		//			}
+		//		}
+		//		return super(n);
+		//	};
+		//} o visitADT)(cu);
+		
+		top-down visit(cu) {
+			case AstNode n: { 
 				if(methodInvocation(Option[AstNode] optionalExpression,_,_,_) := n) {
 					SubstsT[Entity] tn = glookupc(facts, mapper, n);
 					TypeOf[tuple[Entity, Substs]] v = run(tn)(substs([],[]));
@@ -111,9 +107,9 @@ private void testLookupSemantics(loc project) {
 						println("substs: <prettyprint(v.v[1])>");
 					}
 				}
-				return super(n);
-			};
-		} o visitADT)(cu);
+				insert n; 
+			}
+		}
 	}	
 }
 
@@ -128,8 +124,30 @@ private void testEvalSemantics(loc project) {
 		CompilUnit facts = cu@typeComputationModel;
 		Mapper mapper = cu@semanticsOfParameterizedTypes;
 		
-		(AstNode (AstNode) (AstNode (AstNode) super) {
-			return AstNode (AstNode n) {
+		//(AstNode (AstNode) (AstNode (AstNode) super) {
+		//	return AstNode (AstNode n) {
+		//		if(methodInvocation(Option[AstNode] optionalExpression,_,_,_) := n) {
+		//			SubstsT[Entity] tn = gevalc(mapper, lookup(n));
+		//			if(some(AstNode oe) := optionalExpression) {
+		//				SubstsT[Entity] toe = gevalc(mapper, lookup(oe));
+		//				TypeOf[tuple[Entity, Substs]] soe = run(toe)(substs([],[]));
+		//				if(soe.v[1] != substs([],[])) {
+		//					println(prettyprint(lookup(oe)));
+		//					println(prettyprint(soe.v[1]));
+		//				}
+		//			}
+		//			TypeOf[Entity, Substs] sn = run(tn)(substs([],[]));
+		//			if(sn.v[1] != substs([],[])) {
+		//				println(prettyprint(lookup(n)));
+		//				println(prettyprint(sn.v[1]));
+		//			}
+		//		}
+		//		return super(n);
+		//	};
+		//} o visitADT)(cu);
+		
+		top-down visit(cu) {
+			case AstNode n: {
 				if(methodInvocation(Option[AstNode] optionalExpression,_,_,_) := n) {
 					SubstsT[Entity] tn = gevalc(mapper, lookup(n));
 					if(some(AstNode oe) := optionalExpression) {
@@ -146,9 +164,9 @@ private void testEvalSemantics(loc project) {
 						println(prettyprint(sn.v[1]));
 					}
 				}
-				return super(n);
-			};
-		} o visitADT)(cu);
+				insert n;
+			}
+		}
 	}	
 }
 
@@ -164,8 +182,35 @@ private void testSupertypesSemantics(loc project) {
 		CompilUnit facts = cu@typeComputationModel;
 		Mapper mapper = cu@semanticsOfParameterizedTypes;
 		
-		(AstNode (AstNode) (AstNode (AstNode) super) {
-			return AstNode (AstNode n) {
+		//(AstNode (AstNode) (AstNode (AstNode) super) {
+		//	return AstNode (AstNode n) {
+		//		if(methodInvocation(Option[AstNode] optionalExpression,_,_,_) := n) {
+		//			Entity dtype = eval(decl(lookup(n)));
+		//			list[Entity] t = [];
+		//			SubstsT_[bool] sups = returnS_(false);
+		//			if(some(AstNode oe) := optionalExpression) t = [ getType(oe) ];
+		//			else t = n@scopes;
+		//			if(size(t) > 1) println("NESTING : ");
+		//			for(Entity tt <- t) {
+		//				sups = supertypec_(facts, mapper, <tt, dtype>);
+		//				list[tuple[bool, Substs]] s = run(sups)(substs([],[]));
+		//				list[bool] ss = supertype(facts, mapper, <tt, dtype>);
+		//				for(<bool b, Substs s_> <- s, s_ != substs([],[]) ) {
+		//					println("supertype : <ss>");
+		//					println("supertypec_ : ");
+		//					println(prettyprint(n));
+		//					println(prettyprint(eval(decl(lookup(n)))));
+		//					println(prettyprint(tt));
+		//					println("supertypes: <b> --- <prettyprint(s_)>");
+		//				}
+		//			}
+		//		}
+		//		return super(n);
+		//	};
+		//} o visitADT)(cu);
+		
+		top-down visit(cu) {
+			case AstNode n: {
 				if(methodInvocation(Option[AstNode] optionalExpression,_,_,_) := n) {
 					Entity dtype = eval(decl(lookup(n)));
 					list[Entity] t = [];
@@ -187,8 +232,8 @@ private void testSupertypesSemantics(loc project) {
 						}
 					}
 				}
-				return super(n);
-			};
-		} o visitADT)(cu);
+				insert n;
+			}
+		}
 	}	
 }

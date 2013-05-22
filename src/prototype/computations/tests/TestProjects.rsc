@@ -8,13 +8,16 @@
 @contributor{Anastasia Izmaylova - A.Izmaylova@cwi.nl}
 module prototype::computations::tests::TestProjects
 
-public loc testcases1 = |project://TyMoReTestCases/src|;
-public loc testcases2 = |project://TyMoReTestCasesWithoutWildCards/src|;
-public loc testcase1 = |project://LetsTryItOut/src|;
-public loc testcase2 = |project://LetsTryInitializersOut/src|;
-public loc testcase3 = |project://LetsTryLocalTypesOut/src|;
-public loc testcase4 = |project://LetsTryInitializerCounterOut/src|;
-public loc testcase5 = |project://LetsTryItOut/src/testcases|;
+public loc testcases = |project://TyMoReCases/src|;
+
+//public loc testcases1 = |project://TyMoReTestCases/src|;
+//public loc testcases2 = |project://TyMoReTestCasesWithoutWildCards/src|;
+//public loc testcase1 = |project://LetsTryItOut/src|;
+//public loc testcase2 = |project://LetsTryInitializersOut/src|;
+//public loc testcase3 = |project://LetsTryLocalTypesOut/src|;
+//public loc testcase4 = |project://LetsTryInitializerCounterOut/src|;
+//public loc testcase5 = |project://LetsTryItOut/src/testcases|;
+
 public list[loc] eclipseIMPSources = [
 										|project://org.eclipse.imp.pdb/src|,
 										|project://org.eclipse.imp.pdb.ui/src|,
@@ -76,12 +79,12 @@ public list[loc] eclipseSources = [
 									//|project://org.eclipse.e4.ui.di/src|,
 									//|project://org.eclipse.e4.ui.di/src|,
 									//|project://org.eclipse.e4.ui.gadgets/src|,
-									|project://org.eclipse.e4.ui.model.workbench/src|,
-									|project://org.eclipse.e4.ui.model.workbench.edit/src|,
-									|project://org.eclipse.e4.ui.services/src|,
-									|project://org.eclipse.e4.ui.swtdialogs/src|,
-									|project://org.eclipse.e4.ui.web/src|,
-									|project://org.eclipse.e4.ui.widgets/src|//,
+									//|project://org.eclipse.e4.ui.model.workbench/src|,
+									//|project://org.eclipse.e4.ui.model.workbench.edit/src|,
+									//|project://org.eclipse.e4.ui.services/src|,
+									//|project://org.eclipse.e4.ui.swtdialogs/src|,
+									//|project://org.eclipse.e4.ui.web/src|,
+									//|project://org.eclipse.e4.ui.widgets/src|,
 									//|project://org.eclipse.e4.ui.workbench/src|, // huge
 									//|project://org.eclipse.e4.ui.workbench.addons.swt/src|,
 									//|project://org.eclipse.e4.ui.workbench.renderers.swt/src|,

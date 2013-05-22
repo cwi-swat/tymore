@@ -179,6 +179,7 @@ public TypeOf[Entity] scopec(CompilUnit facts, Mapper mapper, AstNode e) {
 	return tauInv(scopes);
 }
 
+/*
 @doc{EXTENSION with wildcards: split of the evaluation semantics into 'left' (capturing) and 'right'} 
 public SubstsT[Entity] gevalcNoCapture(Mapper mapper, Entity v)
 	= bind(evalc(v), SubstsT[Entity] (Entity vT) { 
@@ -189,14 +190,15 @@ public SubstsT[Entity] gevalcNoCapture(Mapper mapper, Entity v)
 			return bind(pushSubsts(paramSubstsWithNoCapture(mapper, vg))(mapper, vgT), SubstsT[Entity] (Entity _) { 
 						return returnS(vT); }); });
 						
-//@doc{EXTENSION with wildcards: extends/overrides the contextual sublookup to account for wildcards and captures}
-//public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)
-//	= bind(subLookupc(facts, mapper, t), SubstsT[Entity] (Entity v0T) { 
-//			return lift(eval(boundEnv(facts, mapper, boundWildcardUB(v0T)))); });
+@doc{EXTENSION with wildcards: extends/overrides the contextual sublookup to account for wildcards and captures}
+public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)
+	= bind(subLookupc(facts, mapper, t), SubstsT[Entity] (Entity v0T) { 
+			return lift(eval(boundEnv(facts, mapper, boundWildcardUB(v0T)))); });
 
-//@doc{EXTENSION with wildcards: overrides the lookup bind semantics to account for wildcards: the upper bind replaces the previous bind}
-//public SubstsT[Entity] boundLkp(CompilUnit facts, Mapper mapper, Entity v) {
-//	Entity vT = eval(getGenV(mapper, v)); 
-//	// DEBUG: tracer(true, "boundLkp: <prettyprint(vT)>; <prettyprint(v)>");
-//	return catchZ(boundSu(mapper, vT), boundEnv(facts, mapper, vT));
-//}
+@doc{EXTENSION with wildcards: overrides the lookup bind semantics to account for wildcards: the upper bind replaces the previous bind}
+public SubstsT[Entity] boundLkp(CompilUnit facts, Mapper mapper, Entity v) {
+	Entity vT = eval(getGenV(mapper, v)); 
+	// DEBUG: tracer(true, "boundLkp: <prettyprint(vT)>; <prettyprint(v)>");
+	return catchZ(boundSu(mapper, vT), boundEnv(facts, mapper, vT));
+}
+*/

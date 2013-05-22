@@ -38,15 +38,6 @@ public set[Constraint[SubstsT[Entity]]] gevalc(CompilUnit facts, Mapper mapper, 
 				return bind(gevalc(mapper, v), SubstsT[Entity] (Entity v_) {
 								return returnS(eval(getGenV(mapper, v))); }); })(c) }; 
 
-@doc{EXTENSION with wildcards: overrides the left hand side evaluation to account for wildcards}
-//public set[Constraint[SubstsT[Entity]]] gevalc(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
-//	= { apply(SubstsT[Entity] (Entity v) { 
-//				return bind(gevalc(mapper, v), SubstsT[Entity] (Entity v_) {
-//								return returnS(eval(getGenV(mapper, v))); }); },
-//			  SubstsT[Entity] (Entity v) { 
-//				return bind(gevalcRight(mapper, v), SubstsT[Entity] (Entity v_) {
-//								return returnS(eval(getGenV(mapper, v))); }); })(c) }; 
-
 @doc{Binds type parameters ignoring the case of a type argument variable,
 	 i.e. stops when bound to a type argument variable}
 public set[Constraint[SubstsT[Entity]]] boundS_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
@@ -57,30 +48,6 @@ public set[Constraint[SubstsT[Entity]]] boundS_(CompilUnit facts, Mapper mapper,
 public set[Constraint[SubstsT[Entity]]] boundS(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 	= { apply(SubstsT[Entity] (Entity v) { 
 				return boundS(mapper, v); })(c) }; 
-
-@doc{EXTENSION with wildcards: extends the bind semantics to account for wildcards and splits it into the lower and upper bind semantics }
-//public set[Constraint[SubstsT[Entity]]] boundSu_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
-//	= { apply(SubstsT[Entity] (Entity v) { 
-//				return boundSu_(mapper, v); })(c) }; 
-//public set[Constraint[SubstsT[Entity]]] boundSu(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
-//	= { apply(SubstsT[Entity] (Entity v) { 
-//				return boundSu(mapper, v); })(c) }; 
-//public set[Constraint[SubstsT[Entity]]] boundSl_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
-//	= { apply(SubstsT[Entity] (Entity v) { 
-//				return boundSl_(mapper, v); })(c) };
-//public set[Constraint[SubstsT[Entity]]] boundSl(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
-//	= { apply(SubstsT[Entity] (Entity v) { 
-//				return boundSl(mapper, v); })(c) };
-//public set[Constraint[SubstsT[Entity]]] boundSul_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
-//	= { apply(SubstsT[Entity] (Entity v) { 
-//				return boundSu_(mapper, v); },
-//			  SubstsT[Entity] (Entity v) { 
-//				return boundSl_(mapper, v); })(c) };
-//public set[Constraint[SubstsT[Entity]]] boundSul(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
-//	= { apply(SubstsT[Entity] (Entity v) { 
-//				return boundSu(mapper, v); },
-//			  SubstsT[Entity] (Entity v) { 
-//				return boundSl(mapper, v); })(c) };    
 
 @doc{Computes the supertype predicate of the left-hand side given the right-hand side}				
 public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapper, Constraint::subtype(SubstsT[Entity] lh, SubstsT[Entity] rh))
@@ -94,20 +61,12 @@ public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapp
 public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapper, c:Constraint::eq(SubstsT[Entity] lh, SubstsT[Entity] rh)) 
 	= { c };
 
-@doc{Infer additional type constraints from subtype constraints}
-public set[Constraint[SubstsT[Entity]]] inferTAs(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c)
+@doc{Infers additional type constraints from subtype constraints}
+public set[Constraint[SubstsT[Entity]]] inferTypeArguments(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c)
 	= { *( catchTypeArgVariable(c2) + subtyping(facts, mapper, c3) ) 
 				| Constraint[SubstsT[Entity]] c1  <- gevalc(facts, mapper, c),
 				  Constraint[SubstsT[Entity]] c2  <- boundS_(facts, mapper, c1),
 				  Constraint[SubstsT[Entity]] c2_ <- boundS(facts, mapper, c2),
-				  Constraint[SubstsT[Entity]] c3  <- catchZ(c2_) // zero may occur due to raw types
-	  };
-@doc{EXTENSION with wildcards: the inference function needs to use a different (lower and upper) bind semantics}
-public set[Constraint[SubstsT[Entity]]] inferTAs(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c)
-	= { *( catchTypeArgVariable(c2) + subtyping(facts, mapper, c3) ) 
-				| Constraint[SubstsT[Entity]] c1  <- gevalc(facts, mapper, c),
-				  Constraint[SubstsT[Entity]] c2  <- boundSul_(facts, mapper, c1),
-				  Constraint[SubstsT[Entity]] c2_ <- boundSul(facts, mapper, c2),
 				  Constraint[SubstsT[Entity]] c3  <- catchZ(c2_) // zero may occur due to raw types
 	  };
 
@@ -135,18 +94,73 @@ public set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapper mappe
 		   };
 }
 
-@doc{EXTENSION with wildcards: extends the invariant function to also impose covariance and contravariance}
-//public set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
-//	return { *catchCaptureVariable(facts, mapper, c2) // 
-//				| Entity rv <- tau(eval(c.rh)),
-//				  Entity param <- getTypeParamsOrArgs(getGenV(mapper, rv)), 
-//				  Constraint[SubstsT[Entity]] c1 := apply(SubstsT[Entity] (Entity _) { return returnS(param); })(c),
-//				  Constraint[SubstsT[Entity]] c2  <- boundS_(facts, mapper, eq(c1.lh, c1.rh)) 
-//		   } 
-//		   + covariant(facts, mapper, c) 
-//		   + contravariant(facts, mapper, c);
-//}
+public set[Constraint[SubstsT[Entity]]] catchTypeArgVariable(Constraint[SubstsT[Entity]] c) {
+	TypeOf[tuple[Entity,Entity]] v = bind(eval(c.lh), TypeOf[Entity] (Entity lv) {
+										return isTypeArgument(lv) ? tzero()
+						   		  								  : bind(eval(c.rh), TypeOf[Entity] (Entity rv) { 
+						   												return isTypeArgument(rv) ? tzero() : returnS(<lv,rv>); }); });
+	return isZero(v) ? { c } : {};
+}
 
+/*
+@doc{EXTENSION with wildcards: overrides the left hand side evaluation to account for wildcards}
+public set[Constraint[SubstsT[Entity]]] gevalc(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+	= { apply(SubstsT[Entity] (Entity v) { 
+				return bind(gevalc(mapper, v), SubstsT[Entity] (Entity v_) {
+								return returnS(eval(getGenV(mapper, v))); }); },
+			  SubstsT[Entity] (Entity v) { 
+				return bind(gevalcR(mapper, v), SubstsT[Entity] (Entity v_) {
+								return returnS(eval(getGenV(mapper, v))); }); })(c) }; 
+*/
+/*
+@doc{EXTENSION with wildcards: extends the bind semantics to account for wildcards and splits it into the lower and upper bind semantics }
+public set[Constraint[SubstsT[Entity]]] boundSu_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+	= { apply(SubstsT[Entity] (Entity v) { 
+				return boundSu_(mapper, v); })(c) }; 
+public set[Constraint[SubstsT[Entity]]] boundSu(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+	= { apply(SubstsT[Entity] (Entity v) { 
+				return boundSu(mapper, v); })(c) }; 
+public set[Constraint[SubstsT[Entity]]] boundSl_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+	= { apply(SubstsT[Entity] (Entity v) { 
+				return boundSl_(mapper, v); })(c) };
+public set[Constraint[SubstsT[Entity]]] boundSl(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+	= { apply(SubstsT[Entity] (Entity v) { 
+				return boundSl(mapper, v); })(c) };
+public set[Constraint[SubstsT[Entity]]] boundSul_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+	= { apply(SubstsT[Entity] (Entity v) { 
+				return boundSu_(mapper, v); },
+			  SubstsT[Entity] (Entity v) { 
+				return boundSl_(mapper, v); })(c) };
+public set[Constraint[SubstsT[Entity]]] boundSul(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+	= { apply(SubstsT[Entity] (Entity v) { 
+				return boundSu(mapper, v); },
+			  SubstsT[Entity] (Entity v) { 
+				return boundSl(mapper, v); })(c) };    
+*/
+/*
+@doc{EXTENSION with wildcards: the inference function needs to use a different (lower and upper) bind semantics}
+public set[Constraint[SubstsT[Entity]]] inferTypeArguments(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c)
+	= { *( catchTypeArgVariable(c2) + subtyping(facts, mapper, c3) ) 
+				| Constraint[SubstsT[Entity]] c1  <- gevalc(facts, mapper, c),
+				  Constraint[SubstsT[Entity]] c2  <- boundSul_(facts, mapper, c1),
+				  Constraint[SubstsT[Entity]] c2_ <- boundSul(facts, mapper, c2),
+				  Constraint[SubstsT[Entity]] c3  <- catchZ(c2_) // zero may occur due to raw types
+	  };
+*/
+/*
+@doc{EXTENSION with wildcards: extends the invariant function to also impose covariance and contravariance}
+public set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
+	return { *catchCaptureVariable(facts, mapper, c2) // 
+				| Entity rv <- tau(eval(c.rh)),
+				  Entity param <- getTypeParamsOrArgs(getGenV(mapper, rv)), 
+				  Constraint[SubstsT[Entity]] c1 := apply(SubstsT[Entity] (Entity _) { return returnS(param); })(c),
+				  Constraint[SubstsT[Entity]] c2  <- boundS_(facts, mapper, eq(c1.lh, c1.rh)) 
+		   } 
+		   + covariant(facts, mapper, c) 
+		   + contravariant(facts, mapper, c);
+}
+*/
+/*
 @doc{EXTENSION with wildcards: adds constraints to account for covariance}
 public set[Constraint[SubstsT[Entity]]] covariant(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
 	return { *catchTypeArgVariable(c2) // 
@@ -158,7 +172,8 @@ public set[Constraint[SubstsT[Entity]]] covariant(CompilUnit facts, Mapper mappe
 				  Constraint[SubstsT[Entity]] c2  <- boundSu_(facts, mapper, subtype(c1.lh, c1.rh)) 
 		   };
 }
-
+*/
+/*
 @doc{EXTENSION with wildcards: adds constraints to account for contravariance}
 public set[Constraint[SubstsT[Entity]]] contravariant(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
 	return { *catchTypeArgVariable(c2) 
@@ -170,7 +185,9 @@ public set[Constraint[SubstsT[Entity]]] contravariant(CompilUnit facts, Mapper m
 				  Constraint[SubstsT[Entity]] c2  <- boundSl_(facts, mapper, subtype(c1.rh, c1.lh)) 
 		   };
 }
-
+*/
+/*
+@doc{EXTENSION with wildcards}
 public set[Constraint[SubstsT[Entity]]] catchCaptureVariable(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
 	TypeOf[tuple[bool,bool]] v = bind(eval(c.lh), TypeOf[Entity] (Entity lv) {
 									return bind(eval(c.rh), TypeOf[Entity] (Entity rv) { 
@@ -194,12 +211,4 @@ public set[Constraint[SubstsT[Entity]]] catchCaptureVariable(CompilUnit facts, M
 					  Constraint[SubstsT[Entity]] cl <- boundSl_(facts, mapper, c),
 					  Constraint[SubstsT[Entity]] cl_ <- catchZ(cl) };
 }
-
-public set[Constraint[SubstsT[Entity]]] catchTypeArgVariable(Constraint[SubstsT[Entity]] c) {
-	TypeOf[tuple[Entity,Entity]] v = bind(eval(c.lh), TypeOf[Entity] (Entity lv) {
-										return isTypeArgument(lv) ? tzero()
-						   		  								  : bind(eval(c.rh), TypeOf[Entity] (Entity rv) { 
-						   												return isTypeArgument(rv) ? tzero() : returnS(<lv,rv>); }); });
-	return isZero(v) ? { c } : {};
-}
-
+*/
