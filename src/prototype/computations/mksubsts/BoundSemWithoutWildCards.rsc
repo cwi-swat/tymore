@@ -56,7 +56,7 @@ public SubstsT[Entity] boundS(Mapper mapper, tp:entity([ *ids, typeParameter(str
 						return boundS(mapper, b_); }); // recursive call to account for propagation through type parameters 
 			});
 public SubstsT[Entity] boundS(Mapper mapper, entity([])) = lift(tzero());
-public SubstsT[Entity] boundS(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, init:zero())])) // case of 'Ta'
+public SubstsT[Entity] boundS(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, init:entity([]))])) // case of 'Ta'
 	= lift(tzero());
 public SubstsT[Entity] boundS(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity init)])) // case of 'Ta'
 	= pushSubsts(paramSubstsWith(mapper, ta))(mapper, init);
@@ -73,11 +73,11 @@ public SubstsT[Entity] boundS_(Mapper mapper, tp:entity([ *ids, typeParameter(st
 public default SubstsT[Entity] boundS_(Mapper mapper, Entity v) = returnS(v);
 
 @doc{EXTENSION with wildcards: extends the bind semantics to account for wildcards, lower and upper bounds}
-public SubstsT[Entity] boundS(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(init:zero())]))
+public SubstsT[Entity] boundS(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(init:entity([]))]))
 	= lift(tzero());
 public SubstsT[Entity] boundS(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity init)]))
 	= pushSubsts(paramSubstsWith(mapper, ta))(mapper, init);
-public SubstsT[Entity] boundS(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(init:zero())]))
+public SubstsT[Entity] boundS(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(init:entity([]))]))
 	= lift(tzero());
 public SubstsT[Entity] boundS(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity init)]))
 	= pushSubsts(paramSubstsWith(mapper, ta))(mapper, init);

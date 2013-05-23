@@ -31,7 +31,7 @@ import Prelude;
 
 
 public void testit() { 
-	testLookupSemantics(eclipseSources); 
+	testConstraintSemantics(testcases); 
 }
 
 public void testConstraintSemantics(list[loc] projects) { for(project <- projects) testConstraintSemantics(project); }
@@ -58,17 +58,17 @@ private void testConstraintSemantics(loc project) {
 			case AstNode n: { cons += constrain(n, facts, mapper); insert n; }
 		}
 		
-		set[Constraint[SubstsT[Entity]]] cls = { *inferTAs(facts, mapper, c) | Constraint[SubstsT[Entity]] c <- cons };
+		set[Constraint[SubstsT[Entity]]] cls = { *inferTypeArguments(facts, mapper, c) | Constraint[SubstsT[Entity]] c <- cons };
 		
 		str print1 = "";
 		for(str cs <- { prettyprint(c) | Constraint[SubstsT[Entity]] c <- cons })
 			print1 = print1 + cs + "\n";
-		tracer(true, "Constraints <print1>");		
+		tracer(true, "Constraints: \n <print1>");		
 
 		str print2 = "";
 		for(str cs <- { prettyprint(c) | Constraint[SubstsT[Entity]] c <- cls})
 			print2 = print2 + cs + "\n";
-		tracer(true, "Constraints (closure) <print2>");		
+		tracer(true, "Constraints (closure): \n <print2>");		
 	}	
 }
 

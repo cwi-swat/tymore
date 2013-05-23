@@ -109,7 +109,7 @@ public class TypeComputationModelBuilder {
 		computations.put(values.string(OVERRIDES_FUNCTION), overrides_func.done());
 		computations.put(values.string(BOUNDS_FUNCTION), bounds_func.done());
 		computations.put(values.string(IsSTATIC_DECL_FUNCTION), isStaticDecl_func.done());
-		
+		System.out.println("Static decl sem must be there!!!");
 		typeComputationModel = computations.done();
 		semanticsOfParameterizedTypes = semantics_of_paramaterized_types_func.done();
 	}

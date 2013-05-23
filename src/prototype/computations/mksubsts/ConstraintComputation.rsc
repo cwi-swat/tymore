@@ -30,12 +30,12 @@ public data Constraint[&M] = eq(&M lh, &M rh)
 					  		 
 public set[Constraint[SubstsT[Entity]]] constrain(t:arrayAccess(_,_), CompilUnit facts, Mapper mapper) 
 	= {};	
-public set[Constraint[SubstsT[Entity]]] constrain(t:arrayCreation(_, list[AstNode] _, some(AstNode initializer)), CompilUnit facts, Mapper mapper) 
-	= { subtype(glookupc(facts, mapper, rmv(initializer)), glookupc(facts, mapper, t)) }
-	;	
-public set[Constraint[SubstsT[Entity]]] constrain(t:arrayInitializer(list[AstNode] exprs), CompilUnit facts, Mapper mapper) 
-	= { subtype(glookupc(facts, mapper, rmv(expr)), glookupc(facts, mapper, t)) | expr <- exprs }
-	;	
+//public set[Constraint[SubstsT[Entity]]] constrain(t:arrayCreation(_, list[AstNode] _, some(AstNode initializer)), CompilUnit facts, Mapper mapper) 
+//	= { subtype(glookupc(facts, mapper, rmv(initializer)), glookupc(facts, mapper, t)) }
+//	;	
+//public set[Constraint[SubstsT[Entity]]] constrain(t:arrayInitializer(list[AstNode] exprs), CompilUnit facts, Mapper mapper) 
+//	= { subtype(glookupc(facts, mapper, rmv(expr)), glookupc(facts, mapper, t)) | expr <- exprs }
+//	;	
 public set[Constraint[SubstsT[Entity]]] constrain(t:assignment(AstNode _, nullLiteral()), CompilUnit facts, Mapper mapper) 
 	= {};
 public set[Constraint[SubstsT[Entity]]] constrain(t:assignment(AstNode lt, AstNode rt), CompilUnit facts, Mapper mapper) 
@@ -114,8 +114,8 @@ public bool isDownCast(CompilUnit facts, Mapper mapper, t:castExpression(_, AstN
 public Constraint[SubstsT[&T1]] (Constraint[SubstsT[&T]]) apply(SubstsT[&T1] (&T) f) 
 	= Constraint[SubstsT[&T1]] (Constraint[SubstsT[&T]] c) {
 			switch(c) {
-				case subtype(SubstsT[&T] lh, SubstsT[&T] rh): return subtype(bind(lh, f), bind(rh, f));
-				case eq(SubstsT[&T] lh, SubstsT[&T] rh): return eq(bind(lh, f), bind(rh, f));
+				case subtype(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::subtype(bind(lh, f), bind(rh, f));
+				case eq(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::eq(bind(lh, f), bind(rh, f));
 			}
 	  }; 
 
@@ -123,8 +123,8 @@ public Constraint[SubstsT[&T1]] (Constraint[SubstsT[&T]]) apply(SubstsT[&T1] (&T
 public Constraint[SubstsT[&T1]] (Constraint[SubstsT[&T]]) apply(SubstsT[&T1] (&T) f1, SubstsT[&T1] (&T) f2) 
 	= Constraint[SubstsT[&T1]] (Constraint[SubstsT[&T]] c) {
 			switch(c) {
-				case subtype(SubstsT[&T] lh, SubstsT[&T] rh): return subtype(bind(lh, f1), bind(rh, f2));
-				case eq(SubstsT[&T] lh, SubstsT[&T] rh): return eq(bind(lh, f1), bind(rh, f2));
+				case subtype(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::subtype(bind(lh, f1), bind(rh, f2));
+				case eq(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::eq(bind(lh, f1), bind(rh, f2));
 			}
 	  }; 
 	  
@@ -134,7 +134,7 @@ public set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c:subtype(lh,
 	if(isZero(lh_)) return {};
 	TypeOf[tuple[&T, Substs]] rh_ = run(rh)(substs([],[]));
 	if(isZero(rh_)) return {};
-	return { subtype(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
+	return { Constraint::subtype(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
 							 				substs( TypeOf[tuple[&T, Substs]] (Substs s) { return rh_; } )) };
 }
 public set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c:eq(lh,rh)) {
@@ -142,14 +142,21 @@ public set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c:eq(lh,rh)) 
 	if(isZero(lh_)) return {};
 	TypeOf[tuple[&T, Substs]] rh_ = run(rh)(substs([],[]));
 	if(isZero(rh_)) return {};
-	return { eq(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
+	return { Constraint::eq(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
 								  substs( TypeOf[tuple[&T, Substs]] (Substs s) { return rh_; } )) };
 }
 	  
 
-public str prettyprint(Constraint::eq(SubstsT[Entity] lh, SubstsT[Entity] rh)) = "<prettyprint(eval(lh))> == <prettyprint(eval(rh))>"; 
-public str prettyprint(Constraint::subtype(SubstsT[Entity] lh, SubstsT[Entity] rh)) = "<prettyprint(eval(lh))> \<: <prettyprint(eval(rh))>"; 
-
+public str prettyprint(Constraint::eq(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
+	l = run(lh)(substs([],[]));
+	r = run(rh)(substs([],[]));
+	return "<prettyprint(eval(lh))> == <prettyprint(eval(rh))> \n <prettyprint(l.v[1])> ; <prettyprint(r.v[1])>";
+} 
+public str prettyprint(Constraint::subtype(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
+	l = run(lh)(substs([],[]));
+	r = run(rh)(substs([],[]));
+	return "<prettyprint(eval(lh))> \<: <prettyprint(eval(rh))> \n <prettyprint(l.v[1])> ; <prettyprint(r.v[1])>"; 
+}
 public str prettyprint(Constraint::eq(&M lh, &M rh)) = "<prettyprint(lh)> == <prettyprint(rh)>"; 
 public str prettyprint(Constraint::subtype(&M lh, &M rh)) = "<prettyprint(lh)> \<: <prettyprint(rh)>"; 
 

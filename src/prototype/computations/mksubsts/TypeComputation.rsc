@@ -105,12 +105,12 @@ public SubstsT_[Entity] supertypes_(CompilUnit facts, Mapper mapper, Entity v) {
 }
 
 @doc{Computes all the supertypes}
-public SubstsT_[Entity] supertypes_(CompilUnit facts, Mapper mapper, Entity v) {
+public SubstsT_[Entity] supertypesAll_(CompilUnit facts, Mapper mapper, Entity v) {
 	return bind(lift(supertypes(facts, v)), SubstsT_[Entity] (Entity vS1) { 
 			return bind(lift(supertypes(facts, getGenV(mapper, v))), SubstsT_[Entity] (Entity vS2) {
 							if(getGenV(mapper, vS1) != getGenV(mapper, vS2)) return lift([]);
 							return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, v), vS2)))(mapper, vS2)), SubstsT_[Entity] (Entity _) {
-										return supertypes_(facts, mapper, vS1); }); }); });
+										return supertypesAll_(facts, mapper, vS1); }); }); });
 }
 
 @doc{Supertype predicate under substitution computation that checks subtype relation}

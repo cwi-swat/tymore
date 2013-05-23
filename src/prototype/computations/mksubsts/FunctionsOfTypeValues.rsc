@@ -78,7 +78,7 @@ public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str na
 public default Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), Entity init, &C c)
 	 = !hasRawTypeArgument(mapper, init) ? init : entity([ typeArgument(name, c, init) ]);
 
-private bool hasRawTypeArgument(Mapper mapper, zero()) = true;
+private bool hasRawTypeArgument(Mapper mapper, entity([])) = true;
 private default bool hasRawTypeArgument(Mapper mapper, Entity init) {
 	PEntity pinit = mkSubsts(mapper, init);
 	if(Entity arg <- pinit.s.args, arg == zero() || hasRawTypeArgument(mapper, arg)) return true;
@@ -90,7 +90,7 @@ public PEntity (Entity) toGensNonRec(Mapper mapper)
 		return toGensNonRecByCase(mapper, val); 
 	};
 	
-public PEntity toGensNonRecByCase(Mapper mapper, val:zero()) = pzero()[@paramval=val];
+public PEntity toGensNonRecByCase(Mapper mapper, val:entity([])) = pzero()[@paramval=val];
 public PEntity toGensNonRecByCase(Mapper mapper, val:entity([ *ids, anonymous(_,_)])) = pentity(substs([],[]), val)[@paramval=val];
 public PEntity toGensNonRecByCase(Mapper mapper, val:entity([ *ids, decl() ])) {
 	PEntity pval = toGensNonRec(mapper)(entity(ids));

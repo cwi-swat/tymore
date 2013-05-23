@@ -71,8 +71,10 @@ public list[Entity] supertypes(CompilUnit facts, Entity v) {
 }
 
 @doc{Static semantics}
-public bool isStatic(CompilUnit facts, Entity v) {
-	!isEmpty(facts["isStaticDecl_func"][v]);
+public bool isStatic(CompilUnit facts, Entity v) { 
+	isS = !isEmpty(facts["isStaticDecl_func"][v]);
+	if(isS) println("static: " + v);
+	return isS; 
 }
 
 @doc{Bound semantics}

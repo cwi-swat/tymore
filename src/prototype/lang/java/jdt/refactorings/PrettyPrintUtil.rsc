@@ -38,7 +38,18 @@ public str prettyprint(wildcard(super(Entity b))) = "! super <prettyprint(b)>";
 public str prettyprint(wildcard(extends(Entity b))) = "! extends <prettyprint(b)>";
 public str prettyprint(captureof(Entity wildCard)) = "captureof <prettyprint(wildCard)>";
 
-public str prettyprint(PrimitiveType pt) = "<pt>";
+public str prettyprint(PrimitiveType pt) = "<prettyprint(pt)>";
+
+public str prettyprint(PrimitiveType::byte()) = "byte";
+public str prettyprint(PrimitiveType::short()) = "short";
+public str prettyprint(PrimitiveType::\int()) = "int";
+public str prettyprint(PrimitiveType::long()) = "long";
+public str prettyprint(PrimitiveType::float()) = "float";
+public str prettyprint(PrimitiveType::double()) = "double";
+public str prettyprint(PrimitiveType::char()) = "char";
+public str prettyprint(PrimitiveType::boolean()) = "boolean";
+public str prettyprint(PrimitiveType::\void()) = "void";
+public str prettyprint(PrimitiveType::null()) = "null";
 
 public str prettyprint(method(list[Entity] genericTypes, str name, list[Entity] params, Entity returnType)) = "<if(!isEmpty(genericTypes)){>\<<for(int i <- [0..size(genericTypes)]){><if(i != size(genericTypes)-1){><prettyprint(genericTypes[i])>,<}else{><prettyprint(genericTypes[i])><}><}>\><}> <prettyprint(returnType)> <name>(<if(size(params) != 0){><for(int i <- [0..size(params)]){><if(i != size(params)-1){><prettyprint(params[i])>,<}else{><prettyprint(params[i])><}><}><}else{><}>)";
 public str prettyprint(constr(list[Entity] genericTypes, list[Entity] params)) = "<if(!isEmpty(genericTypes)){>\<<for(int i <- [0..size(genericTypes)]){><if(i != size(genericTypes)-1){><prettyprint(genericTypes[i])>,<}else{><prettyprint(genericTypes[i])><}><}>\><}> (<if(size(params) != 0){><for(int i <- [0..size(params)]){><if(i != size(params)-1){><prettyprint(params[i])>,<}else{><prettyprint(params[i])><}><}><}else{><}>)";

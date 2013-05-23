@@ -49,7 +49,7 @@ public SubstsT[Entity] boundSu(Mapper mapper, ta:entity([ *ids, typeArgument(str
 public SubstsT[Entity] boundSu(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) // case of 'Ta_l'
 	= boundS(mapper, ta);
 
-public SubstsT[Entity] boundSu(Mapper mapper, zero()) = lift(tzero());
+public SubstsT[Entity] boundSu(Mapper mapper, entity([])) = lift(tzero());
 public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
 public SubstsT[Entity] boundSu(Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) // wildcard value
 	= bind(pushSubsts(idS)(mapper, wcb), SubstsT[Entity] (Entity _) { return boundSu(mapper, wcb); }); // wildcard value
@@ -75,7 +75,7 @@ public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, ta:typeArgument(st
 public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
 	= boundSu_(mapper, entity( ids + ta + upper(init)));
 
-public SubstsT[Entity] boundSu_(Mapper mapper, zero()) = lift(tzero());
+public SubstsT[Entity] boundSu_(Mapper mapper, entity([])) = lift(tzero());
 public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
 public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) // wildcard value
 	= bind(pushSubsts(idS)(mapper, wcb), SubstsT[Entity] (Entity _) { return boundSu_(mapper, wcb); }); // wildcard value
@@ -106,7 +106,7 @@ public SubstsT[Entity] boundSl(Mapper mapper, ta:entity([ *ids, typeArgument(str
 public SubstsT[Entity] boundSl(Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) // case of 'Ta_u'
 	= boundS(mapper, ta);
 
-public SubstsT[Entity] boundSl(Mapper mapper, zero()) = lift(tzero());
+public SubstsT[Entity] boundSl(Mapper mapper, entity([])) = lift(tzero());
 public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
 public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) = lift(tzero()); // wildcard value
 public SubstsT[Entity] boundSl(Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) // wildcard value
@@ -123,16 +123,16 @@ public SubstsT[Entity] boundSl_(Mapper mapper, tp:entity([ *ids, typeParameter(s
 			return bind(pushSubsts(idS)(mapper, b), SubstsT[Entity] (Entity b_) { 
 						return boundSl_(mapper, b_); });
 			});
-public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, entity([ *ids, wildcard() ]))])) // case of 'Ta'
+public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard() ]))])) // case of 'Ta'
 	= boundSl_(mapper, entity( ids + ta + lower(zero()) ));
-public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
+public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSl_(mapper, entity( ids + ta + lower(zero()) ));
-public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
+public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSl_(mapper, entity( ids + ta + lower(wcb) ));
 public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
 	= boundSl_(mapper, entity( ids + ta + lower(init)));
 
-public SubstsT[Entity] boundSl_(Mapper mapper, zero()) = lift(tzero());
+public SubstsT[Entity] boundSl_(Mapper mapper, entity([])) = lift(tzero());
 public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
 public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) = lift(tzero()); // wildcard value
 public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) // wildcard value
