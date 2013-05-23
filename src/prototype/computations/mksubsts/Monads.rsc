@@ -75,33 +75,45 @@ public SubstsT[Entity] (Mapper, Entity) pushSubsts(Substs (Substs) f)
 	};
 
 // SubstsT' monad
-public data SubstsT_[&T] = substs_( list[tuple[&T, Substs]] (Substs) v );
+public data SubstsT_[&T] = substs_( lrel[&T, Substs] (Substs) v );
 
-public SubstsT_[&T] returnS_(&T v) = substs_(list[tuple[&T, Substs]] (Substs s) { return [<v, s>]; });
-public list[tuple[&T, Substs]] (Substs) run(SubstsT_[&T] mv) = list[tuple[&T, Substs]] (Substs s) { return mv.v(s); };
+public SubstsT_[&T] returnS_(&T v) = substs_(lrel[&T, Substs] (Substs s) { return [<v, s>]; });
+public lrel[&T, Substs] (Substs) run(SubstsT_[&T] mv) = lrel[&T, Substs] (Substs s) { return mv.v(s); };
 public list[&T] eval(SubstsT[&T] mv) = [ v[0] | tuple[&T, Substs] v <- mv.v(substs([],[])) ];
 
 public SubstsT_[&T2] bind(SubstsT_[&T1] mv, SubstsT_[&T2] (&T1) f)
-	= substs_( list[tuple[&T2, Substs]] (Substs s) {
-					list[tuple[&T1, Substs]] vs = run(mv)(s);
+	= substs_( lrel[&T2, Substs] (Substs s) {
+					lrel[&T1, Substs] vs = run(mv)(s);
 					return [ *run(f(v[0]))(v[1]) | tuple[&T1, Substs] v <- vs ];
 			  } );
 			  
-public SubstsT_[&T] lift(list[&T] vs) = !isEmpty(vs) ? substs_( list[tuple[&T, Substs]] (Substs s) { return [ <v, s> | &T v <- vs ]; })
-													 : substs_( list[tuple[&T, Substs]] (Substs s) { return []; });
+public SubstsT_[&T] lift(list[&T] vs) = !isEmpty(vs) ? substs_( lrel[&T, Substs] (Substs s) { return [ <v, s> | &T v <- vs ]; })
+													 : substs_( lrel[&T, Substs] (Substs s) { return []; });
 													 
-// SubstsTLog monad
-public data SubstsTL[&T] = substsl( &T v, list[Substs] l );
+// SubstsTL monad
+public data SubstsTL[&T] = substsl( TypeOf[tuple[&T,Substs]] v);
 
-public SubstsTL[&T] returnSL(&T v) = substsl(v, []);
-public &T eval(SubstsTL[&T] mv:substsl(&T v, _)) = v;
+public SubstsTL[&T] returnSL(&T v) = substsl(returnT(<v,substs([],[])>));
+public TypeOf[tuple[&T,Substs]] run(SubstsTL[&T] mv) = mv.v;
 
-public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl(&T1 v, list[Substs] l), SubstsTL[&T2] (&T1) f) {
-	SubstsTL[&T2] mv = f(v);
-	return substsl(mv.v, l + mv.l);
+public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl( TypeOf[tuple[&T1,Substs]] mv1 ), SubstsTL[&T2] (&T1) f) {
+	switch(mv1) {
+		case typeof(<&T1 v, Substs substs>): return f(v);
+		default: return substsl(tzero());
+	}
 }
 
-// tau: SubstsT -> SubstsT'
+// SubstsTL' monad
+public data SubstsTL_[&T] = substsl_( lrel[&T,Substs] v);
+
+public SubstsTL_[&T] returnSL_(&T v) = substsl_([<v,substs([],[])>]);
+public lrel[&T,Substs] run(SubstsTL_ mv) = mv.v;
+public list[&T] eval(SubstsTL_[&T] mv) = [ v | <&T v, _> <- mv.v ];
+
+public SubstsTL_[&T2] bind(SubstsTL_[&T1] _:substsl_( lrel[&T1,Substs] mv1 ), SubstsTL_[&T2] (&T1) f)
+	= substsl_([ *run(f(v)) | <&T1 v, _> <- mv ]);
+
+@doc{tau: SubstsT -> SubstsT'}
 public SubstsT_[&T] tau(SubstsT[&T] mv) 
 	= substs_( list[tuple[&T, Substs]] (Substs s) {
 		TypeOf[tuple[&T, Substs]] v = run(mv)(s);
@@ -111,7 +123,33 @@ public SubstsT[&T] tauInv(SubstsT_[&T] mv)
 		list[tuple[&T, Substs]] v = run(mv)(s);
 		return tauInv(v); });
 		
-// tau: TypeOf -> list
+@doc{tauToSubstsTL: SubstsT -> SubstsTL}
+public SubstsTL[&T] tauToSubstsTL(SubstsT[&T] mv) {
+	TypeOf[tuple[&T,Substs]] v = run(mv)(substs([],[]));
+	return substsl(v);
+} 
+
+@doc{tauToSubstsT: SubstsTL -> SubstsT}
+public SubstsT[&T] tauToSubstsT(SubstsTL[&T] mv) {
+	TypeOf[tuple[&T,Substs]] v = run(mv);
+	return substs( TypeOf[tuple[&T,Substs]] (Substs s) {
+						return v; });
+}
+
+@doc{tauToSubstsTL_: SubstsT_ -> SubstsTL_}
+public SubstsTL_[&T] tauToSubstsTL_(SubstsT_[&T] mv) {
+	lrel[&T,Substs] v = run(mv)(substs([],[]));
+	return substsl_(v);
+} 
+
+@doc{tauToSubstsT_: SubstsTL_ -> SubstsT_}
+public SubstsT_[&T] tauToSubstsT_(SubstsTL_[&T] mv) {
+	lrel[&T,Substs] v = run(mv);
+	return substs_( lrel[&T,Substs] (Substs s) {
+						return v; });
+} 
+		
+@doc{tau: TypeOf -> list}
 public list[&T] tau(TypeOf[&T] mv) 
 	= typeof(&T v) := mv ? [ v ] : [];
 public TypeOf[&T] tauInv(list[&T] mv) 

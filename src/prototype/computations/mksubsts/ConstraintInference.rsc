@@ -30,6 +30,7 @@ import Set;
 import IO;
 
 // FIXME: rename "boundS" -> "bindS"
+// EXTEND: "boundS_" and "boundS" may return zero in case of raw types and free variables
 
 @doc{Evaluates the left and right hand side of a constraint;
 	 Note: semantically, left- and right-hand side may be of the forms:
@@ -73,8 +74,10 @@ public set[Constraint[SubstsT[Entity]]] inferTypeArguments(CompilUnit facts, Map
 			      Constraint[SubstsT[Entity]] c2  <- boundS_(facts, mapper, c1) 
 		   };
 		   
-	return { c2 | Constraint[SubstsT[Entity]] c1 <- cons,
-				  Constraint[SubstsT[Entity]] c2 <- catchTypeArgVariable(c1) 
+	return { c4 | Constraint[SubstsT[Entity]] c1 <- cons,
+				  Constraint[SubstsT[Entity]] c2 <- catchTypeArgVariable(c1),
+				  Constraint[SubstsT[Entity]] c3 <- bindTypeArgumentIfNotRawType(mapper, c2),
+				  Constraint[SubstsT[Entity]] c4 <- catchTypeArgVariable(c3) 
 		   } 
 		   + 
 		   { c3 | Constraint[SubstsT[Entity]] c1  <- cons,
@@ -88,7 +91,7 @@ public set[Constraint[SubstsT[Entity]]] inferTypeArguments(CompilUnit facts, Map
 @doc{***Recursive subtyping with regard to type arguments}
 public set[Constraint[SubstsT[Entity]]] subtyping(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
 	return { c4 | Constraint[SubstsT[Entity]] c1  <- boundS(facts, mapper, c), 
-				  Constraint[SubstsT[Entity]] c1_ <- catchZ(c1),
+				  Constraint[SubstsT[Entity]] c1_ <- catchZ(c1), // zero may occur due to raw types
 				  
 				  Constraint[SubstsT[Entity]] c2  <- supertypec(facts, mapper, c1_),
 				  Constraint[SubstsT[Entity]] c2_ <- catchZ(c2), 
@@ -102,13 +105,17 @@ public set[Constraint[SubstsT[Entity]]] subtyping(CompilUnit facts, Mapper mappe
 
 @doc{Invariant function that imposes equality constraints on type arguments}
 public set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
-	return { c3 | Entity rv    <- tau(eval(c.rh)),
+	return { c5 | Entity rv    <- tau(eval(c.rh)),
 				  Entity param <- getTypeParamsOrArgs(getGenV(mapper, rv)), 
 				  
 				  Constraint[SubstsT[Entity]] c1 := apply(SubstsT[Entity] (Entity _) { return returnS(param); })(c),
-				  Constraint[SubstsT[Entity]] c2  <- boundS_(facts, mapper, eq(c1.lh, c1.rh)), // new equality constraint
+				  
+				  Constraint[SubstsT[Entity]] c_ := eq(c1.lh, c1.rh), // new equality constraint
+				  Constraint[SubstsT[Entity]] c2 <- boundS_(facts, mapper, c_),
 					  
-				  Constraint[SubstsT[Entity]] c3 <- catchTypeArgVariable(c2) // adds only constraints that have type argument variables
+				  Constraint[SubstsT[Entity]] c3 <- catchTypeArgVariable(c2), // adds only constraints that have type argument variables
+				  Constraint[SubstsT[Entity]] c4 <- bindTypeArgumentIfNotRawType(mapper, c3),
+				  Constraint[SubstsT[Entity]] c5 <- catchTypeArgVariable(c4) // filters those, which represent raw types
 		   };
 }
 
@@ -118,6 +125,21 @@ public set[Constraint[SubstsT[Entity]]] catchTypeArgVariable(Constraint[SubstsT[
 						   		  								   : bind(eval(c.rh), TypeOf[tuple[Entity, Entity]] (Entity rv) { 
 						   												 return isTypeArgument(rv) ? tzero() : returnT(<lv,rv>); }); });
 	return isZero(v) ? { c } : {};
+}
+
+public set[Constraint[SubstsT[Entity]]] bindTypeArgumentIfNotRawType(Mapper mapper, Constraint[SubstsT[Entity]] c) {
+	SubstsT[Entity] (Entity) f = SubstsT[Entity] (Entity v) {
+									if(isTypeArgument(v)) {
+										SubstsT[Entity] b = bind(boundS(mapper, v), SubstsT[Entity] (Entity b) { 
+																// DEBUG: 
+																println("Bind type argument variables if not a raw type: <prettyprint(v)> <prettyprint(b)>"); 
+																return returnS(getGenV(mapper, b)); });
+										if(!isZero(b))
+											return b;
+										else return returnS(v);
+									}
+									return returnS(v);  };
+	return { apply(f)(c) };
 }
 
 /*

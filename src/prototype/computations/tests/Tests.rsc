@@ -60,10 +60,10 @@ private void testConstraintSemantics(loc project) {
 		
 		set[Constraint[SubstsT[Entity]]] cls = { *inferTypeArguments(facts, mapper, c) | Constraint[SubstsT[Entity]] c <- cons };
 		
-		str print1 = "";
-		for(str cs <- { prettyprint(c) | Constraint[SubstsT[Entity]] c <- cons })
-			print1 = print1 + cs + "\n";
-		tracer(true, "Constraints: \n <print1>");		
+		//str print1 = "";
+		//for(str cs <- { prettyprint(c) | Constraint[SubstsT[Entity]] c <- cons })
+		//	print1 = print1 + cs + "\n";
+		//tracer(true, "Constraints: \n <print1>");		
 
 		str print2 = "";
 		for(str cs <- { prettyprint(c) | Constraint[SubstsT[Entity]] c <- cls})
