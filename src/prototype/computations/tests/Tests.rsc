@@ -26,6 +26,7 @@ import prototype::computations::mksubsts::LanguageInterface;
 import prototype::computations::mksubsts::Monads;
 import prototype::computations::mksubsts::TypeComputation;
 import prototype::computations::mksubsts::FunctionsOfTypeValues;
+import prototype::computations::mksubsts::AbstractConstraintSolver;
 
 import Prelude;
 
@@ -69,7 +70,18 @@ private void testConstraintSemantics(loc project) {
 		for(str cs <- { prettyprint(c) | Constraint[SubstsT[Entity]] c <- cls})
 			print2 = print2 + cs + "\n";
 		tracer(true, "Constraints (closure): \n <print2>");		
+		
+		set[Constraint[SubstsTL[Entity]]] cls_ = { (Constraint::subtype(lh,rh) := c) ? Constraint::subtype(tauToSubstsTL(lh), tauToSubstsTL(rh)) 
+																					  : Constraint::eq(tauToSubstsTL(c.lh), tauToSubstsTL(c.rh)) 
+																			| Constraint[SubstsT[Entity]] c <- cls };
+										
+		set[Constraint[SubstsTL[Entity]]] clsSolved = {};
+		solve(solutions) {
+			clsSolved = { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- cls_ };
+		}
+		
 	}	
+	tracer(true, "Solutions: <for(s<-solutions){><prettyprint(s)> = <prettyprint(solutions[s])> \n <}>");
 }
 
 public void testLookupSemantics(list[loc] projects) { for(project <- projects) testLookupSemantics(project); }

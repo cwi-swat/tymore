@@ -79,7 +79,7 @@ public data SubstsT_[&T] = substs_( lrel[&T, Substs] (Substs) v );
 
 public SubstsT_[&T] returnS_(&T v) = substs_(lrel[&T, Substs] (Substs s) { return [<v, s>]; });
 public lrel[&T, Substs] (Substs) run(SubstsT_[&T] mv) = lrel[&T, Substs] (Substs s) { return mv.v(s); };
-public list[&T] eval(SubstsT[&T] mv) = [ v[0] | tuple[&T, Substs] v <- mv.v(substs([],[])) ];
+public list[&T] eval(SubstsT_[&T] mv) = [ v[0] | tuple[&T, Substs] v <- mv.v(substs([],[])) ];
 
 public SubstsT_[&T2] bind(SubstsT_[&T1] mv, SubstsT_[&T2] (&T1) f)
 	= substs_( lrel[&T2, Substs] (Substs s) {
@@ -87,18 +87,36 @@ public SubstsT_[&T2] bind(SubstsT_[&T1] mv, SubstsT_[&T2] (&T1) f)
 					return [ *run(f(v[0]))(v[1]) | tuple[&T1, Substs] v <- vs ];
 			  } );
 			  
+public SubstsT_[&T] discard(SubstsT_[&T] mv)
+	= substs_( lrel[&T, Substs] (Substs s) {
+				lrel[&T, Substs] vs = run(mv)(s);
+				return [ <v,substs([],[])> | <&T v, Substs _> <- vs ]; });
+
+			  
+public SubstsT_[&T] concat(SubstsT_[&T] mv1, SubstsT_[&T] mv2)
+	= substs_(lrel[&T, Substs] (Substs substs) {
+		return run(mv1)(substs) + run(mv2)(substs); });
+			  
 public SubstsT_[&T] lift(list[&T] vs) = !isEmpty(vs) ? substs_( lrel[&T, Substs] (Substs s) { return [ <v, s> | &T v <- vs ]; })
 													 : substs_( lrel[&T, Substs] (Substs s) { return []; });
+
+public bool isZero(SubstsT_[&T] mv) = isEmpty(eval(mv));
 													 
 // SubstsTL monad
 public data SubstsTL[&T] = substsl( TypeOf[tuple[&T,Substs]] v);
 
 public SubstsTL[&T] returnSL(&T v) = substsl(returnT(<v,substs([],[])>));
 public TypeOf[tuple[&T,Substs]] run(SubstsTL[&T] mv) = mv.v;
+public TypeOf[&T] eval(SubstsTL[&T] mv) 
+	= bind(mv.v, TypeOf[&T] (tuple[&T,Substs] v) { 
+			return returnT(v[0]); });
 
 public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl( TypeOf[tuple[&T1,Substs]] mv1 ), SubstsTL[&T2] (&T1) f) {
 	switch(mv1) {
-		case typeof(<&T1 v, Substs substs>): return f(v);
+		case typeof(<&T1 v, Substs substs>): {
+			mv2 = f(v);
+			return substsl(<mv2.v[0],concat(substs,mv2.v[1])>);
+		}
 		default: return substsl(tzero());
 	}
 }
@@ -111,7 +129,13 @@ public lrel[&T,Substs] run(SubstsTL_ mv) = mv.v;
 public list[&T] eval(SubstsTL_[&T] mv) = [ v | <&T v, _> <- mv.v ];
 
 public SubstsTL_[&T2] bind(SubstsTL_[&T1] _:substsl_( lrel[&T1,Substs] mv1 ), SubstsTL_[&T2] (&T1) f)
-	= substsl_([ *run(f(v)) | <&T1 v, _> <- mv ]);
+	= substsl_([ <v2,concat(substs1,substs2)> | <&T1 v1, Substs substs1> <- mv1, 
+												<&T2 v2, Substs substs2> <- run(f(v1)) ]);
+	
+public SubstsTL_[&T] liftTL_(list[&T] vs) = !isEmpty(vs) ? substsl_( [ <v, substs([],[])> | &T v <- vs ])
+													     : substsl_( [] );
+													    
+public bool isZero(SubstsTL_[&T] mv) = isEmpty(eval(mv));
 
 @doc{tau: SubstsT -> SubstsT'}
 public SubstsT_[&T] tau(SubstsT[&T] mv) 
@@ -136,13 +160,24 @@ public SubstsT[&T] tauToSubstsT(SubstsTL[&T] mv) {
 						return v; });
 }
 
-@doc{tauToSubstsTL_: SubstsT_ -> SubstsTL_}
+@doc{tauToSubstsT: SubstsTL -> SubstsTL'}
+public SubstsTL_[&T] tauToSubstsTL_(SubstsTL[&T] mv) {
+	TypeOf[tuple[&T,Substs]] v = run(mv);
+	return substsl_( typeof(tuple[&T,Substs] v_) := v ? [ v_ ] : [] );
+}
+
+@doc{tauToSubstsTL_: SubstsT -> SubstsTL'}
+public SubstsTL_[&T] tauToSubstsTL_(SubstsT[&T] mv) {
+	return tauToSubstsTL_(tau(mv));
+}
+
+@doc{tauToSubstsTL_: SubstsT' -> SubstsTL'}
 public SubstsTL_[&T] tauToSubstsTL_(SubstsT_[&T] mv) {
 	lrel[&T,Substs] v = run(mv)(substs([],[]));
 	return substsl_(v);
 } 
 
-@doc{tauToSubstsT_: SubstsTL_ -> SubstsT_}
+@doc{tauToSubstsT_: SubstsTL' -> SubstsT'}
 public SubstsT_[&T] tauToSubstsT_(SubstsTL_[&T] mv) {
 	lrel[&T,Substs] v = run(mv);
 	return substs_( lrel[&T,Substs] (Substs s) {
@@ -157,3 +192,9 @@ public TypeOf[&T] tauInv(list[&T] mv)
 		
 public str prettyprint(typeof(&T v)) = prettyprint(v);
 public str prettyprint(tzero()) = "zero";
+
+public str prettyprint(substsl(typeof(<&T v, Substs substs>))) = "\< <prettyprint(v)>; <prettyprint(substs)> \>";
+public str prettyprint(substsl(tzero())) = "zero";
+
+public str prettyprint(substsl_(lrel[&T, Substs] vals)) = "[ <for(val<-vals){><prettyprint(val)><}> ]";
+public str prettyprint(<&T v, Substs substs>) = "\< <prettyprint(v)>, <prettyprint(substs)> \>";

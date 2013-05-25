@@ -104,15 +104,6 @@ public SubstsT_[Entity] supertypes_(CompilUnit facts, Mapper mapper, Entity v) {
 										return returnS_(vS1); }); }); });
 }
 
-@doc{Computes all the supertypes}
-public SubstsT_[Entity] supertypesAll_(CompilUnit facts, Mapper mapper, Entity v) {
-	return bind(lift(supertypes(facts, v)), SubstsT_[Entity] (Entity vS1) { 
-			return bind(lift(supertypes(facts, getGenV(mapper, v))), SubstsT_[Entity] (Entity vS2) {
-							if(getGenV(mapper, vS1) != getGenV(mapper, vS2)) return lift([]);
-							return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, v), vS2)))(mapper, vS2)), SubstsT_[Entity] (Entity _) {
-										return supertypesAll_(facts, mapper, vS1); }); }); });
-}
-
 @doc{Supertype predicate under substitution computation that checks subtype relation}
 public SubstsT_[bool] supertypec_(CompilUnit facts, Mapper mapper, tuple[Entity l, Entity r] ts) {
 	if(isSub(mapper, ts.l, ts.r)) return returnS_(true);
@@ -145,7 +136,7 @@ public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:methodInvocati
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:methodInvocation(some(AstNode expr),_,_,_)) 
 	= isStatic(facts, lookup(e)) ? tzero() : returnT(rmv(expr));
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:qualifiedName(AstNode qname,_)) 
-	= isVariableBinding(lookup(e)) ? isStatic(lookup(e)) ? tzero() : returnT(qname) : tzero(); 
+	= isVariableBinding(lookup(e)) ? isStatic(facts, lookup(e)) ? tzero() : returnT(qname) : tzero(); 
 public TypeOf[AstNode] subterm(CompilUnit facts, Mapper mapper, e:simpleName(_)) 
 	= (isFieldBinding(lookup(e)) && !isArrayType(getType(e))) 
 		? isStatic(facts, lookup(e)) ? tzero() : bind(scopec(facts, mapper, e), TypeOf[AstNode] (Entity scope) { 

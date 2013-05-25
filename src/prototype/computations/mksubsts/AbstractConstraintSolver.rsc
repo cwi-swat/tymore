@@ -8,24 +8,108 @@
 @contributor{Anastasia Izmaylova - A.Izmaylova@cwi.nl}
 module prototype::computations::mksubsts::AbstractConstraintSolver
 
+import lang::java::jdt::Java;
+import lang::java::jdt::JavaADT;
+import lang::java::jdt::JDT;
+import prototype::lang::java::jdt::refactorings::Java;
+import prototype::lang::java::jdt::refactorings::JavaADT;
+import prototype::lang::java::jdt::refactorings::JavaADTVisitor;
+import prototype::lang::java::jdt::refactorings::JDT4Refactorings;
+import prototype::lang::java::jdt::refactorings::PrettyPrintUtil;
+import prototype::lang::java::jdt::refactorings::ValuesUtil;
+
+import prototype::computations::mksubsts::ConstraintComputation;
 import prototype::computations::mksubsts::ConstraintInference;
+import prototype::computations::mksubsts::LanguageInterface;
+import prototype::computations::mksubsts::Monads;
+import prototype::computations::mksubsts::TypeComputation;
+import prototype::computations::mksubsts::FunctionsOfTypeValues;
 
-public alias ParamSolutions = map[SubstsTL[Entity], SubstsTL_[Entity]];
+import IO;
+import List;
 
-public set[Constraint[TypeOf[Entity]]] solveit(Constraint::eq(TypeOf[Entity] l, TypeOf[Entity] r));
-public set[Constraint[TypeOf[Entity]]] solveit(Constraint::subtype(TypeOf[Entity] l, TypeOf[Entity] r));
+
+public alias ParamSolutions = map[TypeOf[Entity], SubstsTL_[Entity]];
+
+// public set[Constraint[TypeOf[Entity]]] solveit(Constraint::eq(TypeOf[Entity] l, TypeOf[Entity] r));
+// public set[Constraint[TypeOf[Entity]]] solveit(Constraint::subtype(TypeOf[Entity] l, TypeOf[Entity] r));
 
 public ParamSolutions solutions = ();
 public set[Constraint[SubstsT[Entity]]] constraints = {};
 
 @doc{EXTENSION with plain generics}
-public set[Constraint[SubstsT[Entity]]] solveit(CompilUnit facts, Mapper mapper, 
-												Constraint::eq(SubstsT[Entity] l, SubstsT[Entity] r)) {}
-public set[Constraint[SubstsT[Entity]]] solveit(CompilUnit facts, Mapper mapper, 
-												Constraint::subtype(SubstsT[Entity] l, SubstsT[Entity] r)) {
+public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper, 
+												 Constraint::eq(SubstsTL[Entity] lh, SubstsTL[Entity] rh)) 
+	= { Constraint::eq(lh,rh) };
+public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper, 
+												 Constraint::subtype(SubstsTL[Entity] lh, SubstsTL[Entity] rh)) {
+											
+	TypeOf[Entity] lv = eval(lh);
+	TypeOf[Entity] rv = eval(rh);
 	
+	bool lhIsTypeArg = !isZero(bind(lv, TypeOf[Entity] (Entity v) { 
+									return isTypeArgument(v) ? returnT(v) : tzero(); }));
+	bool rhIsTypeArg = !isZero(bind(rv, TypeOf[Entity] (Entity v) { 
+									return isTypeArgument(v) ? returnT(v) : tzero(); }));
+	
+	// left- and right-hand side are both type argument variables	
+	if(lhIsTypeArg && rhIsTypeArg) {
+		if(lv in solutions) {		
+			solutions[lv] = (rv in solutions) ? intersectLHS(facts, mapper, solutions[lv], solutions[rv]) : solutions[lv];
+			solutions[rv] = (rv in solutions) ? intersectRHS(facts, mapper, solutions[lv], solutions[rv]) 
+											  : { sups = supertypes_all_(facts, mapper, solutions[lv]);
+											  	  // DEBUG: println("supertype values in Ta \<: Ta: <prettyprint(sups)>"); 
+											      sups; };
+		} else if(rv in solutions) {
+			solutions[lv] = (lv in solutions) ? intersectLHS(facts, mapper, solutions[lv], solutions[rv]) : solutions[lv];
+			solutions[rv] = (lv in solutions) ? intersectRHS(facts, mapper, solutions[lv], solutions[rv]) 
+											  : solutions[rv]; // TODO: should be actually subtypes
+		}
+	// only left-hand side is a type argument variable
+	} else if(lhIsTypeArg && !rhIsTypeArg) {
+		solutions[lv] = (lv in solutions) ? intersectLHS(facts, mapper, solutions[lv], tauToSubstsTL_(rh)) : tauToSubstsTL_(rh);
+	// only right-hand side is a type argument variable
+	} else if(!lhIsTypeArg && rhIsTypeArg) {
+		solutions[rv] = (rv in solutions) ? intersectRHS(facts, mapper, tauToSubstsTL_(lh), solutions[rv]) 
+											  : { sups = supertypes_all_(facts, mapper, tauToSubstsTL_(lh));
+											  	  // DEBUG: println("supertype values of <prettyprint(tauToSubstsTL_(lh))>"); println("supertype values in vT \<: Ta: <prettyprint(sups)>");  
+											  	  sups; };
+	}
+	
+	return { Constraint::subtype(lh, rh) };
 }
 
-public void intersect(SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
+@doc{Computes all the supertypes; assumes that values are type values in their generic form}
+public SubstsT_[Entity] supertypes_all(CompilUnit facts, Mapper mapper, Entity v) {
+	Entity genV = getGenV(mapper, v);
+	return bind(isEmpty(getTypeParamsOrArgs(genV)) ? discard(returnS_(v)) : returnS_(v), SubstsT_[Entity] (Entity v) {
+				return concat(returnS_(v), 
+				   	   bind(lift(supertypes(facts, v)), SubstsT_[Entity] (Entity vS) {
+							return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, v), vS)))(mapper, vS)), SubstsT_[Entity] (Entity _) {
+										return supertypes_all(facts, mapper, getGenV(mapper, vS)); }); })); });
+}
+
+public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mv)
+	= tauToSubstsTL_(bind(tauToSubstsT_(mv), SubstsT_[Entity] (Entity v) {
+						return supertypes_all(facts, mapper, v); }));
+
+public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
+	return bind(l, SubstsTL_[Entity] (Entity lv) { 
+				return ( !isZero(intersectRHS(facts, mapper, returnSL_(lv), r)) ) ? returnSL_(lv) : liftTL_([]);
+			});
+}
+
+public SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
+	l = liftTL_([*{*eval(supertypes_all_(facts, mapper, l))}]); // duplicates should be removed from the left-hand side before the intersection, 
+																// otherwise it adds new elements to the right-hand side
+	return intersect(l,r);
+}
+
+public SubstsTL_[Entity] intersect(SubstsTL_[Entity] l, SubstsTL_[Entity] r) 
+	= bind(l, SubstsTL_[Entity] (Entity lv) {
+				return bind(r, SubstsTL_[Entity] (Entity rv) { 
+							return (lv == rv) ? returnSL_(rv) : liftTL_([]); }); });
+							
+public SubstsTL_[Entity] intersect(Entity l, Entity r) {
 	
 }
