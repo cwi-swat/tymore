@@ -115,12 +115,14 @@ public TypeOf[&T] eval(SubstsTL[&T] mv)
 public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl( TypeOf[tuple[&T1,set[Substs]]] mv1 ), SubstsTL[&T2] (&T1) f) {
 	switch(mv1) {
 		case typeof(<&T1 v1, set[Substs] substs>): {
-			mv2 = f(v1);
-			return substsl(bind(mv2.v, TypeOf[tuple[&T,set[Substs]]] (tuple[&T,set[Substs]] v2) { return returnT(<v2[0], substs + v2[1]>); } ));
+			SubstsTL[&T2] mv2 = f(v1);
+			return substsl(bind(mv2.v, TypeOf[tuple[&T2,set[Substs]]] (tuple[&T2,set[Substs]] v2) { return returnT(<v2[0], substs + v2[1]>); } ));
 		}
 		default: return substsl(tzero());
 	}
 }
+
+public bool isZero(SubstsTL[&T] mv) = isZero(eval(mv));
 
 public SubstsTL[set[Substs]] popSubsts(SubstsTL[&T] mv) = substsl( bind(mv.v, TypeOf[tuple[set[Substs],set[Substs]]] (tuple[&T,set[Substs]] v) { return <v[1],v[1]>; }) );
 
@@ -130,10 +132,10 @@ public SubstsTL[&T] liftTL(TypeOf[&T] mv) = substsl( bind(mv, TypeOf[tuple[&T,se
 public data SubstsTL_[&T] = substsl_( rel[&T,set[Substs]] v); // promising experience of replacing list to set logic of computation
 
 public SubstsTL_[&T] returnSL_(&T v) = substsl_({<v, { substs([],[]) }>});
-public rel[&T,Substs] run(SubstsTL_ mv) = mv.v;
+public rel[&T,set[Substs]] run(SubstsTL_ mv) = mv.v;
 public set[&T] eval(SubstsTL_[&T] mv) = { v | <&T v, _> <- mv.v };
 
-public SubstsTL_[&T2] bind(SubstsTL_[&T1] _:substsl_( rel[&T1,Substs] vs1 ), SubstsTL_[&T2] (&T1) f)
+public SubstsTL_[&T2] bind(SubstsTL_[&T1] _:substsl_( rel[&T1,set[Substs]] vs1 ), SubstsTL_[&T2] (&T1) f)
 	= substsl_({ <v2, substs1 + substs2> | <&T1 v1, set[Substs] substs1> <- vs1, 
 										   <&T2 v2, set[Substs] substs2> <- run(f(v1)) });
 	
@@ -200,8 +202,8 @@ public TypeOf[&T] tauInv(list[&T] mv)
 public str prettyprint(typeof(&T v)) = prettyprint(v);
 public str prettyprint(tzero()) = "zero";
 
-public str prettyprint(substsl(typeof(<&T v, Substs substs>))) = "\< <prettyprint(v)>; <prettyprint(substs)> \>";
+public str prettyprint(substsl(typeof(<&T v, set[Substs] ss>))) = "\< <prettyprint(v)>; <for(substs<-ss){><prettyprint(substs)><}> \>";
 public str prettyprint(substsl(tzero())) = "zero";
 
-public str prettyprint(substsl_(lrel[&T, Substs] vals)) = "[ <for(val<-vals){><prettyprint(val)><}> ]";
-public str prettyprint(<&T v, Substs substs>) = "\< <prettyprint(v)>, <prettyprint(substs)> \>";
+public str prettyprint(substsl_(rel[&T, set[Substs]] vals)) = "[ <for(val<-vals){><prettyprint(val)><}> ]";
+public str prettyprint(<&T v, set[Substs] ss>) = "\< <prettyprint(v)>, <for(substs<-ss){><prettyprint(substs)><}> \>";
