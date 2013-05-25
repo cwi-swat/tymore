@@ -104,28 +104,30 @@ public SubstsT_[&T] lift(list[&T] vs) = !isEmpty(vs) ? substs_( lrel[&T, Substs]
 public bool isZero(SubstsT_[&T] mv) = isEmpty(eval(mv));
 													 
 @doc{SubstsTL monad that adds explicit substitution in a slightly different manner}
-public data SubstsTL[&T] = substsl( TypeOf[tuple[&T,Substs]] v);
+public data SubstsTL[&T] = substsl( TypeOf[tuple[&T,set[Substs]]] v);
 
-public SubstsTL[&T] returnSL(&T v) = substsl(returnT(<v,substs([],[])>));
-public TypeOf[tuple[&T,Substs]] run(SubstsTL[&T] mv) = mv.v;
+public SubstsTL[&T] returnSL(&T v) = substsl(returnT(<v, { substs([],[]) }>));
+public TypeOf[tuple[&T,set[Substs]]] run(SubstsTL[&T] mv) = mv.v;
 public TypeOf[&T] eval(SubstsTL[&T] mv) 
-	= bind(mv.v, TypeOf[&T] (tuple[&T,Substs] v) { 
+	= bind(mv.v, TypeOf[&T] (tuple[&T,set[Substs]] v) { 
 			return returnT(v[0]); });
 
-public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl( TypeOf[tuple[&T1,Substs]] mv1 ), SubstsTL[&T2] (&T1) f) {
+public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl( TypeOf[tuple[&T1,set[Substs]]] mv1 ), SubstsTL[&T2] (&T1) f) {
 	switch(mv1) {
-		case typeof(<&T1 v, Substs substs>): {
-			mv2 = f(v);
-			return substsl(<mv2.v[0],concat(substs,mv2.v[1])>);
+		case typeof(<&T1 v1, set[Substs] substs>): {
+			mv2 = f(v1);
+			return substsl(bind(mv2.v, TypeOf[tuple[&T,set[Substs]]] (tuple[&T,set[Substs]] v2) { return returnT(<v2[0], substs + v2[1]>); } ));
 		}
 		default: return substsl(tzero());
 	}
 }
 
-public SubstsTL[Substs] popSubsts(SubstsTL[&T] mv) = substsl( bind(mv.v, TypeOf[tuple[Substs,Substs]] (tuple[&T,Substs] v) { return <v[1],v[1]>; }) );
+public SubstsTL[set[Substs]] popSubsts(SubstsTL[&T] mv) = substsl( bind(mv.v, TypeOf[tuple[set[Substs],set[Substs]]] (tuple[&T,set[Substs]] v) { return <v[1],v[1]>; }) );
+
+public SubstsTL[&T] liftTL(TypeOf[&T] mv) = substsl( bind(mv, TypeOf[tuple[&T,set[Substs]]] (&T v) { return returnT(<v, { substs([],[]) }>); }) );
 
 @doc{SubstsTL' monad}
-public data SubstsTL_[&T] = substsl_( rel[&T,set[Substs]] v);
+public data SubstsTL_[&T] = substsl_( rel[&T,set[Substs]] v); // promising experience of replacing list to set logic of computation
 
 public SubstsTL_[&T] returnSL_(&T v) = substsl_({<v, { substs([],[]) }>});
 public rel[&T,Substs] run(SubstsTL_ mv) = mv.v;
@@ -153,20 +155,20 @@ public SubstsT[&T] tauInv(SubstsT_[&T] mv)
 @doc{tauToSubstsTL: SubstsT -> SubstsTL}
 public SubstsTL[&T] tauToSubstsTL(SubstsT[&T] mv) {
 	TypeOf[tuple[&T,Substs]] v = run(mv)(substs([],[]));
-	return substsl(v);
+	return substsl(bind(v, TypeOf[tuple[&T,set[Substs]]] (tuple[&T,Substs] v_) { return returnT(<v_[0], { v_[1] }>); }));
 } 
 
 @doc{tauToSubstsT: SubstsTL -> SubstsT}
 public SubstsT[&T] tauToSubstsT(SubstsTL[&T] mv) {
-	TypeOf[tuple[&T,Substs]] v = run(mv);
+	TypeOf[tuple[&T,set[Substs]]] v = run(mv);
 	return substs( TypeOf[tuple[&T,Substs]] (Substs s) {
-						return v; });
+						return bind(v, TypeOf[tuple[&T,Substs]] (tuple[&T,set[Substs]] v_) { return returnT(v_[0], getOneFrom(v_[1])); }); });
 }
 
 @doc{tauToSubstsT: SubstsTL -> SubstsTL'}
 public SubstsTL_[&T] tauToSubstsTL_(SubstsTL[&T] mv) {
-	TypeOf[tuple[&T,Substs]] v = run(mv);
-	return substsl_( typeof(tuple[&T,Substs] v_) := v ? { <v_[0], { v_[1] }> } : {} );
+	TypeOf[tuple[&T,set[Substs]]] v = run(mv);
+	return substsl_( typeof(tuple[&T,set[Substs]] v_) := v ? { v_ } : {} );
 }
 
 @doc{tauToSubstsTL_: SubstsT -> SubstsTL'}
@@ -182,7 +184,7 @@ public SubstsTL_[&T] tauToSubstsTL_(SubstsT_[&T] mv) {
 
 @doc{tauToSubstsT_: SubstsTL' -> SubstsT'}
 public SubstsT_[&T] tauToSubstsT_(SubstsTL_[&T] mv) {
-	rel[&T,Substs] vs = run(mv);
+	rel[&T,set[Substs]] vs = run(mv);
 	return substs_( lrel[&T,Substs] (Substs s) {
 						return [ <v, getOneFrom(ss)> | <&T v, set[Substs] ss> <- vs ]; });
 } 

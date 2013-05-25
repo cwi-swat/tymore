@@ -31,11 +31,14 @@ import List;
 
 public alias ParamSolutions = map[TypeOf[Entity], SubstsTL_[Entity]];
 
-// public set[Constraint[TypeOf[Entity]]] solveit(Constraint::eq(TypeOf[Entity] l, TypeOf[Entity] r));
-// public set[Constraint[TypeOf[Entity]]] solveit(Constraint::subtype(TypeOf[Entity] l, TypeOf[Entity] r));
+@doc{
+public set[Constraint[TypeOf[Entity]]] solveit(Constraint::eq(TypeOf[Entity] l, TypeOf[Entity] r));
+public set[Constraint[TypeOf[Entity]]] solveit(Constraint::subtype(TypeOf[Entity] l, TypeOf[Entity] r));
+}
 
+// TODO: also need to be formulated in a monadic way
 public ParamSolutions solutions = ();
-public set[Constraint[SubstsT[Entity]]] constraints = {};
+public set[Constraint[SubstsTL[Entity]]] constraints = {};
 
 @doc{EXTENSION with plain generics}
 public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper, 
@@ -47,10 +50,8 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	TypeOf[Entity] lv = eval(lh);
 	TypeOf[Entity] rv = eval(rh);
 	
-	bool lhIsTypeArg = !isZero(bind(lv, TypeOf[Entity] (Entity v) { 
-									return isTypeArgument(v) ? returnT(v) : tzero(); }));
-	bool rhIsTypeArg = !isZero(bind(rv, TypeOf[Entity] (Entity v) { 
-									return isTypeArgument(v) ? returnT(v) : tzero(); }));
+	bool lhIsTypeArg = isTypeArgument(lh);
+	bool rhIsTypeArg = isTypeArgument(rh);
 	
 	// left- and right-hand side are both type argument variables	
 	if(lhIsTypeArg && rhIsTypeArg) {
@@ -79,10 +80,11 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	return { Constraint::subtype(lh, rh) };
 }
 
+public bool isTypeArgument(SubstsTL[Entity] v) = !isZero(bind(v, SubstsTL[Entity] (Entity v_) { return isTypeArgument(v_) ? returnSL(v_) : liftTL(tzero()); }));
+
 @doc{Computes all the supertypes; assumes that values are type values in their generic form}
 public SubstsT_[Entity] supertypes_all(CompilUnit facts, Mapper mapper, Entity v) {
-	Entity genV = getGenV(mapper, v);
-	return bind(isEmpty(getTypeParamsOrArgs(genV)) ? discard(returnS_(v)) : returnS_(v), SubstsT_[Entity] (Entity v) {
+	return bind(isEmpty(getTypeParamsOrArgs(v)) ? discard(returnS_(v)) : returnS_(v), SubstsT_[Entity] (Entity v) {
 				return concat(returnS_(v), 
 				   	   bind(lift(supertypes(facts, v)), SubstsT_[Entity] (Entity vS) {
 							return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, v), vS)))(mapper, vS)), SubstsT_[Entity] (Entity _) {
@@ -95,21 +97,16 @@ public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, Substs
 
 public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
 	return bind(l, SubstsTL_[Entity] (Entity lv) { 
-				return ( !isZero(intersectRHS(facts, mapper, returnSL_(lv), r)) ) ? returnSL_(lv) : liftTL_([]);
+				SubstsTL_[Entity] cond = intersectRHS(facts, mapper, returnSL_(lv), r);
+				return !isZero(cond) ? returnSL_(lv) : liftTL_({});
 			});
 }
 
 public SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
-	l = liftTL_([*{*eval(supertypes_all_(facts, mapper, l))}]); // duplicates should be removed from the left-hand side before the intersection, 
-																// otherwise it adds new elements to the right-hand side
-	return intersect(l,r);
+	return intersect(supertypes_all_(facts, mapper, l),r);
 }
 
 public SubstsTL_[Entity] intersect(SubstsTL_[Entity] l, SubstsTL_[Entity] r) 
 	= bind(l, SubstsTL_[Entity] (Entity lv) {
 				return bind(r, SubstsTL_[Entity] (Entity rv) { 
-							return (lv == rv) ? returnSL_(rv) : liftTL_([]); }); });
-							
-public SubstsTL_[Entity] intersect(Entity l, Entity r) {
-	
-}
+							return (lv == rv) ? returnSL_(rv) : liftTL_({}); }); });
