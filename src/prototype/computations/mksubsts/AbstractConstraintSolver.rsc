@@ -27,6 +27,7 @@ import prototype::computations::mksubsts::FunctionsOfTypeValues;
 
 import IO;
 import List;
+import Set;
 
 
 public alias ParamSolutions = map[TypeOf[Entity], SubstsTL_[Entity]];
@@ -55,29 +56,47 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	
 	// left- and right-hand side are both type argument variables	
 	if(lhIsTypeArg && rhIsTypeArg) {
-		if(lv in solutions) {		
-			solutions[lv] = (rv in solutions) ? intersectLHS(facts, mapper, solutions[lv], solutions[rv]) 
-											  : solutions[lv];
-			solutions[rv] = (rv in solutions) ? intersectRHS(facts, mapper, solutions[lv], solutions[rv]) 
-											  : { sups = supertypes_all_(facts, mapper, solutions[lv]);
-											  	  // DEBUG: println("supertype values in Ta \<: Ta: <prettyprint(sups)>"); 
-											      sups; };
-		} else if(rv in solutions) {
-			solutions[lv] = (lv in solutions) ? intersectLHS(facts, mapper, solutions[lv], solutions[rv]) 
-											  : solutions[rv]; // TODO: should be actually subtypes
-			solutions[rv] = (lv in solutions) ? intersectRHS(facts, mapper, solutions[lv], solutions[rv]) 
-											  : solutions[rv]; 
+		if(lv in solutions) {
+		
+			bool isThere = rv in solutions;
+			
+			solutions[lv] = isThere ? intersectLHS(facts, mapper, solutions[lv], solutions[rv])
+									: solutions[lv];
+			solutions[rv] = isThere ? intersectRHS(facts, mapper, solutions[lv], solutions[rv]) 
+									: { sups = supertypes_all_(facts, mapper, solutions[lv]);
+										// DEBUG: println("supertype values in Ta \<: Ta: <prettyprint(sups)>"); 
+										sups; };		
+			
+			if(isThere) 
+				inferMoreTypeArgumentConstraints(facts, mapper, solutions[rv]);
+				
+		} else if(rv in solutions) { 
+			// Note: lv is not in solutions
+			solutions[lv] = solutions[rv]; // TODO: should be actually subtypes
 		}
 	// only left-hand side is a type argument variable
 	} else if(lhIsTypeArg && !rhIsTypeArg) {
-		solutions[lv] = (lv in solutions) ? intersectLHS(facts, mapper, solutions[lv], tauToSubstsTL_(rh)) 
-										  : tauToSubstsTL_(rh); // TODO: should be actually subtypes
+		
+		bool isThere = lv in solutions;
+		
+		solutions[lv] = isThere ? intersectLHS(facts, mapper, solutions[lv], tauToSubstsTL_(rh)) 
+								: tauToSubstsTL_(rh); // TODO: should be actually subtypes
+								
+		if(isThere)
+			inferMoreTypeArgumentConstraints(facts, mapper, solutions[lv]);
+		
 	// only right-hand side is a type argument variable
 	} else if(!lhIsTypeArg && rhIsTypeArg) {
-		solutions[rv] = (rv in solutions) ? intersectRHS(facts, mapper, tauToSubstsTL_(lh), solutions[rv]) 
-										  : { sups = supertypes_all_(facts, mapper, tauToSubstsTL_(lh));
-											  // DEBUG: println("supertype values of <prettyprint(tauToSubstsTL_(lh))>"); println("supertype values in vT \<: Ta: <prettyprint(sups)>");  
-											  sups; };
+	
+		bool isThere = rv in solutions;
+		
+		solutions[rv] = isThere ? intersectRHS(facts, mapper, tauToSubstsTL_(lh), solutions[rv]) 
+								: { sups = supertypes_all_(facts, mapper, tauToSubstsTL_(lh));
+									// DEBUG: println("supertype values of <prettyprint(tauToSubstsTL_(lh))>"); println("supertype values in vT \<: Ta: <prettyprint(sups)>");  
+									sups; };
+									
+		if(isThere)
+			inferMoreTypeArgumentConstraints(facts, mapper, solutions[rv]);
 	}
 	
 	return { Constraint::subtype(lh, rh) };
@@ -111,3 +130,18 @@ public SubstsTL_[Entity] intersect(SubstsTL_[Entity] l, SubstsTL_[Entity] r)
 	= bind(l, SubstsTL_[Entity] (Entity lv) {
 				return bind(r, SubstsTL_[Entity] (Entity rv) { 
 							return (lv == rv) ? returnSL_(rv) : liftTL_({}); }); });
+							
+public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mvals) {
+	rel[Entity,set[Substs]] vals = run(mvals);
+	for(<Entity val, set[Substs] ss_> <- vals, ss := { s | s <- ss_, s != substs([],[]) }, size(ss) > 1) {
+		Substs oneOf = getOneFrom(ss);
+		for(Substs substs <- ss, substs != oneOf) {
+			SubstsT[Entity] lh = bind(appnd(oneOf), SubstsT[Entity] (value _) { return returnS(val); });
+			SubstsT[Entity] rh = bind(appnd(substs), SubstsT[Entity] (value _) { return returnS(val); });
+			constraints = constraints + { (subtype(_,_) := c) ? Constraint::subtype(tauToSubstsTL(c.lh), tauToSubstsTL(c.rh)) 
+															  : Constraint::eq(tauToSubstsTL(c.lh), tauToSubstsTL(c.rh)) 
+											| Constraint[SubstsT[Entity]] c <- subtyping(facts, mapper, Constraint::eq(lh, rh)) };
+		}
+	}
+	return mvals;
+}

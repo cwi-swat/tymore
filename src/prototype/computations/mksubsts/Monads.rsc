@@ -42,7 +42,8 @@ public TypeOf[&T] eval(SubstsT[&T] mv) = bind(mv.v(substs([],[])), TypeOf[&T] (t
 public SubstsT[&T2] bind(SubstsT[&T1] mv, SubstsT[&T2] (&T1) f)
 	= substs( TypeOf[tuple[&T2, Substs]] (Substs s) {
 				TypeOf[tuple[&T1, Substs]] v = run(mv)(s);
-				return (typeof(tuple[&T1, Substs] tpl) := v) ? run(f(tpl[0]))(tpl[1]) : tzero();
+				return bind(v, TypeOf[tuple[&T2,Substs]] (tuple[&T1,Substs] tpl) { 
+							return run(f(tpl[0]))(tpl[1]); });
 			  } );
 			  
 public bool isZero(SubstsT[&T] mv) = isZero(eval(mv));

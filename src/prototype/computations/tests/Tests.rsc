@@ -98,6 +98,7 @@ private void testConstraintSemantics(loc project) {
 		
 	}	
 	tracer(true, "Solutions: <for(s<-solutions){><prettyprint(s)> = <prettyprint(solutions[s])> \n <}>");
+	tracer(true, "Constraints: <for(c<-constraints){><prettyprint(c)> \n <}>");
 }
 
 public void testLookupSemantics(list[loc] projects) { for(project <- projects) testLookupSemantics(project); }
