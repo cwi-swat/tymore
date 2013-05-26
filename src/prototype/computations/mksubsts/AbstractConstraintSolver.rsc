@@ -56,25 +56,28 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	// left- and right-hand side are both type argument variables	
 	if(lhIsTypeArg && rhIsTypeArg) {
 		if(lv in solutions) {		
-			solutions[lv] = (rv in solutions) ? intersectLHS(facts, mapper, solutions[lv], solutions[rv]) : solutions[lv];
+			solutions[lv] = (rv in solutions) ? intersectLHS(facts, mapper, solutions[lv], solutions[rv]) 
+											  : solutions[lv];
 			solutions[rv] = (rv in solutions) ? intersectRHS(facts, mapper, solutions[lv], solutions[rv]) 
 											  : { sups = supertypes_all_(facts, mapper, solutions[lv]);
 											  	  // DEBUG: println("supertype values in Ta \<: Ta: <prettyprint(sups)>"); 
 											      sups; };
 		} else if(rv in solutions) {
-			solutions[lv] = (lv in solutions) ? intersectLHS(facts, mapper, solutions[lv], solutions[rv]) : solutions[lv];
-			solutions[rv] = (lv in solutions) ? intersectRHS(facts, mapper, solutions[lv], solutions[rv]) 
+			solutions[lv] = (lv in solutions) ? intersectLHS(facts, mapper, solutions[lv], solutions[rv]) 
 											  : solutions[rv]; // TODO: should be actually subtypes
+			solutions[rv] = (lv in solutions) ? intersectRHS(facts, mapper, solutions[lv], solutions[rv]) 
+											  : solutions[rv]; 
 		}
 	// only left-hand side is a type argument variable
 	} else if(lhIsTypeArg && !rhIsTypeArg) {
-		solutions[lv] = (lv in solutions) ? intersectLHS(facts, mapper, solutions[lv], tauToSubstsTL_(rh)) : tauToSubstsTL_(rh);
+		solutions[lv] = (lv in solutions) ? intersectLHS(facts, mapper, solutions[lv], tauToSubstsTL_(rh)) 
+										  : tauToSubstsTL_(rh); // TODO: should be actually subtypes
 	// only right-hand side is a type argument variable
 	} else if(!lhIsTypeArg && rhIsTypeArg) {
 		solutions[rv] = (rv in solutions) ? intersectRHS(facts, mapper, tauToSubstsTL_(lh), solutions[rv]) 
-											  : { sups = supertypes_all_(facts, mapper, tauToSubstsTL_(lh));
-											  	  // DEBUG: println("supertype values of <prettyprint(tauToSubstsTL_(lh))>"); println("supertype values in vT \<: Ta: <prettyprint(sups)>");  
-											  	  sups; };
+										  : { sups = supertypes_all_(facts, mapper, tauToSubstsTL_(lh));
+											  // DEBUG: println("supertype values of <prettyprint(tauToSubstsTL_(lh))>"); println("supertype values in vT \<: Ta: <prettyprint(sups)>");  
+											  sups; };
 	}
 	
 	return { Constraint::subtype(lh, rh) };

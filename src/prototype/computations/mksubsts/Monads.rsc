@@ -139,6 +139,7 @@ public data SubstsTL_[&T] = substsl_( rel[&T,set[Substs]] v); // promising exper
 public SubstsTL_[&T] returnSL_(&T v) = substsl_({<v, { substs([],[]) }>});
 public rel[&T,set[Substs]] run(SubstsTL_ mv) = mv.v;
 public set[&T] eval(SubstsTL_[&T] mv) = { v | <&T v, _> <- mv.v };
+public set[set[Substs]] evalSubsts(SubstsTL_[&T] mv) = { ss | <&T _, set[Substs] ss> <- mv.v };
 
 public SubstsTL_[&T2] bind(SubstsTL_[&T1] _:substsl_( rel[&T1,set[Substs]] vs1 ), SubstsTL_[&T2] (&T1) f)
 	= substsl_({ <v2, substs1 + substs2> | <&T1 v1, set[Substs] substs1> <- vs1, 
