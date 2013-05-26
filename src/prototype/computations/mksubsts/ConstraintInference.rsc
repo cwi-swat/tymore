@@ -55,15 +55,17 @@ public set[Constraint[SubstsT[Entity]]] boundS(CompilUnit facts, Mapper mapper, 
 							return returnS(getGenV(mapper, b)); }); })(c) }; 
 
 @doc{Computes the supertype predicate of the left-hand side given the right-hand side}				
-public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapper, Constraint::subtype(SubstsT[Entity] lh, SubstsT[Entity] rh))
-	= { subtype(bind(discard(rh), SubstsT[Entity] (Entity v2) { 
+public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapper, Constraint::subtype(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
+	rh = tauToSubstsT(tauToSubstsTL(rh));
+	return { subtype(bind(discard(rh), SubstsT[Entity] (Entity v2) { 
 						return bind(lh, SubstsT[Entity] (Entity v1) {
 								SubstsT[bool] isSup = tauInv(supertypec_(facts, mapper, <v1, v2>)); 
 								// DEBUG: if(tzero() := eval(isSup)) println("<prettyprint(v1)> \<: <prettyprint(v2)> does not hold!");
-								// assert(!(tzero() := eval(isSup))); // makes sure that the supertype is found
+								// assert(!(tzero() := eval(isSup)));
 								return bind(isSup, SubstsT[Entity] (bool b) { 
 									return returnS(v2); }); }); }),
 				rh) };
+}
 public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapper, c:Constraint::eq(SubstsT[Entity] lh, SubstsT[Entity] rh)) 
 	= { c };
 

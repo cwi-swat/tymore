@@ -116,7 +116,8 @@ public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl( TypeOf[tuple[&T1,set[Substs]]
 	switch(mv1) {
 		case typeof(<&T1 v1, set[Substs] substs>): {
 			SubstsTL[&T2] mv2 = f(v1);
-			return substsl(bind(mv2.v, TypeOf[tuple[&T2,set[Substs]]] (tuple[&T2,set[Substs]] v2) { return returnT(<v2[0], substs + v2[1]>); } ));
+			return substsl(bind(mv2.v, TypeOf[tuple[&T2,set[Substs]]] (tuple[&T2,set[Substs]] v2) { 
+								return returnT(<v2[0], substs + v2[1]>); } ));
 		}
 		default: return substsl(tzero());
 	}
@@ -124,9 +125,13 @@ public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl( TypeOf[tuple[&T1,set[Substs]]
 
 public bool isZero(SubstsTL[&T] mv) = isZero(eval(mv));
 
-public SubstsTL[set[Substs]] popSubsts(SubstsTL[&T] mv) = substsl( bind(mv.v, TypeOf[tuple[set[Substs],set[Substs]]] (tuple[&T,set[Substs]] v) { return <v[1],v[1]>; }) );
+public SubstsTL[set[Substs]] popSubsts(SubstsTL[&T] mv) 
+	= substsl( bind(mv.v, TypeOf[tuple[set[Substs],set[Substs]]] (tuple[&T,set[Substs]] v) { 
+					return <v[1],v[1]>; }) );
 
-public SubstsTL[&T] liftTL(TypeOf[&T] mv) = substsl( bind(mv, TypeOf[tuple[&T,set[Substs]]] (&T v) { return returnT(<v, { substs([],[]) }>); }) );
+public SubstsTL[&T] liftTL(TypeOf[&T] mv) 
+	= substsl( bind(mv, TypeOf[tuple[&T,set[Substs]]] (&T v) { 
+					return returnT(<v, { substs([],[]) }>); }) );
 
 @doc{SubstsTL' monad}
 public data SubstsTL_[&T] = substsl_( rel[&T,set[Substs]] v); // promising experience of replacing list to set logic of computation
@@ -140,7 +145,7 @@ public SubstsTL_[&T2] bind(SubstsTL_[&T1] _:substsl_( rel[&T1,set[Substs]] vs1 )
 										   <&T2 v2, set[Substs] substs2> <- run(f(v1)) });
 	
 public SubstsTL_[&T] liftTL_(set[&T] vs) = !isEmpty(vs) ? substsl_( { <v, { substs([],[]) }> | &T v <- vs } )
-													     : substsl_( {} );
+													    : substsl_( {} );
 													    
 public bool isZero(SubstsTL_[&T] mv) = isEmpty(eval(mv));
 
