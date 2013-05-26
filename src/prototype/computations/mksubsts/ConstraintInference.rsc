@@ -144,7 +144,8 @@ public set[Constraint[SubstsT[Entity]]] bindTypeArgumentIfNotRawType(Mapper mapp
 										SubstsT[Entity] b = bind(boundS(mapper, v), SubstsT[Entity] (Entity b) { 
 																// DEBUG: println("Bind type argument variables if not a raw type: <prettyprint(v)> <prettyprint(b)>"); 
 																return returnS(getGenV(mapper, b)); });
-										if(!isZero(b)) return b;
+										SubstsTL[Entity] b_ = tauToSubstsTL(b);
+										if(!isZero(b_)) return tauToSubstsT(b_);
 										else return returnS(v);
 									}
 									return returnS(v);  };
