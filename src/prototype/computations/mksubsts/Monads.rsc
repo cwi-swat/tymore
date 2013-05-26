@@ -47,12 +47,12 @@ public SubstsT[&T2] bind(SubstsT[&T1] mv, SubstsT[&T2] (&T1) f)
 			  
 public bool isZero(SubstsT[&T] mv) = isZero(eval(mv));
 
-// FIXME: the semantics has to be checked
 @doc{Drops the substitution part}
 public SubstsT[&T] discard(SubstsT[&T] mv)
-	= substs( TypeOf[tuple[&T, Substs]] (Substs s) {
-				TypeOf[tuple[&T, Substs]] v = run(mv)(substs([],[]));
-				return (typeof(<&T v_,_>) := v) ? returnT(<v_,s>) : tzero() ; } );
+	= substs( TypeOf[tuple[&T,Substs]] (Substs s) {
+				TypeOf[tuple[&T,Substs]] v = run(mv)(s);
+				return bind(v, TypeOf[tuple[&T,Substs]] (tuple[&T,Substs] v_) { 
+							return returnT(<v_[0], substs([],[])>); }); });
 			  
 public SubstsT[&T] catchZ(SubstsT[&T] mv1, SubstsT[&T] mv2) 
 	= substs( TypeOf[tuple[&T, Substs]] (Substs s) {
