@@ -25,14 +25,6 @@ import List;
 import Map;
 import Set;
 
-public Entity lookupSubsts(Substs s, Entity v) {
-	map[Entity, Entity] mapOfs = ();
-	if(!isEmpty(s.params))
-		for(int i <- [0..size(s.params)])
-			mapOfs[s.params[i]] = s.args[i];
-	return mapOfs[v] ? zero();
-}
-
 public Entity lookupEnv(CompilUnit facts, Entity v) {
 	list[Entity] boundsOftp = typeParamBounds(facts, v);
 	map[Entity, Entity] mapOfs = ();

@@ -100,11 +100,44 @@ public Entity boundWildcardLB(entity([ *ids, wildcard(extends(Entity wcb)) ])) =
 public Entity boundWildcardLB(entity([ *ids, captureof(wildcard(extends(Entity wcb))) ])) = zero();
 public default Entity boundWildcardLB(Entity val) = val;
 
+@doc{Does lookup into substitution}
+public Entity lookupSubsts(Substs s, Entity v) {
+	map[Entity, Entity] mapOfs = ();
+	if(!isEmpty(s.params))
+		for(int i <- [0..size(s.params)])
+			mapOfs[s.params[i]] = s.args[i];
+	return mapOfs[v] ? zero();
+}
+
 @doc{Concatenates substitutions}
 public Substs concat(Substs s1, Substs s2) { 
 	assert(size(s1.args) == size(s1.params)); assert(size(s2.args) == size(s2.params));		
 	Substs s = substs( ((!isEmpty(s1.params)) ? [ s1.args[i] | int i <- [0..size(s1.params)], s1.params[i] notin s2.params ] : []) + s2.args, 
 		    	       ((!isEmpty(s1.params)) ? [ s1.params[i] | int i <- [0..size(s1.params)], s1.params[i] notin s2.params ] : []) + s2.params );
 	assert(size(s.args) == size(s.params));
-	return s;
+	return normalize(s);
+}
+
+@doc{Does propagation via type parameters}
+public Substs normalize(Substs s) {
+	list[Entity] args = s.args;
+	list[Entity] params = s.params;
+	if(isEmpty(params) || size(params) == 1) return s;
+	int n = -1;
+	Entity bnd = zero();
+	if(int i <- [0..size(args)], 
+			isTypeParameter(args[i]), Entity b := lookupSubsts(s, args[i]), b != zero()) {
+		n = i;
+		bnd = b;
+	}
+	if(n == -1) return s;
+	// DEBUG: println("normalization ..."); println(s);
+	Entity arg = args[n];
+	args[n] = bnd;
+	if(int i <- [0..size(params)], params[i] == arg) {
+		args = delete(args,i);
+		params = delete(params,i);
+	}
+	// DEBUG: println(substs(args,params));
+	return normalize(substs(args,params));
 }
