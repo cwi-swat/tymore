@@ -55,11 +55,19 @@ private void testConstraintSemantics(loc project) {
 		//	};
 		//} o visitADT)(cu);
 		
+		println("computing constraints...");
+		
 		top-down visit(cu) {
 			case AstNode n: { cons += constrain(n, facts, mapper); insert n; }
 		}
 		
+		println("done");
+		
+		println("computing additional constaints...");
+		
 		set[Constraint[SubstsT[Entity]]] cls = { *inferTypeArguments(facts, mapper, c) | Constraint[SubstsT[Entity]] c <- cons };
+		
+		println("done");
 		
 		//str print1 = "";
 		//for(str cs <- { prettyprint(c) | Constraint[SubstsT[Entity]] c <- cons })
@@ -71,14 +79,22 @@ private void testConstraintSemantics(loc project) {
 			print2 = print2 + cs + "\n";
 		tracer(true, "Constraints (closure): \n <print2>");		
 		
+		println("processing to solve...");
+		
 		set[Constraint[SubstsTL[Entity]]] cls_ = { (Constraint::subtype(lh,rh) := c) ? Constraint::subtype(tauToSubstsTL(lh), tauToSubstsTL(rh)) 
 																					  : Constraint::eq(tauToSubstsTL(c.lh), tauToSubstsTL(c.rh)) 
 																			| Constraint[SubstsT[Entity]] c <- cls };
-										
+				
+		println("done");
+		
+		println("solving...");
+								
 		set[Constraint[SubstsTL[Entity]]] clsSolved = {};
 		solve(solutions) {
 			clsSolved = { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- cls_ };
 		}
+		
+		println("done");
 		
 	}	
 	tracer(true, "Solutions: <for(s<-solutions){><prettyprint(s)> = <prettyprint(solutions[s])> \n <}>");

@@ -80,8 +80,6 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	return { Constraint::subtype(lh, rh) };
 }
 
-public bool isTypeArgument(SubstsTL[Entity] v) = !isZero(bind(v, SubstsTL[Entity] (Entity v_) { return isTypeArgument(v_) ? returnSL(v_) : liftTL(tzero()); }));
-
 @doc{Computes all the supertypes; assumes that values are type values in their generic form}
 public SubstsT_[Entity] supertypes_all(CompilUnit facts, Mapper mapper, Entity v) {
 	return bind(isEmpty(getTypeParamsOrArgs(v)) ? discard(returnS_(v)) : returnS_(v), SubstsT_[Entity] (Entity v) {

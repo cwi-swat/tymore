@@ -59,9 +59,8 @@ public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapp
 	= { subtype(bind(discard(rh), SubstsT[Entity] (Entity v2) { 
 						return bind(lh, SubstsT[Entity] (Entity v1) {
 								SubstsT[bool] isSup = tauInv(supertypec_(facts, mapper, <v1, v2>)); 
-								// DEBUG: 
-								if(tzero() := eval(isSup)) println("<prettyprint(v1)> \<: <prettyprint(v2)> does not hold!");
-								assert(!(tzero() := eval(isSup))); // makes sure that the supertype is found
+								// DEBUG: if(tzero() := eval(isSup)) println("<prettyprint(v1)> \<: <prettyprint(v2)> does not hold!");
+								// assert(!(tzero() := eval(isSup))); // makes sure that the supertype is found
 								return bind(isSup, SubstsT[Entity] (bool b) { 
 									return returnS(v2); }); }); }),
 				rh) };
@@ -119,23 +118,33 @@ public set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapper mappe
 		   };
 }
 
-public set[Constraint[SubstsT[Entity]]] catchTypeArgVariable(Constraint[SubstsT[Entity]] c) {
-	TypeOf[tuple[Entity,Entity]] v = bind(eval(c.lh), TypeOf[tuple[Entity, Entity]] (Entity lv) {
-										 return isTypeArgument(lv) ? tzero()
-						   		  								   : bind(eval(c.rh), TypeOf[tuple[Entity, Entity]] (Entity rv) { 
-						   												 return isTypeArgument(rv) ? tzero() : returnT(<lv,rv>); }); });
-	return isZero(v) ? { c } : {};
+public set[Constraint[SubstsT[Entity]]] catchTypeArgVariable(Constraint::subtype(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
+	SubstsTL[Entity] lh_ = tauToSubstsTL(lh);
+	SubstsTL[Entity] rh_ = tauToSubstsTL(rh);
+	bool lhIsTypeArg = isTypeArgument(lh_);
+	bool rhIsTypeArg = isTypeArgument(rh_);
+	return (lhIsTypeArg || rhIsTypeArg) ? { Constraint::subtype(tauToSubstsT(lh_), tauToSubstsT(rh_)) } : {};
 }
+
+public set[Constraint[SubstsT[Entity]]] catchTypeArgVariable(Constraint::eq(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
+	SubstsTL[Entity] lh_ = tauToSubstsTL(lh);
+	SubstsTL[Entity] rh_ = tauToSubstsTL(rh);
+	bool lhIsTypeArg = isTypeArgument(lh_);
+	bool rhIsTypeArg = isTypeArgument(rh_);
+	return (lhIsTypeArg || rhIsTypeArg) ? { Constraint::eq(tauToSubstsT(lh_), tauToSubstsT(rh_)) } : {};
+}
+
+public bool isTypeArgument(SubstsTL[Entity] v) 
+	= !isZero(bind(v, SubstsTL[Entity] (Entity v_) { 
+					return isTypeArgument(v_) ? returnSL(v_) : liftTL(tzero()); }));
 
 public set[Constraint[SubstsT[Entity]]] bindTypeArgumentIfNotRawType(Mapper mapper, Constraint[SubstsT[Entity]] c) {
 	SubstsT[Entity] (Entity) f = SubstsT[Entity] (Entity v) {
 									if(isTypeArgument(v)) {
 										SubstsT[Entity] b = bind(boundS(mapper, v), SubstsT[Entity] (Entity b) { 
-																// DEBUG: 
-																println("Bind type argument variables if not a raw type: <prettyprint(v)> <prettyprint(b)>"); 
+																// DEBUG: println("Bind type argument variables if not a raw type: <prettyprint(v)> <prettyprint(b)>"); 
 																return returnS(getGenV(mapper, b)); });
-										if(!isZero(b))
-											return b;
+										if(!isZero(b)) return b;
 										else return returnS(v);
 									}
 									return returnS(v);  };

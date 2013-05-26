@@ -164,7 +164,7 @@ public SubstsTL[&T] tauToSubstsTL(SubstsT[&T] mv) {
 public SubstsT[&T] tauToSubstsT(SubstsTL[&T] mv) {
 	TypeOf[tuple[&T,set[Substs]]] v = run(mv);
 	return substs( TypeOf[tuple[&T,Substs]] (Substs s) {
-						return bind(v, TypeOf[tuple[&T,Substs]] (tuple[&T,set[Substs]] v_) { return returnT(v_[0], getOneFrom(v_[1])); }); });
+						return bind(v, TypeOf[tuple[&T,Substs]] (tuple[&T,set[Substs]] v_) { return returnT(<v_[0], getOneFrom(v_[1])>); }); });
 }
 
 @doc{tauToSubstsT: SubstsTL -> SubstsTL'}
