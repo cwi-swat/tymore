@@ -43,8 +43,43 @@ public set[Constraint[SubstsTL[Entity]]] constraints = {};
 
 @doc{EXTENSION with plain generics}
 public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper, 
-												 Constraint::eq(SubstsTL[Entity] lh, SubstsTL[Entity] rh)) 
-	= { Constraint::eq(lh,rh) };
+												 Constraint::eq(SubstsTL[Entity] lh, SubstsTL[Entity] rh)) {
+	TypeOf[Entity] lv = eval(lh);
+	TypeOf[Entity] rv = eval(rh);
+	
+	bool lhIsTypeArg = isTypeArgument(lh);
+	bool rhIsTypeArg = isTypeArgument(rh);
+	
+	// left- and right-hand side are both type argument variables	
+	if(lhIsTypeArg && rhIsTypeArg) {
+		if(lv in solutions) {		
+			bool isThere = rv in solutions;		
+			solutions[lv] = isThere ? intersect(facts, mapper, solutions[rv], solutions[lv]) // Note: reverse order!
+									: solutions[lv];
+			solutions[rv] = isThere ? intersect(facts, mapper, solutions[lv], solutions[rv]) 
+									: solutions[lv];
+						
+		} else if(rv in solutions) { 
+			// Note: lv is not in solutions
+			solutions[lv] = solutions[rv];
+		}
+	// only left-hand side is a type argument variable
+	} else if(lhIsTypeArg && !rhIsTypeArg) {		
+		bool isThere = lv in solutions;
+		solutions[lv] = isThere ? intersect(facts, mapper, tauToSubstsTL_(rh), solutions[lv]) // Note: reverse order! 
+								: tauToSubstsTL_(rh);
+								
+	// only right-hand side is a type argument variable
+	} else if(!lhIsTypeArg && rhIsTypeArg) {	
+		bool isThere = rv in solutions;
+		solutions[rv] = isThere ? intersect(facts, mapper, tauToSubstsTL_(lh), solutions[rv]) 
+								: tauToSubstsTL_(lh);
+									
+	}
+	
+	return { Constraint::eq(lh, rh) };			 
+}
+
 public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper, 
 												 Constraint::subtype(SubstsTL[Entity] lh, SubstsTL[Entity] rh)) {
 											
@@ -56,10 +91,8 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	
 	// left- and right-hand side are both type argument variables	
 	if(lhIsTypeArg && rhIsTypeArg) {
-		if(lv in solutions) {
-		
+		if(lv in solutions) {		
 			bool isThere = rv in solutions;
-			
 			solutions[lv] = isThere ? intersectLHS(facts, mapper, solutions[lv], solutions[rv])
 									: solutions[lv];
 			solutions[rv] = isThere ? intersectRHS(facts, mapper, solutions[lv], solutions[rv]) 
@@ -67,9 +100,6 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 										// DEBUG: println("supertype values in Ta \<: Ta: <prettyprint(sups)>"); 
 										sups; };		
 			
-			if(isThere) 
-				inferMoreTypeArgumentConstraints(facts, mapper, solutions[rv]);
-				
 		} else if(rv in solutions) { 
 			// Note: lv is not in solutions
 			solutions[lv] = solutions[rv]; // TODO: should be actually subtypes
@@ -79,24 +109,27 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 		
 		bool isThere = lv in solutions;
 		
+		// DEBUG: println("Compute lhs in Ta \<: C: <if(isThere){><prettyprint(solutions[lv])><}>");
+		
 		solutions[lv] = isThere ? intersectLHS(facts, mapper, solutions[lv], tauToSubstsTL_(rh)) 
 								: tauToSubstsTL_(rh); // TODO: should be actually subtypes
-								
-		if(isThere)
-			inferMoreTypeArgumentConstraints(facts, mapper, solutions[lv]);
 		
+		// DEBUG: println("computed rhs in Ta \<: C: <prettyprint(solutions[lv])>!");
+								
 	// only right-hand side is a type argument variable
 	} else if(!lhIsTypeArg && rhIsTypeArg) {
 	
 		bool isThere = rv in solutions;
 		
+		// DEBUG: println("Compute rhs in C \<: Ta: <if(isThere){><prettyprint(solutions[rv])><}>");
+		
 		solutions[rv] = isThere ? intersectRHS(facts, mapper, tauToSubstsTL_(lh), solutions[rv]) 
 								: { sups = supertypes_all_(facts, mapper, tauToSubstsTL_(lh));
 									// DEBUG: println("supertype values of <prettyprint(tauToSubstsTL_(lh))>"); println("supertype values in vT \<: Ta: <prettyprint(sups)>");  
 									sups; };
+		
+		//DEBUG: println("computed rhs in C \<: Ta: <prettyprint(solutions[rv])>!");
 									
-		if(isThere)
-			inferMoreTypeArgumentConstraints(facts, mapper, solutions[rv]);
 	}
 	
 	return { Constraint::subtype(lh, rh) };
@@ -115,6 +148,7 @@ public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, Substs
 	= tauToSubstsTL_(bind(tauToSubstsT_(mv), SubstsT_[Entity] (Entity v) {
 						return supertypes_all(facts, mapper, v); }));
 
+// TODO: tauToSubstsT -> tauToSubstsTL
 public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
 	return bind(l, SubstsTL_[Entity] (Entity lv) { 
 				SubstsTL_[Entity] cond = intersectRHS(facts, mapper, returnSL_(lv), r);
@@ -122,18 +156,24 @@ public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, SubstsTL_
 			});
 }
 
+// TODO: tauToSubstsT -> tauToSubstsTL
 public SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
-	return intersect(supertypes_all_(facts, mapper, l),r);
+	return intersect(facts, mapper, supertypes_all_(facts, mapper, l),r);
 }
 
-public SubstsTL_[Entity] intersect(SubstsTL_[Entity] l, SubstsTL_[Entity] r) 
-	= bind(l, SubstsTL_[Entity] (Entity lv) {
-				return bind(r, SubstsTL_[Entity] (Entity rv) { 
-							return (lv == rv) ? returnSL_(rv) : liftTL_({}); }); });
-							
+public SubstsTL_[Entity] intersect(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) { 
+	SubstsTL_[Entity] intersection = bind(l, SubstsTL_[Entity] (Entity lv) {
+										return bind(r, SubstsTL_[Entity] (Entity rv) { 
+												return (lv == rv) ? returnSL_(rv) : liftTL_({}); }); });
+	return inferMoreTypeArgumentConstraints(facts, mapper, intersection);
+}
+
 public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mvals) {
 	rel[Entity,set[Substs]] vals = run(mvals);
+	// DEBUG: println("Solving and inferring type argument constraints... <prettyprint(mvals)>");
 	for(<Entity val, set[Substs] ss_> <- vals, ss := { s | s <- ss_, s != substs([],[]) }, size(ss) > 1) {
+		// DEBUG: 
+		// println("Solving and inferring type argument constraints... <prettyprint(val)>; <for(s<-ss){><prettyprint(s)>; <}>");
 		Substs oneOf = getOneFrom(ss);
 		for(Substs substs <- ss, substs != oneOf) {
 			SubstsT[Entity] lh = bind(appnd(oneOf), SubstsT[Entity] (value _) { return returnS(val); });
@@ -143,5 +183,6 @@ public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapp
 											| Constraint[SubstsT[Entity]] c <- subtyping(facts, mapper, Constraint::eq(lh, rh)) };
 		}
 	}
+	// DEBUG: println("<for(c<-constraints){><prettyprint(c)><}>");	
 	return mvals;
 }

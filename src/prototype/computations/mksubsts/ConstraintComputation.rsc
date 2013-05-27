@@ -156,20 +156,20 @@ public str prettyprint(Constraint::eq(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
 public str prettyprint(Constraint::subtype(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
 	l = run(lh)(substs([],[]));
 	r = run(rh)(substs([],[]));
-	// return "<prettyprint(eval(lh))> \<: <prettyprint(eval(rh))> \n <prettyprint(l.v[1])> ; <prettyprint(r.v[1])>";
+	// return "<prettyprint(lh)> \<: <prettyprint(eval(rh))> \n <prettyprint(l.v[1])> ; <prettyprint(r.v[1])>";
 	return "<prettyprint(eval(lh))> \<: <prettyprint(eval(rh))>"; 
 }
 
 public str prettyprint(Constraint::eq(SubstsTL[Entity] lh, SubstsTL[Entity] rh)) {
 	l = run(lh);
 	r = run(rh);
-	// return "<prettyprint(eval(lh))> == <prettyprint(eval(rh))> \n <prettyprint(l.v[1])> ; <prettyprint(r.v[1])>";
+	// return "<prettyprint(lh)> == <prettyprint(rh)>";
 	return "<prettyprint(eval(lh))> == <prettyprint(eval(rh))>";
 } 
-public str prettyprint(Constraint::subtype(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
+public str prettyprint(Constraint::subtype(SubstsTL[Entity] lh, SubstsTL[Entity] rh)) {
 	l = run(lh);
 	r = run(rh);
-	// return "<prettyprint(eval(lh))> \<: <prettyprint(eval(rh))> \n <prettyprint(l.v[1])> ; <prettyprint(r.v[1])>";
+	// return "<prettyprint(lh)> \<: <prettyprint(rh)>";
 	return "<prettyprint(eval(lh))> \<: <prettyprint(eval(rh))>"; 
 }
 

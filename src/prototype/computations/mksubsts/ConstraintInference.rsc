@@ -57,7 +57,7 @@ public set[Constraint[SubstsT[Entity]]] boundS(CompilUnit facts, Mapper mapper, 
 @doc{Computes the supertype predicate of the left-hand side given the right-hand side}				
 public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapper, Constraint::subtype(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
 	rh = tauToSubstsT(tauToSubstsTL(rh));
-	return { subtype(bind(discard(rh), SubstsT[Entity] (Entity v2) { 
+	return { Constraint::subtype(bind(discard(rh), SubstsT[Entity] (Entity v2) { 
 						return bind(lh, SubstsT[Entity] (Entity v1) {
 								SubstsT[bool] isSup = tauInv(supertypec_(facts, mapper, <v1, v2>)); 
 								// DEBUG: if(tzero() := eval(isSup)) println("<prettyprint(v1)> \<: <prettyprint(v2)> does not hold!");
