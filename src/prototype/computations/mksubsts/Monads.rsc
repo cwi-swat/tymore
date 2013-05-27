@@ -133,7 +133,7 @@ public SubstsTL[&T] liftTL(TypeOf[&T] mv)
 public data SubstsTL_[&T] = substsl_( rel[&T,list[Substs]] v); // promising experience of replacing list to set logic of computation
 
 public SubstsTL_[&T] returnSL_(&T v) = substsl_({<v, []>});
-public rel[&T,set[Substs]] run(SubstsTL_ mv) = mv.v;
+public rel[&T,list[Substs]] run(SubstsTL_ mv) = mv.v;
 public set[&T] eval(SubstsTL_[&T] mv) = { v | <&T v, _> <- mv.v };
 public set[list[Substs]] evalSubsts(SubstsTL_[&T] mv) = { ss | <&T _, list[Substs] ss> <- mv.v };
 
@@ -183,7 +183,7 @@ public SubstsTL_[&T] tauToSubstsTL_(SubstsT[&T] mv) {
 @doc{tauToSubstsTL_: SubstsT' -> SubstsTL'}
 public SubstsTL_[&T] tauToSubstsTL_(SubstsT_[&T] mv) {
 	lrel[&T,Substs] vs = run(mv)(substs([],[]));
-	return substsl_({ <v, (substs != substs([],[])) ? [ substs ] : [] > | <&T v, Substs substs> <- vs });
+	return substsl_({ <v, (substs != Substs::substs([],[])) ? [ substs ] : [] > | <&T v, Substs substs> <- vs });
 } 
 
 @doc{tauToSubstsT_: SubstsTL' -> SubstsT'}
@@ -208,4 +208,4 @@ public str prettyprint(substsl(typeof(<&T v, list[Substs] ss>))) = "\< <prettypr
 public str prettyprint(substsl(tzero())) = "zero";
 
 public str prettyprint(substsl_(rel[&T, list[Substs]] vals)) = "[ <for(val<-vals){><prettyprint(val)><}> ]";
-public str prettyprint(<&T v, set[Substs] ss>) = "\< <prettyprint(v)>, <for(substs<-ss){><prettyprint(substs)><}> \>";
+public str prettyprint(<&T v, list[Substs] ss>) = "\< <prettyprint(v)>, <for(substs<-ss){><prettyprint(substs)><}> \>";

@@ -134,12 +134,13 @@ public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, Substs
 
 public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r)
 	= tauToSubstsTL_(bind(tauToSubstsT_(l), SubstsT_[Entity] (Entity lv) { 
-							return bind(popSubsts(), SubstsT_[Entity] (Substs substs) {
-										SubstsTL_[Entity] cond = intersectRHS(facts, mapper, 
-																  		 	  tauToSubstsTL_(bind(appnd(substs), SubstsT[Entity] (Substs _) { 
-																									return returnS(lv); })),
-																  			  r);				 
-										return !isZero(cond) ? returnS_(lv) : lift({}); });
+							return bind(tau(popSubsts()), SubstsT_[Entity] (Substs substs) {
+										SubstsTL_[Entity] cond 
+												= intersectRHS(facts, mapper, 
+															   tauToSubstsTL_(bind(appnd(substs), SubstsT[Entity] (value _) { 
+																					return returnS(lv); })),
+															   r);				 
+										return !isZero(cond) ? returnS_(lv) : lift([]); });
 						}));
 
 public SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
