@@ -113,20 +113,15 @@ public TypeOf[&T] eval(SubstsTL[&T] mv)
 	= bind(mv.v, TypeOf[&T] (tuple[&T,list[Substs]] v) { 
 			return returnT(v[0]); });
 
-public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl( TypeOf[tuple[&T1,list[Substs]]] mv1 ), SubstsTL[&T2] (&T1) f) {
-	switch(mv1) {
-		case typeof(<&T1 v1, set[Substs] substs>): {
-			SubstsTL[&T2] mv2 = f(v1);
-			return substsl(bind(mv2.v, TypeOf[tuple[&T2,list[Substs]]] (tuple[&T2,list[Substs]] v2) { 
-								return returnT(<v2[0], substs + v2[1]>); } ));
-		}
-		default: return substsl(tzero());
-	}
-}
+public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl( TypeOf[tuple[&T1,list[Substs]]] mv1 ), SubstsTL[&T2] (&T1) f)
+	= substsl( bind(mv1, TypeOf[tuple[&T2,list[Substs]]] (tuple[&T1,list[Substs]] v1) { 
+						SubstsTL[&T2] mv2 = f(v1[0]);
+						return bind(mv2.v, TypeOf[tuple[&T2,list[Substs]]] (tuple[&T2,list[Substs]] v2) { 
+									return returnT(<v2[0], v1[1] + v2[1]>); } ); }) );
 
 public bool isZero(SubstsTL[&T] mv) = isZero(eval(mv));
 
-public SubstsTL[set[Substs]] popSubsts(SubstsTL[&T] mv) 
+public SubstsTL[list[Substs]] popSubsts(SubstsTL[&T] mv) 
 	= substsl( bind(mv.v, TypeOf[tuple[list[Substs],list[Substs]]] (tuple[&T,list[Substs]] v) { 
 					return <v[1],v[1]>; }) );
 
