@@ -53,28 +53,21 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	// left- and right-hand side are both type argument variables	
 	if(lhIsTypeArg && rhIsTypeArg) {
 		if(lv in solutions) {		
-			bool isThere = rv in solutions;		
-			solutions[lv] = isThere ? intersect(facts, mapper, solutions[rv], solutions[lv]) // Note: reverse order!
-									: solutions[lv];
-			solutions[rv] = isThere ? intersect(facts, mapper, solutions[lv], solutions[rv]) 
-									: solutions[lv];
-						
-		} else if(rv in solutions) { 
-			// Note: lv is not in solutions
+			solutions[lv] = (rv in solutions) ? intersect(facts, mapper, solutions[lv], solutions[rv]) // Note: reverse order!
+											  : solutions[lv];
+			solutions[rv] = (rv in solutions) ? intersect(facts, mapper, solutions[rv], solutions[lv]) 
+											  : solutions[lv];
+		} else if(rv in solutions) { // Note: lv is not in solutions
 			solutions[lv] = solutions[rv];
 		}
 	// only left-hand side is a type argument variable
 	} else if(lhIsTypeArg && !rhIsTypeArg) {		
-		bool isThere = lv in solutions;
-		solutions[lv] = isThere ? intersect(facts, mapper, tauToSubstsTL_(rh), solutions[lv]) // Note: reverse order! 
-								: tauToSubstsTL_(rh);
-								
+		solutions[lv] = (lv in solutions) ? intersect(facts, mapper, solutions[lv], tauToSubstsTL_(rh)) // Note: reverse order! 
+										  : tauToSubstsTL_(rh);								
 	// only right-hand side is a type argument variable
 	} else if(!lhIsTypeArg && rhIsTypeArg) {	
-		bool isThere = rv in solutions;
-		solutions[rv] = isThere ? intersect(facts, mapper, tauToSubstsTL_(lh), solutions[rv]) 
-								: tauToSubstsTL_(lh);
-									
+		solutions[rv] = (rv in solutions) ? intersect(facts, mapper, solutions[rv], tauToSubstsTL_(lh)) 
+								: tauToSubstsTL_(lh);					
 	}
 	
 	return { Constraint::eq(lh, rh) };			 
@@ -92,44 +85,35 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	// left- and right-hand side are both type argument variables	
 	if(lhIsTypeArg && rhIsTypeArg) {
 		if(lv in solutions) {		
-			bool isThere = rv in solutions;
-			solutions[lv] = isThere ? intersectLHS(facts, mapper, solutions[lv], solutions[rv])
-									: solutions[lv];
-			solutions[rv] = isThere ? intersectRHS(facts, mapper, solutions[lv], solutions[rv]) 
-									: { sups = supertypes_all_(facts, mapper, solutions[lv]);
-										// DEBUG: println("supertype values in Ta \<: Ta: <prettyprint(sups)>"); 
-										sups; };		
-			
-		} else if(rv in solutions) { 
-			// Note: lv is not in solutions
+			solutions[lv] = (rv in solutions) ? intersectLHS(facts, mapper, solutions[lv], solutions[rv])
+											  : solutions[lv];
+			solutions[rv] = (rv in solutions) ? intersectRHS(facts, mapper, solutions[lv], solutions[rv]) 
+											  : { sups = supertypes_all_(facts, mapper, solutions[lv]);
+												  // DEBUG: println("supertype values in Ta \<: Ta: <prettyprint(sups)>"); 
+												  sups; };
+		} else if(rv in solutions) { // Note: lv is not in solutions
 			solutions[lv] = solutions[rv]; // TODO: should be actually subtypes
 		}
 	// only left-hand side is a type argument variable
 	} else if(lhIsTypeArg && !rhIsTypeArg) {
-		
-		bool isThere = lv in solutions;
-		
 		// DEBUG: println("Compute lhs in Ta \<: C: <if(isThere){><prettyprint(solutions[lv])><}>");
 		
-		solutions[lv] = isThere ? intersectLHS(facts, mapper, solutions[lv], tauToSubstsTL_(rh)) 
-								: tauToSubstsTL_(rh); // TODO: should be actually subtypes
+		solutions[lv] = (lv in solutions) ? intersectLHS(facts, mapper, solutions[lv], tauToSubstsTL_(rh)) 
+										  : tauToSubstsTL_(rh); // TODO: should be actually subtypes
 		
 		// DEBUG: println("computed rhs in Ta \<: C: <prettyprint(solutions[lv])>!");
 								
 	// only right-hand side is a type argument variable
 	} else if(!lhIsTypeArg && rhIsTypeArg) {
-	
-		bool isThere = rv in solutions;
 		
 		// DEBUG: println("Compute rhs in C \<: Ta: <if(isThere){><prettyprint(solutions[rv])><}>");
 		
-		solutions[rv] = isThere ? intersectRHS(facts, mapper, tauToSubstsTL_(lh), solutions[rv]) 
+		solutions[rv] = (rv in solutions) ? intersectRHS(facts, mapper, tauToSubstsTL_(lh), solutions[rv]) 
 								: { sups = supertypes_all_(facts, mapper, tauToSubstsTL_(lh));
 									// DEBUG: println("supertype values of <prettyprint(tauToSubstsTL_(lh))>"); println("supertype values in vT \<: Ta: <prettyprint(sups)>");  
 									sups; };
 		
-		//DEBUG: println("computed rhs in C \<: Ta: <prettyprint(solutions[rv])>!");
-									
+		//DEBUG: println("computed rhs in C \<: Ta: <prettyprint(solutions[rv])>!");									
 	}
 	
 	return { Constraint::subtype(lh, rh) };
@@ -148,18 +132,18 @@ public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, Substs
 	= tauToSubstsTL_(bind(tauToSubstsT_(mv), SubstsT_[Entity] (Entity v) {
 						return supertypes_all(facts, mapper, v); }));
 
-// TODO: tauToSubstsT -> tauToSubstsTL
-public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
-	return bind(l, SubstsTL_[Entity] (Entity lv) { 
-				// FIXME
-				SubstsTL_[Entity] cond = intersectRHS(facts, mapper, returnSL_(lv), r);
-				return !isZero(cond) ? returnSL_(lv) : liftTL_({});
-			});
-}
+public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r)
+	= tauToSubstsTL_(bind(tauToSubstsT_(l), SubstsT_[Entity] (Entity lv) { 
+							return bind(popSubsts(), SubstsT_[Entity] (Substs substs) {
+										SubstsTL_[Entity] cond = intersectRHS(facts, mapper, 
+																  		 	  tauToSubstsTL_(bind(appnd(substs), SubstsT[Entity] (Substs _) { 
+																									return returnS(lv); })),
+																  			  r);				 
+										return !isZero(cond) ? returnS_(lv) : lift({}); });
+						}));
 
-// TODO: tauToSubstsT -> tauToSubstsTL
 public SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
-	return intersect(facts, mapper, supertypes_all_(facts, mapper, l),r);
+	return intersect(facts, mapper, r, supertypes_all_(facts, mapper, l));
 }
 
 public SubstsTL_[Entity] intersect(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) { 
@@ -185,5 +169,5 @@ public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapp
 		}
 	}
 	// DEBUG: println("<for(c<-constraints){><prettyprint(c)><}>");	
-	return mvals;
+	return tauToSubstsTL_(tauToSubstsT_(mvals)); // removes alternative (now constrained) substitutions
 }
