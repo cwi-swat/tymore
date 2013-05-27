@@ -144,8 +144,7 @@ public set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c:eq(lh,rh)) 
 	if(isZero(rh_)) return {};
 	return { Constraint::eq(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
 								  substs( TypeOf[tuple[&T, Substs]] (Substs s) { return rh_; } )) };
-}
-	  
+}	  
 
 public str prettyprint(Constraint::eq(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
 	l = run(lh)(substs([],[]));

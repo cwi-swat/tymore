@@ -151,6 +151,7 @@ public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, Substs
 // TODO: tauToSubstsT -> tauToSubstsTL
 public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
 	return bind(l, SubstsTL_[Entity] (Entity lv) { 
+				// FIXME
 				SubstsTL_[Entity] cond = intersectRHS(facts, mapper, returnSL_(lv), r);
 				return !isZero(cond) ? returnSL_(lv) : liftTL_({});
 			});

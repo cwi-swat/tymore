@@ -120,9 +120,9 @@ public set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapper mappe
 		   };
 }
 
-public set[Constraint[SubstsT[Entity]]] catchTypeArgVariable(Constraint::subtype(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
-	SubstsTL[Entity] lh_ = tauToSubstsTL(lh);
-	SubstsTL[Entity] rh_ = tauToSubstsTL(rh);
+public set[Constraint[SubstsT[Entity]]] catchTypeArgVariable(Constraint[SubstsT[Entity]] c) {
+	SubstsTL[Entity] lh_ = tauToSubstsTL(c.lh);
+	SubstsTL[Entity] rh_ = tauToSubstsTL(c.rh);
 	bool lhIsTypeArg = isTypeArgument(lh_);
 	bool rhIsTypeArg = isTypeArgument(rh_);
 	return (lhIsTypeArg || rhIsTypeArg) ? { Constraint::subtype(tauToSubstsT(lh_), tauToSubstsT(rh_)) } : {};
