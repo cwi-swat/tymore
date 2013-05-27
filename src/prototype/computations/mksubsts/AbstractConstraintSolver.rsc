@@ -170,17 +170,17 @@ public SubstsTL_[Entity] intersect(CompilUnit facts, Mapper mapper, SubstsTL_[En
 }
 
 public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mvals) {
-	rel[Entity,set[Substs]] vals = run(mvals);
+	rel[Entity,list[Substs]] vals = run(mvals);
 	// DEBUG: println("Solving and inferring type argument constraints... <prettyprint(mvals)>");
-	for(<Entity val, set[Substs] ss_> <- vals, ss := { s | s <- ss_, s != substs([],[]) }, size(ss) > 1) {
+	for(<Entity val, list[Substs] ss> <- vals, size(ss) > 1) {
 		// DEBUG: 
 		// println("Solving and inferring type argument constraints... <prettyprint(val)>; <for(s<-ss){><prettyprint(s)>; <}>");
-		Substs oneOf = getOneFrom(ss);
-		for(Substs substs <- ss, substs != oneOf) {
-			SubstsT[Entity] lh = bind(appnd(oneOf), SubstsT[Entity] (value _) { return returnS(val); });
+		Substs first = ss[0];
+		ss = delete(ss,0);
+		for(Substs substs <- ss) {
+			SubstsT[Entity] lh = bind(appnd(first), SubstsT[Entity] (value _) { return returnS(val); });
 			SubstsT[Entity] rh = bind(appnd(substs), SubstsT[Entity] (value _) { return returnS(val); });
-			constraints = constraints + { (subtype(_,_) := c) ? Constraint::subtype(tauToSubstsTL(c.lh), tauToSubstsTL(c.rh)) 
-															  : Constraint::eq(tauToSubstsTL(c.lh), tauToSubstsTL(c.rh)) 
+			constraints = constraints + { Constraint::eq(tauToSubstsTL(c.lh), tauToSubstsTL(c.rh)) // TODO: not necessarily equality constraints 
 											| Constraint[SubstsT[Entity]] c <- subtyping(facts, mapper, Constraint::eq(lh, rh)) };
 		}
 	}
