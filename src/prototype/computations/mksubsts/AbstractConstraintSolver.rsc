@@ -96,24 +96,14 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 		}
 	// only left-hand side is a type argument variable
 	} else if(lhIsTypeArg && !rhIsTypeArg) {
-		// DEBUG: println("Compute lhs in Ta \<: C: <if(isThere){><prettyprint(solutions[lv])><}>");
-		
 		solutions[lv] = (lv in solutions) ? intersectLHS(facts, mapper, solutions[lv], tauToSubstsTL_(rh)) 
 										  : tauToSubstsTL_(rh); // TODO: should be actually subtypes
-		
-		// DEBUG: println("computed rhs in Ta \<: C: <prettyprint(solutions[lv])>!");
-								
 	// only right-hand side is a type argument variable
 	} else if(!lhIsTypeArg && rhIsTypeArg) {
-		
-		// DEBUG: println("Compute rhs in C \<: Ta: <if(isThere){><prettyprint(solutions[rv])><}>");
-		
 		solutions[rv] = (rv in solutions) ? intersectRHS(facts, mapper, tauToSubstsTL_(lh), solutions[rv]) 
 								: { sups = supertypes_all_(facts, mapper, tauToSubstsTL_(lh));
 									// DEBUG: println("supertype values of <prettyprint(tauToSubstsTL_(lh))>"); println("supertype values in vT \<: Ta: <prettyprint(sups)>");  
 									sups; };
-		
-		//DEBUG: println("computed rhs in C \<: Ta: <prettyprint(solutions[rv])>!");									
 	}
 	
 	return { Constraint::subtype(lh, rh) };
@@ -156,10 +146,7 @@ public SubstsTL_[Entity] intersect(CompilUnit facts, Mapper mapper, SubstsTL_[En
 
 public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mvals) {
 	rel[Entity,list[Substs]] vals = run(mvals);
-	// DEBUG: println("Solving and inferring type argument constraints... <prettyprint(mvals)>");
 	for(<Entity val, list[Substs] ss> <- vals, size(ss) > 1) {
-		// DEBUG: 
-		// println("Solving and inferring type argument constraints... <prettyprint(val)>; <for(s<-ss){><prettyprint(s)>; <}>");
 		Substs first = ss[0];
 		ss = delete(ss,0);
 		for(Substs substs <- ss) {
@@ -171,6 +158,5 @@ public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapp
 			constraints = constraints + inferred;
 		}
 	}
-	// DEBUG: println("<for(c<-constraints){><prettyprint(c)><}>");	
-	return tauToSubstsTL_(tauToSubstsT_(mvals)); // removes alternative (now constrained) substitutions
+	return tauToSubstsTL_(tauToSubstsT_(mvals)); // removes alternative (now under additional constraints) substitutions
 }
