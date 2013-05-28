@@ -28,7 +28,7 @@ data Id = method(list[Entity] genericTypes, str name, list[Entity] params, Entit
         | parameter(int i)
         
 		| typeArgument(str name, Entity valuec, Entity init) // value context
-		| typeArgument(str name, AstNode termc, Entity init) // term context
+		| typeArgument(str name, tuple[AstNode,loc] termc, Entity init) // term context
 		
 		| upper(Entity init)
 		| lower(Entity init)
