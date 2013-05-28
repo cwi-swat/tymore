@@ -62,9 +62,7 @@ private void testConstraintSemantics(loc project) {
 		tracer(true, "Constraints (closure): <for(c<-cls){>\n <prettyprint(c)><}>");		
 		tracer(true, "Processing to solve...");
 		
-		set[Constraint[SubstsTL[Entity]]] cls_ = { (Constraint::subtype(lh,rh) := c) ? Constraint::subtype(tauToSubstsTL(lh), tauToSubstsTL(rh)) 
-																					 : Constraint::eq(tauToSubstsTL(c.lh), tauToSubstsTL(c.rh)) 
-																			| Constraint[SubstsT[Entity]] c <- cls };
+		set[Constraint[SubstsTL[Entity]]] cls_ = { tauToSubstsTL(c) | Constraint[SubstsT[Entity]] c <- cls };
 				
 		tracer(true, "done!");
 		
@@ -74,7 +72,7 @@ private void testConstraintSemantics(loc project) {
 		constraints = {};
 								
 		set[Constraint[SubstsTL[Entity]]] clsSolved = {};
-		solve(solutions) {
+		solve(solutions, clsSolved) {
 			clsSolved = { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- cls_ };
 			clsSolved = clsSolved + { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constraints };
 		}

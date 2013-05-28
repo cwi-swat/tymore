@@ -165,8 +165,10 @@ public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapp
 		for(Substs substs <- ss) {
 			SubstsT[Entity] lh = bind(appnd(first), SubstsT[Entity] (value _) { return returnS(val); });
 			SubstsT[Entity] rh = bind(appnd(substs), SubstsT[Entity] (value _) { return returnS(val); });
-			constraints = constraints + { Constraint::eq(tauToSubstsTL(c.lh), tauToSubstsTL(c.rh)) // TODO: not necessarily equality constraints 
-											| Constraint[SubstsT[Entity]] c <- subtyping(facts, mapper, Constraint::eq(lh, rh)) };
+			set[Constraint[SubstsTL[Entity]]] inferred = { tauToSubstsTL(c) 
+															| Constraint[SubstsT[Entity]] c <- subtyping(facts, mapper, Constraint::eq(lh, rh)) };
+			// TODO: include check on not parameterized substitutions 
+			constraints = constraints + inferred;
 		}
 	}
 	// DEBUG: println("<for(c<-constraints){><prettyprint(c)><}>");	

@@ -26,6 +26,7 @@ import prototype::computations::mksubsts::FunctionsOfTypeValues;
 import Prelude;
 public data Constraint[&M] = eq(&M lh, &M rh)
 					  		 | subtype(&M lh, &M rh)
+					  		 | violated(str msg)
 					  		 ;
 					  		 
 public set[Constraint[SubstsT[Entity]]] constrain(t:arrayAccess(_,_), CompilUnit facts, Mapper mapper) 
@@ -146,32 +147,18 @@ public set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c:eq(lh,rh)) 
 								  substs( TypeOf[tuple[&T, Substs]] (Substs s) { return rh_; } )) };
 }	  
 
-public str prettyprint(Constraint::eq(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
-	l = run(lh)(substs([],[]));
-	r = run(rh)(substs([],[]));
-	// return "<prettyprint(eval(lh))> == <prettyprint(eval(rh))> \n <prettyprint(l.v[1])> ; <prettyprint(r.v[1])>";
-	return "<prettyprint(eval(lh))> == <prettyprint(eval(rh))>";
-} 
-public str prettyprint(Constraint::subtype(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
-	l = run(lh)(substs([],[]));
-	r = run(rh)(substs([],[]));
-	// return "<prettyprint(lh)> \<: <prettyprint(eval(rh))> \n <prettyprint(l.v[1])> ; <prettyprint(r.v[1])>";
-	return "<prettyprint(eval(lh))> \<: <prettyprint(eval(rh))>"; 
-}
+public Constraint[SubstsTL[&T]] tauToSubstsTL(Constraint::subtype(SubstsT[&T] lh, SubstsT[&T] rh))
+	= Constraint::subtype(tauToSubstsTL(lh), tauToSubstsTL(rh));
+public Constraint[SubstsTL[&T]] tauToSubstsTL(Constraint::eq(SubstsT[&T] lh, SubstsT[&T] rh))
+	= Constraint::eq(tauToSubstsTL(lh), tauToSubstsTL(rh));
+	
+public Constraint[SubstsT[&T]] tauToSubstsT(Constraint::subtype(SubstsTL[&T] lh, SubstsTL[&T] rh))
+	= Constraint::subtype(tauToSubstsT(lh), tauToSubstsT(rh));
+public Constraint[SubstsT[&T]] tauToSubstsT(Constraint::eq(SubstsTL[&T] lh, SubstsTL[&T] rh))
+	= Constraint::eq(tauToSubstsT(lh), tauToSubstsT(rh));
 
-public str prettyprint(Constraint::eq(SubstsTL[Entity] lh, SubstsTL[Entity] rh)) {
-	l = run(lh);
-	r = run(rh);
-	// return "<prettyprint(lh)> == <prettyprint(rh)>";
-	return "<prettyprint(eval(lh))> == <prettyprint(eval(rh))>";
-} 
-public str prettyprint(Constraint::subtype(SubstsTL[Entity] lh, SubstsTL[Entity] rh)) {
-	l = run(lh);
-	r = run(rh);
-	// return "<prettyprint(lh)> \<: <prettyprint(rh)>";
-	return "<prettyprint(eval(lh))> \<: <prettyprint(eval(rh))>"; 
-}
 
+@doc{Prettyprinting facilities}
 public str prettyprint(Constraint::eq(&M lh, &M rh)) = "<prettyprint(lh)> == <prettyprint(rh)>"; 
 public str prettyprint(Constraint::subtype(&M lh, &M rh)) = "<prettyprint(lh)> \<: <prettyprint(rh)>"; 
 
