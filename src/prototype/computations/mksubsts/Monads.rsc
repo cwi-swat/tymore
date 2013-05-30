@@ -36,8 +36,11 @@ public default bool isZero(TypeOf[&T] mv) = false;
 public data SubstsT[&T] = substs( TypeOf[tuple[&T,Substs]] (Substs) v );
 
 public SubstsT[&T] returnS(&T v) = substs(TypeOf[tuple[&T,Substs]] (Substs s) { return returnT(<v, s>); });
-public TypeOf[tuple[&T, Substs]] (Substs) run(SubstsT[&T] mv) = mv.v;
-public SubstsT[&T] runWithEmptySubsts(SubstsT[&T] mv) = substs( TypeOf[tuple[&T,Substs]] (Substs _) { return run(mv)(substs([],[])); } );
+public TypeOf[tuple[&T,Substs]] (Substs) run(SubstsT[&T] mv) = mv.v;
+public SubstsT[&T] runWithEmptySubsts(SubstsT[&T] mv) {
+	TypeOf[tuple[&T,Substs]] v = run(mv)(substs([],[]));
+	return substs( TypeOf[tuple[&T,Substs]] (Substs _) { return v; } );
+}
 public TypeOf[&T] eval(SubstsT[&T] mv) = bind(mv.v(substs([],[])), TypeOf[&T] (tuple[&T, Substs] v) { return returnT(v[0]); });
 
 public SubstsT[&T2] bind(SubstsT[&T1] mv, SubstsT[&T2] (&T1) f)

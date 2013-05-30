@@ -87,8 +87,8 @@ public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapp
 
 @doc{Infers additional type constraints from subtype constraints}
 public set[Constraint[SubstsT[Entity]]] inferTypeArguments(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
-	cons = { runWithEmptySubsts(c2) | Constraint[SubstsT[Entity]] c1  <- gevalc(facts, mapper, c),
-			      					  Constraint[SubstsT[Entity]] c2  <- boundS_(facts, mapper, c1) 
+	cons = { c2 | Constraint[SubstsT[Entity]] c1  <- gevalc(facts, mapper, c),
+			      Constraint[SubstsT[Entity]] c2  <- boundS_(facts, mapper, c1) 
 		   };
 		   
 	return { c4 | Constraint[SubstsT[Entity]] c1 <- cons,
