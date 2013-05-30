@@ -62,6 +62,7 @@ public SubstsT[Entity] boundS_(Mapper mapper, tp:entity([ *ids, typeParameter(st
 			return bind(pushSubsts(idS)(mapper, b), SubstsT[Entity] (Entity b_) { 
 						return boundS_(mapper, b_); });
 			});
+public SubstsT[Entity] boundS_(Mapper mapper, entity([])) = lift(tzero());
 public default SubstsT[Entity] boundS_(Mapper mapper, Entity v) = returnS(v);
 
 @doc{EXTENSION with wildcards: extends the bind semantics to account for wildcards, lower and upper bounds}
