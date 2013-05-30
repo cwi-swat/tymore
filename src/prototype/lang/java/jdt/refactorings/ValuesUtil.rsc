@@ -70,6 +70,7 @@ public default list[Entity] getTypeParamsOrArgs(Entity val) = [];
 public bool isTypeParameter(PEntity val) = isTypeParameter(val.genval);
 @doc{Returns true if a type argument value}
 public bool isTypeArgument(entity([ *ids, typeArgument(str name, _, Entity _) ])) = true;
+@doc{EXTENSION with wildcards}
 public bool isTypeArgument(entity([ *ids, typeArgument(str name, _, Entity _), upper(_) ])) = true;
 public bool isTypeArgument(entity([ *ids, typeArgument(str name, _, Entity _), lower(_) ])) = true;
 public default bool isTypeArgument(_) = false;
@@ -78,27 +79,37 @@ public bool isCapturedTypeArgument(entity([ *ids, captureof(Entity v) ])) = isTy
 public default bool isCapturedTypeArgument(Entity _) = false;
 
 public Entity getTypeParameter(entity([ *ids, typeArgument(str name, _,_) ])) = entity([typeParameter(name)]);
+@doc{EXTENSION with wildcards}
 public Entity getTypeParameter(entity([ *ids, typeArgument(str name, _,_), upper() ])) = entity([typeParameter(name)]);
 public Entity getTypeParameter(entity([ *ids, typeArgument(str name, _,_), lower() ])) = entity([typeParameter(name)]);
 
 public Entity getInit(entity([ *ids, typeArgument(str name, _, Entity init) ])) = init;
+public default Entity getInit(_) = zero();
+@doc{EXTENSION with wildcards}
 public Entity getInit(entity([ *ids, typeArgument(str name, _, Entity _), upper(Entity init) ])) = init;
 public Entity getInit(entity([ *ids, typeArgument(str name, _, Entity _), lower(Entity init) ])) = init;
-public default Entity getInit(_) = zero();
 
+@doc{EXTENSION with wildcards}
 public Entity boundWildcardUB(entity([ *ids, wildcard() ])) = zero();
 public Entity boundWildcardUB(entity([ *ids, wildcard(extends(Entity wcb)) ])) = wcb;
 public Entity boundWildcardUB(entity([ *ids, captureof(wildcard(extends(Entity wcb))) ])) = wcb;
 public Entity boundWildcardUB(entity([ *ids, wildcard(super(Entity wcb)) ])) = zero();
 public Entity boundWildcardUB(entity([ *ids, captureof(wildcard(super(Entity wcb))) ])) = zero();
 public default Entity boundWildcardUB(Entity val) = val;
-
+@doc{EXTENSION with wildcards}
 public Entity boundWildcardLB(entity([ *ids, wildcard() ])) = zero();
 public Entity boundWildcardLB(entity([ *ids, wildcard(super(Entity wcb)) ])) = wcb;
 public Entity boundWildcardLB(entity([ *ids, captureof(wildcard(super(Entity wcb))) ])) = wcb;
 public Entity boundWildcardLB(entity([ *ids, wildcard(extends(Entity wcb)) ])) = zero();
 public Entity boundWildcardLB(entity([ *ids, captureof(wildcard(extends(Entity wcb))) ])) = zero();
 public default Entity boundWildcardLB(Entity val) = val;
+@doc{EXTENSION with wildcards}
+public Entity boundWildcard(entity([ *ids, wildcard() ])) = zero();
+public Entity boundWildcard(entity([ *ids, wildcard(super(Entity wcb)) ])) = wcb;
+public Entity boundWildcard(entity([ *ids, captureof(wildcard(super(Entity wcb))) ])) = wcb;
+public Entity boundWildcard(entity([ *ids, wildcard(extends(Entity wcb)) ])) = wcb;
+public Entity boundWildcard(entity([ *ids, captureof(wildcard(extends(Entity wcb))) ])) = wcb;
+public default Entity boundWildcard(Entity val) = val;
 
 @doc{Does lookup into substitution}
 public Entity lookupSubsts(Substs s, Entity v) {
