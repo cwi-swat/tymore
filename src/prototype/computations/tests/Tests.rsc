@@ -62,19 +62,21 @@ private void testConstraintSemantics(loc project) {
 		tracer(true, "Constraints (closure): <for(c<-cls){>\n <prettyprint(c)><}>");		
 		tracer(true, "Processing to solve...");
 		
-		set[Constraint[SubstsTL[Entity]]] cls_ = { tauToSubstsTL(c) | Constraint[SubstsT[Entity]] c <- cls };
-				
 		tracer(true, "done!");
 		
-		println("Solving constraints...");
+		tracer(true, "Solving constraints...");
+		
+		set[Constraint[SubstsTL[Entity]]] cls_ = { tauToSubstsTL(c) | Constraint[SubstsT[Entity]] c <- cls };
 		
 		solutions = ();
 		constraints = {};
 								
 		set[Constraint[SubstsTL[Entity]]] clsSolved = {};
+		int n = size(clsSolved);
 		solve(solutions, clsSolved) {
 			clsSolved = { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- cls_ };
 			clsSolved = clsSolved + { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constraints };
+			n = size(clsSolved);
 		}
 		
 		println("done!");

@@ -88,14 +88,15 @@ public SubstsT[Entity] boundLkp(CompilUnit facts, Mapper mapper, Entity v) {
 @doc{Supertype predicate that checks subtype relation}
 public list[bool] supertype(CompilUnit facts, Mapper mapper, tuple[Entity l, Entity r] ts) {
 	if(isSub(mapper, ts.l, ts.r)) return [ true ];
-	return [ b | Entity vS <- supertypes(facts, ts[0]), 
-		   		 bool b <- supertype(facts, mapper, <vS, ts[1]>) ];
+	return [ b | Entity vS <- supertypes(facts, ts.l), 
+		   		 bool b <- supertype(facts, mapper, <vS, ts.r>) ];
 }
 
-@doc{Takes care of raw types, and wildcards}
+@doc{Simple way to take care of raw types, and wildcards; 
+	 the assumption of initial program type correctness makes it sufficient for Java}
 public bool isSub(Mapper mapper, Entity sub, Entity sup) = (mkSubsts(mapper, sub).genval == mkSubsts(mapper, sup).genval);
 
-@doc{Computes direct supertypes}
+@doc{Computes ***direct*** supertypes}
 public SubstsT_[Entity] supertypes_(CompilUnit facts, Mapper mapper, Entity v) {
 	return bind(lift(supertypes(facts, v)), SubstsT_[Entity] (Entity vS1) { 
 			return bind(lift(supertypes(facts, getGenV(mapper, v))), SubstsT_[Entity] (Entity vS2) {
@@ -104,11 +105,20 @@ public SubstsT_[Entity] supertypes_(CompilUnit facts, Mapper mapper, Entity v) {
 										return returnS_(vS1); }); }); });
 }
 
+@doc{Computes ***all*** the supertypes; ***note: it assumes that the input value is a type value in its generic form}
+public SubstsT_[Entity] supertypes_all(CompilUnit facts, Mapper mapper, Entity v) {
+	return bind(isEmpty(getTypeParamsOrArgs(v)) ? discard(returnS_(v)) : returnS_(v), SubstsT_[Entity] (Entity v) {
+				return concat(returnS_(v), 
+				   	   bind(lift(supertypes(facts, v)), SubstsT_[Entity] (Entity vS) {
+							return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, v), vS)))(mapper, vS)), SubstsT_[Entity] (Entity _) {
+										return supertypes_all(facts, mapper, getGenV(mapper, vS)); }); })); });
+}
+
 @doc{Supertype predicate under substitution computation that checks subtype relation}
-public SubstsT_[bool] supertypec_(CompilUnit facts, Mapper mapper, tuple[Entity l, Entity r] ts) {
-	if(isSub(mapper, ts.l, ts.r)) return returnS_(true);
-	return bind(supertypes_(facts, mapper, ts.l), SubstsT_[bool] (Entity vS) { 
-			return bind(supertypec_(facts, mapper, <vS, ts.r>), SubstsT_[bool] (bool b) {
+public SubstsT_[bool] supertypec_(CompilUnit facts, Mapper mapper, tuple[Entity l, Entity r] tpl) {
+	if(isSub(mapper, tpl.l, tpl.r)) return returnS_(true);
+	return bind(supertypes_(facts, mapper, tpl.l), SubstsT_[bool] (Entity vS) { 
+			return bind(supertypec_(facts, mapper, <vS, tpl.r>), SubstsT_[bool] (bool b) {
 						return returnS_(b); }); });
 }
 //@doc{Supertype predicate under substitution computation that checks subtype relation: FACTORED OUT, see above}

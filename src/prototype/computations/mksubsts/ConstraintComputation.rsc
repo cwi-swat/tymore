@@ -130,23 +130,17 @@ public Constraint[SubstsT[&T1]] (Constraint[SubstsT[&T]]) apply(SubstsT[&T1] (&T
 	  }; 
 	  
 @doc{Catches zero computation at the right or left of a constraint and discard this constraint}
-public set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c:subtype(lh,rh)) {
-	TypeOf[tuple[&T, Substs]] lh_ = run(lh)(substs([],[]));
-	if(isZero(lh_)) return {};
-	TypeOf[tuple[&T, Substs]] rh_ = run(rh)(substs([],[]));
-	if(isZero(rh_)) return {};
-	return { Constraint::subtype(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
-							 				substs( TypeOf[tuple[&T, Substs]] (Substs s) { return rh_; } )) };
+public set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c:violated(_)) = { c };
+public default set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c) {
+	Constraint[SubstsT[&T]] c_ = runWithEmptySubsts(c);
+	return (isZero(c_.lh) || isZero(c_.rh)) ? {} : { c_ };
 }
-public set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c:eq(lh,rh)) {
-	TypeOf[tuple[&T, Substs]] lh_ = run(lh)(substs([],[]));
-	if(isZero(lh_)) return {};
-	TypeOf[tuple[&T, Substs]] rh_ = run(rh)(substs([],[]));
-	if(isZero(rh_)) return {};
-	return { Constraint::eq(substs( TypeOf[tuple[&T, Substs]] (Substs s) { return lh_; } ), 
-								  substs( TypeOf[tuple[&T, Substs]] (Substs s) { return rh_; } )) };
-}	  
 
+public Constraint[SubstsT[&T]] runWithEmptySubsts(Constraint[SubstsT[&T]] c:violated(str msg)) = c;
+public Constraint[SubstsT[&T]] runWithEmptySubsts(Constraint::subtype(SubstsT[&T] lh, SubstsT[&T] rh)) = Constraint::subtype(runWithEmptySubsts(lh), runWithEmptySubsts(rh));
+public Constraint[SubstsT[&T]] runWithEmptySubsts(Constraint::eq(SubstsT[&T] lh, SubstsT[&T] rh)) = Constraint::eq(runWithEmptySubsts(lh), runWithEmptySubsts(rh));	  
+
+public Constraint[SubstsTL[&T]] tauToSubstsTL(Constraint[SubstsT[&T]] c:violated(str msg)) = violated(msg);
 public Constraint[SubstsTL[&T]] tauToSubstsTL(Constraint::subtype(SubstsT[&T] lh, SubstsT[&T] rh))
 	= Constraint::subtype(tauToSubstsTL(lh), tauToSubstsTL(rh));
 public Constraint[SubstsTL[&T]] tauToSubstsTL(Constraint::eq(SubstsT[&T] lh, SubstsT[&T] rh))
@@ -159,6 +153,7 @@ public Constraint[SubstsT[&T]] tauToSubstsT(Constraint::eq(SubstsTL[&T] lh, Subs
 
 
 @doc{Prettyprinting facilities}
+public str prettyprint(Constraint::violated(str msg)) = msg;
 public str prettyprint(Constraint::eq(&M lh, &M rh)) = "<prettyprint(lh)> == <prettyprint(rh)>"; 
 public str prettyprint(Constraint::subtype(&M lh, &M rh)) = "<prettyprint(lh)> \<: <prettyprint(rh)>"; 
 

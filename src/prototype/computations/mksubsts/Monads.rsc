@@ -33,15 +33,16 @@ public bool isZero(tzero()) = true;
 public default bool isZero(TypeOf[&T] mv) = false;
 
 @doc{SubstsT monad that adds explicit substitution aspect to values (type value in this case)}
-public data SubstsT[&T] = substs( TypeOf[tuple[&T, Substs]] (Substs) v );
+public data SubstsT[&T] = substs( TypeOf[tuple[&T,Substs]] (Substs) v );
 
-public SubstsT[&T] returnS(&T v) = substs(TypeOf[tuple[&T, Substs]] (Substs s) { return returnT(<v, s>); });
-public TypeOf[tuple[&T, Substs]] (Substs) run(SubstsT[&T] mv) = TypeOf[tuple[&T, Substs]] (Substs s) { return mv.v(s); };
+public SubstsT[&T] returnS(&T v) = substs(TypeOf[tuple[&T,Substs]] (Substs s) { return returnT(<v, s>); });
+public TypeOf[tuple[&T, Substs]] (Substs) run(SubstsT[&T] mv) = mv.v;
+public SubstsT[&T] runWithEmptySubsts(SubstsT[&T] mv) = substs( TypeOf[tuple[&T,Substs]] (Substs _) { return run(mv)(substs([],[])); } );
 public TypeOf[&T] eval(SubstsT[&T] mv) = bind(mv.v(substs([],[])), TypeOf[&T] (tuple[&T, Substs] v) { return returnT(v[0]); });
 
 public SubstsT[&T2] bind(SubstsT[&T1] mv, SubstsT[&T2] (&T1) f)
-	= substs( TypeOf[tuple[&T2, Substs]] (Substs s) {
-				TypeOf[tuple[&T1, Substs]] v = run(mv)(s);
+	= substs( TypeOf[tuple[&T2,Substs]] (Substs s) {
+				TypeOf[tuple[&T1,Substs]] v = run(mv)(s);
 				return bind(v, TypeOf[tuple[&T2,Substs]] (tuple[&T1,Substs] tpl) { 
 							return run(f(tpl[0]))(tpl[1]); });
 			  } );
@@ -77,21 +78,22 @@ public SubstsT[Entity] (Mapper, Entity) pushSubsts(Substs (Substs) f)
 	};
 
 @doc{SubstsT' monad that adds explicit substitution to non-deterministic value computation}
-public data SubstsT_[&T] = substs_( lrel[&T, Substs] (Substs) v );
+public data SubstsT_[&T] = substs_( lrel[&T,Substs] (Substs) v );
 
-public SubstsT_[&T] returnS_(&T v) = substs_(lrel[&T, Substs] (Substs s) { return [<v, s>]; });
-public lrel[&T, Substs] (Substs) run(SubstsT_[&T] mv) = lrel[&T, Substs] (Substs s) { return mv.v(s); };
-public list[&T] eval(SubstsT_[&T] mv) = [ v[0] | tuple[&T, Substs] v <- mv.v(substs([],[])) ];
+public SubstsT_[&T] returnS_(&T v) = substs_(lrel[&T,Substs] (Substs s) { return [<v, s>]; });
+public lrel[&T,Substs] (Substs) run(SubstsT_[&T] mv) = lrel[&T,Substs] (Substs s) { return mv.v(s); };
+public SubstsT_[&T] runWithEmptySubsts(SubstsT_[&T] mv) = substs_( lrel[&T,Substs] (Substs _) { return run(mv)(substs([],[])); } );
+public list[&T] eval(SubstsT_[&T] mv) = [ v[0] | tuple[&T,Substs] v <- mv.v(substs([],[])) ];
 
 public SubstsT_[&T2] bind(SubstsT_[&T1] mv, SubstsT_[&T2] (&T1) f)
-	= substs_( lrel[&T2, Substs] (Substs s) {
-					lrel[&T1, Substs] vs = run(mv)(s);
+	= substs_( lrel[&T2,Substs] (Substs s) {
+					lrel[&T1,Substs] vs = run(mv)(s);
 					return [ *run(f(v[0]))(v[1]) | tuple[&T1, Substs] v <- vs ];
 			  } );
 			  
 public SubstsT_[&T] discard(SubstsT_[&T] mv)
-	= substs_( lrel[&T, Substs] (Substs s) {
-				lrel[&T, Substs] vs = run(mv)(s);
+	= substs_( lrel[&T,Substs] (Substs s) {
+				lrel[&T,Substs] vs = run(mv)(s);
 				return [ <v,substs([],[])> | <&T v, Substs _> <- vs ]; });
 
 			  
@@ -120,10 +122,6 @@ public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl( TypeOf[tuple[&T1,list[Substs]
 									return returnT(<v2[0], v1[1] + v2[1]>); } ); }) );
 
 public bool isZero(SubstsTL[&T] mv) = isZero(eval(mv));
-
-public SubstsTL[list[Substs]] popSubsts(SubstsTL[&T] mv) 
-	= substsl( bind(mv.v, TypeOf[tuple[list[Substs],list[Substs]]] (tuple[&T,list[Substs]] v) { 
-					return <v[1],v[1]>; }) );
 
 public SubstsTL[&T] liftTL(TypeOf[&T] mv) 
 	= substsl( bind(mv, TypeOf[tuple[&T,list[Substs]]] (&T v) { 

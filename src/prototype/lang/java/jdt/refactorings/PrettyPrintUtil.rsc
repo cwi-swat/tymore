@@ -59,7 +59,7 @@ public str prettyprint(variable(str name, _,_)) = name;
 public str prettyprint(enumConstant(str name, _)) = "enum (<name>)";
 public str prettyprint(Id::typeParameter(str name)) = "<name> (type parameter)";
 
-public str prettyprint(anonymous(loc location, Entity declaredType)) = "anonymous(<prettyprint(declaredType)>)";
+public str prettyprint(anonymous(loc location, Entity declaredType)) = "anonymous(<prettyprint(declaredType)> <location.begin.line> <location.begin.column>)";
 public str prettyprint(inherits(Entity declaredType)) = "inherits(<prettyprint(declaredType)>)";
 public str prettyprint(Id::decl()) = "decl()";
 public str prettyprint(Id::parameter(int i)) = "parameter(<i>)";

@@ -37,19 +37,22 @@ public set[Constraint[TypeOf[Entity]]] solveit(Constraint::eq(TypeOf[Entity] l, 
 public set[Constraint[TypeOf[Entity]]] solveit(Constraint::subtype(TypeOf[Entity] l, TypeOf[Entity] r));
 }
 
-// TODO: also need to be formulated in a monadic way
+// TODO: also needs to be in a monadic form
 public ParamSolutions solutions = ();
+
+// To deal with duplicates
 public set[Constraint[SubstsTL[Entity]]] constraints = {};
 
 @doc{EXTENSION with plain generics}
 public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper, 
 												 Constraint::eq(SubstsTL[Entity] lh, SubstsTL[Entity] rh)) {
+												 
+	bool lhIsTypeArg = isTypeArgument(tauToSubstsT(lh));
+	bool rhIsTypeArg = isTypeArgument(tauToSubstsT(rh));
+	
 	TypeOf[Entity] lv = eval(lh);
 	TypeOf[Entity] rv = eval(rh);
-	
-	bool lhIsTypeArg = isTypeArgument(lh);
-	bool rhIsTypeArg = isTypeArgument(rh);
-	
+		
 	// left- and right-hand side are both type argument variables	
 	if(lhIsTypeArg && rhIsTypeArg) {
 		if(lv in solutions) {		
@@ -70,18 +73,18 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 								: tauToSubstsTL_(lh);					
 	}
 	
-	return { Constraint::eq(lh, rh) };			 
+	return { Constraint::eq(lh,rh) };			 
 }
 
 public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper, 
 												 Constraint::subtype(SubstsTL[Entity] lh, SubstsTL[Entity] rh)) {
-											
+	
+	bool lhIsTypeArg = isTypeArgument(tauToSubstsT(lh));
+	bool rhIsTypeArg = isTypeArgument(tauToSubstsT(rh));
+	
 	TypeOf[Entity] lv = eval(lh);
 	TypeOf[Entity] rv = eval(rh);
-	
-	bool lhIsTypeArg = isTypeArgument(lh);
-	bool rhIsTypeArg = isTypeArgument(rh);
-	
+		
 	// left- and right-hand side are both type argument variables	
 	if(lhIsTypeArg && rhIsTypeArg) {
 		if(lv in solutions) {		
@@ -109,39 +112,32 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	return { Constraint::subtype(lh, rh) };
 }
 
-@doc{Computes all the supertypes; assumes that values are type values in their generic form}
-public SubstsT_[Entity] supertypes_all(CompilUnit facts, Mapper mapper, Entity v) {
-	return bind(isEmpty(getTypeParamsOrArgs(v)) ? discard(returnS_(v)) : returnS_(v), SubstsT_[Entity] (Entity v) {
-				return concat(returnS_(v), 
-				   	   bind(lift(supertypes(facts, v)), SubstsT_[Entity] (Entity vS) {
-							return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, v), vS)))(mapper, vS)), SubstsT_[Entity] (Entity _) {
-										return supertypes_all(facts, mapper, getGenV(mapper, vS)); }); })); });
-}
-
 public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mv)
 	= tauToSubstsTL_(bind(tauToSubstsT_(mv), SubstsT_[Entity] (Entity v) {
 						return supertypes_all(facts, mapper, v); }));
 
-public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r)
-	= tauToSubstsTL_(bind(tauToSubstsT_(l), SubstsT_[Entity] (Entity lv) { 
+public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
+	SubstsT_[&T] l_ = tauToSubstsT_(l);
+	SubstsT_[&T] res = bind(l_, SubstsT_[Entity] (Entity lv) { 
 							return bind(tau(popSubsts()), SubstsT_[Entity] (Substs substs) {
-										SubstsTL_[Entity] cond 
-												= intersectRHS(facts, mapper, 
-															   tauToSubstsTL_(bind(appnd(substs), SubstsT[Entity] (value _) { 
-																					return returnS(lv); })),
-															   r);				 
+										SubstsTL_[Entity] cond = intersectRHS(facts, mapper, 
+															   				  tauToSubstsTL_(bind(appnd(substs), SubstsT[Entity] (value _) { 
+																									return returnS(lv); })),
+															   				  r);				 
 										return !isZero(cond) ? returnS_(lv) : lift([]); });
-						}));
+						});
+	return tauToSubstsTL_(res);
+}
 
 public SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
 	return intersect(facts, mapper, r, supertypes_all_(facts, mapper, l));
 }
 
 public SubstsTL_[Entity] intersect(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) { 
-	SubstsTL_[Entity] intersection = bind(l, SubstsTL_[Entity] (Entity lv) {
-										return bind(r, SubstsTL_[Entity] (Entity rv) { 
-												return (lv == rv) ? returnSL_(rv) : liftTL_({}); }); });
-	return inferMoreTypeArgumentConstraints(facts, mapper, intersection);
+	SubstsTL_[Entity] res = bind(l, SubstsTL_[Entity] (Entity lv) {
+								return bind(r, SubstsTL_[Entity] (Entity rv) { 
+											return (lv == rv) ? returnSL_(rv) : liftTL_({}); }); });
+	return inferMoreTypeArgumentConstraints(facts, mapper, res);
 }
 
 public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mvals) {
@@ -149,13 +145,21 @@ public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapp
 	for(<Entity val, list[Substs] ss> <- vals, size(ss) > 1) {
 		Substs first = ss[0];
 		ss = delete(ss,0);
+		Entity val_i = val; // Attention: to stay safe with the current Rascal semantics for closures!!!
 		for(Substs substs <- ss) {
-			SubstsT[Entity] lh = bind(appnd(first), SubstsT[Entity] (value _) { return returnS(val); });
-			SubstsT[Entity] rh = bind(appnd(substs), SubstsT[Entity] (value _) { return returnS(val); });
-			set[Constraint[SubstsTL[Entity]]] inferred = { tauToSubstsTL(c) 
-															| Constraint[SubstsT[Entity]] c <- subtyping(facts, mapper, Constraint::eq(lh, rh)) };
-			// TODO: include check on not parameterized substitutions 
-			constraints = constraints + inferred;
+			SubstsT[Entity] lh = bind(appnd(first), SubstsT[Entity] (value _) { 
+									return returnS(val_i); });
+			Substs substs_i = substs; // Attention: to stay safe with the current Rascal semantics for closures!!!
+			SubstsT[Entity] rh = bind(appnd(substs_i), SubstsT[Entity] (value _) { 
+									return returnS(val_i); });
+									
+			set[Constraint[SubstsT[Entity]]] inferred = subtyping(facts, mapper, Constraint::eq(lh,rh));
+			
+			// Remove the solution if there is a violated constraint
+			if(!isEmpty({ c | Constraint[SubstsT[Entity]] c <- inferred, Constraint::violated(_) := c }))
+				mvals = bind(mvals, SubstsTL_[Entity] (Entity v) { 
+							return (v != val) ? returnSL_(v) : liftTL_({}); } );
+			else constraints = constraints + { tauToSubstsTL(c) | Constraint[SubstsT[Entity]] c <- inferred };
 		}
 	}
 	return tauToSubstsTL_(tauToSubstsT_(mvals)); // removes alternative (now under additional constraints) substitutions
