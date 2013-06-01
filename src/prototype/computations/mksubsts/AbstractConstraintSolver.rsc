@@ -20,6 +20,8 @@ import prototype::lang::java::jdt::refactorings::ValuesUtil;
 
 import prototype::computations::mksubsts::ConstraintComputation;
 import prototype::computations::mksubsts::ConstraintInference;
+import prototype::computations::mksubsts::BoundSemWithoutWildCards;
+import prototype::computations::mksubsts::BoundSemWithWildCards;
 import prototype::computations::mksubsts::LanguageInterface;
 import prototype::computations::mksubsts::Monads;
 import prototype::computations::mksubsts::TypeComputation;
@@ -70,7 +72,7 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	// only right-hand side is a type argument variable
 	} else if(!lhIsTypeArg && rhIsTypeArg) {	
 		solutions[rv] = (rv in solutions) ? intersect(facts, mapper, solutions[rv], tauToSubstsTL_(lh), 0) 
-								: tauToSubstsTL_(lh);					
+								          : tauToSubstsTL_(lh);					
 	}
 	
 	return { Constraint::eq(lh,rh) };			 
@@ -91,25 +93,37 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 			solutions[lv] = (rv in solutions) ? intersectLHS(facts, mapper, solutions[lv], solutions[rv])
 											  : solutions[lv];
 			solutions[rv] = (rv in solutions) ? intersectRHS(facts, mapper, solutions[lv], solutions[rv]) 
-											  : { sups = supertypes_all_(facts, mapper, solutions[lv]);
-												  // DEBUG: println("supertype values in Ta \<: Ta: <prettyprint(sups)>"); 
+											  : { sups = supertypes_all_(facts, mapper, replaceSubsts(mapper, solutions[lv], rh)); // solutions[lv];
+												  // DEBUG: println("supertype values in Ta \<: Ta: <prettyprint(sups)>");
 												  sups; };
 		} else if(rv in solutions) { // Note: lv is not in solutions
-			solutions[lv] = solutions[rv]; // TODO: should be actually subtypes
+			solutions[lv] = replaceSubsts(mapper, solutions[rv], lh); // TODO: should be actually subtypes
 		}
 	// only left-hand side is a type argument variable
 	} else if(lhIsTypeArg && !rhIsTypeArg) {
-		solutions[lv] = (lv in solutions) ? intersectLHS(facts, mapper, solutions[lv], tauToSubstsTL_(rh)) 
-										  : tauToSubstsTL_(rh); // TODO: should be actually subtypes
+		solutions[lv] = (lv in solutions) ? intersectLHS(facts, mapper, solutions[lv], tauToSubstsTL_(rh))
+										  : replaceSubsts(mapper, tauToSubstsTL_(rh), lh); // TODO: should be actually subtypes
 	// only right-hand side is a type argument variable
 	} else if(!lhIsTypeArg && rhIsTypeArg) {
 		solutions[rv] = (rv in solutions) ? intersectRHS(facts, mapper, tauToSubstsTL_(lh), solutions[rv]) 
-								: { sups = supertypes_all_(facts, mapper, tauToSubstsTL_(lh));
+								: { sups = supertypes_all_(facts, mapper, replaceSubsts(mapper, tauToSubstsTL_(lh), rh)); // tauToSubstsTL_(lh)
 									// DEBUG: println("supertype values of <prettyprint(tauToSubstsTL_(lh))>"); println("supertype values in vT \<: Ta: <prettyprint(sups)>");  
 									sups; };
 	}
 	
 	return { Constraint::subtype(lh, rh) };
+}
+
+public SubstsTL_[Entity] replaceSubsts(Mapper mapper, SubstsTL_[Entity] vals, SubstsTL[Entity] var) {
+	return tauToSubstsTL_(bind(tau(lift(eval(var))), SubstsT_[Entity] (Entity varv) {
+								return bind(tauToSubstsT_(vals), SubstsT_[Entity] (Entity val) {
+											list[Entity] params = getTypeParamsOrArgs(val);
+											if(isEmpty(params)) return returnS_(val);
+											return bind(lift(params), SubstsT_[Entity] (Entity param) {
+														return bind(tau(boundS_(mapper, param)), SubstsT_[Entity] (Entity v) {
+																	return bind(tau(appnd(substs([ entity([ typeArgument(isTypeArgument(v) ? v.id[0].name : param.id[0].name, varv, zero()) ]) ], 
+																		   		   		   		 [ param ]))), SubstsT_[Entity] (value _) {
+																				return returnS_(val); }); }); }); }); }));
 }
 
 public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mv)
@@ -140,7 +154,10 @@ public SubstsTL_[Entity] intersect(CompilUnit facts, Mapper mapper, SubstsTL_[En
 	return inferMoreTypeArgumentConstraints(facts, mapper, res, kind);
 }
 
+public map[SubstsTL_[Entity],SubstsTL_[Entity]] memoInference = ();
+
 public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mvals, int kind) {
+	if(mvals in memoInference) return memoInference[mvals];
 	rel[Entity,list[Substs]] vals = run(mvals);
 	for(<Entity val, list[Substs] ss> <- vals, size(ss) > 1) {
 		Substs first = ss[0];
@@ -162,5 +179,7 @@ public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapp
 			else constraints = constraints + { tauToSubstsTL(c) | Constraint[SubstsT[Entity]] c <- inferred };
 		}
 	}
-	return tauToSubstsTL_(tauToSubstsT_(mvals)); // removes alternative (now under additional constraints) substitutions
+	SubstsTL_[Entity] res = tauToSubstsTL_(tauToSubstsT_(mvals));
+	memoInference = memoInference + (mvals:res);
+	return res; // removes alternative (now under additional constraints) substitutions
 }

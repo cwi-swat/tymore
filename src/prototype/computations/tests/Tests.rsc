@@ -35,10 +35,14 @@ public void testit() {
 	testConstraintSemantics(testcases); 
 }
 
-public void testConstraintSemantics(list[loc] projects) { for(project <- projects) testConstraintSemantics(project); }
-private void testConstraintSemantics(loc project) {
+public void testit(loc f) {
+	testConstraintSemantics([f]);
+}
+
+public void testConstraintSemantics(list[loc] files) { for(f <- files) testConstraintSemantics(f); }
+private void testConstraintSemantics(loc f) {
 	println("calculating facts and asts...");
-	set[AstNode] compilationUnits = createAstsFromProjectR(project); 
+	set[AstNode] compilationUnits = { createAstFromFileR(f) }; 
 	println("done...");
 	for(AstNode cu <- compilationUnits) {
 		println(cu@location);
@@ -74,6 +78,7 @@ private void testConstraintSemantics(loc project) {
 		set[Constraint[SubstsTL[Entity]]] clsSolved = {};
 		int n = 0;
 		solve(solutions, n) {
+			println("solve...");
 			clsSolved = { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- cls_ };
 			clsSolved = clsSolved + { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constraints };
 			n = size(clsSolved);

@@ -8,7 +8,27 @@
 @contributor{Anastasia Izmaylova - A.Izmaylova@cwi.nl}
 module prototype::computations::tests::TestProjects
 
-public loc testcases = |project://TyMoReCases/src|;
+public loc exmpl1 = |project://TyMoReCases/src/rawtypes/Example1.java|;
+public loc exmpl2 = |project://TyMoReCases/src/rawtypes/Example2.java|;
+public loc exmpl3 = |project://TyMoReCases/src/rawtypes/Example3.java|;
+public loc exmpl4 = |project://TyMoReCases/src/rawtypes/Example4.java|;
+public loc exmpl5 = |project://TyMoReCases/src/rawtypes/Example5.java|;
+public loc exmpl6 = |project://TyMoReCases/src/rawtypes/Example6.java|;
+public loc exmpl7 = |project://TyMoReCases/src/rawtypes/Example7.java|;
+public loc exmpl8 = |project://TyMoReCases/src/rawtypes/Example8.java|;
+public loc exmpl9 = |project://TyMoReCases/src/rawtypes/Example9.java|;
+public loc exmpl10 = |project://TyMoReCases/src/rawtypes/Example10.java|;
+
+public list[loc] testcases = [ exmpl1,
+						 	   exmpl2,
+						 	   exmpl3,
+						 	   exmpl4,
+						 	   exmpl5,
+						 	   exmpl6,
+						 	   exmpl7,
+						 	   exmpl8,
+						 	   exmpl9,
+						 	   exmpl10 ];
 
 //public loc testcases1 = |project://TyMoReTestCases/src|;
 //public loc testcases2 = |project://TyMoReTestCasesWithoutWildCards/src|;
