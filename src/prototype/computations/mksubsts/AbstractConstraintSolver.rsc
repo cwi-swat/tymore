@@ -29,6 +29,7 @@ import prototype::computations::mksubsts::FunctionsOfTypeValues;
 
 import IO;
 import List;
+import Map;
 import Set;
 
 
@@ -135,7 +136,10 @@ public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, Substs
 	return res;
 }
 
+public map[tuple[SubstsTL_[Entity],SubstsTL_[Entity]],SubstsTL_[Entity]] memoIntersectLHS = ();
+
 public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
+	if(<l,r> in memoIntersectLHS) return memoIntersectLHS[<l,r>];
 	SubstsT_[&T] l_ = tauToSubstsT_(l);
 	SubstsT_[&T] res = bind(l_, SubstsT_[Entity] (Entity lv) { 
 							return bind(tau(popSubsts()), SubstsT_[Entity] (Substs substs) {
@@ -145,46 +149,81 @@ public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, SubstsTL_
 															   				  r);				 
 										return !isZero(cond) ? returnS_(lv) : lift([]); });
 						});
-	return tauToSubstsTL_(res);
+	res_ = tauToSubstsTL_(res);
+	memoIntersectLHS[<l,r>] = res_;
+	return res_;
 }
+
+public map[tuple[SubstsTL_[Entity],SubstsTL_[Entity]],SubstsTL_[Entity]] memoIntersectRHS = ();
 
 public SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
-	return intersect(facts, mapper, r, supertypes_all_(facts, mapper, l), -1);
+	if(<l,r> in memoIntersectRHS) return memoIntersectRHS[<l,r>];
+	SubstsTL_[Entity] res = intersect(facts, mapper, r, supertypes_all_(facts, mapper, l), -1);
+	memoIntersectRHS[<l,r>] = res;
+	return res;
 }
 
+public map[tuple[SubstsTL_[Entity],SubstsTL_[Entity],int],SubstsTL_[Entity]] memoIntersect = ();
+
 public SubstsTL_[Entity] intersect(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r, int kind) { 
+	if(<l,r,kind> in memoIntersect) return memoIntersect[<l,r,kind>];
 	SubstsTL_[Entity] res = bind(l, SubstsTL_[Entity] (Entity lv) {
 								return bind(r, SubstsTL_[Entity] (Entity rv) { 
 											return (lv == rv) ? returnSL_(rv) : liftTL_({}); }); });
-	return inferMoreTypeArgumentConstraints(facts, mapper, res, kind);
+	
+	res_ = inferMoreTypeArgumentConstraints(facts, mapper, res, kind);
+	memoIntersect[<l,r,kind>] = res_;
+	return res_;
 }
 
-public map[SubstsTL_[Entity],SubstsTL_[Entity]] memoInference = ();
+public map[tuple[Entity,list[Substs]],set[Constraint[SubstsT[Entity]]]] memoInference = ();
 
 public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mvals, int kind) {
-	if(mvals in memoInference) return memoInference[mvals];
 	rel[Entity,list[Substs]] vals = run(mvals);
-	for(<Entity val, list[Substs] ss> <- vals, size(ss) > 1) {
-		Substs first = ss[0];
-		ss = delete(ss,0);
+	for(<Entity val, list[Substs] ss0> <- vals, size(ss0) > 1) {
+		Substs first = ss0[0];
+		ss = delete(ss0,0);
 		Entity val_i = val; // Attention: to stay safe with the current Rascal semantics for closures!!!
 		for(Substs substs <- ss) {
-			SubstsT[Entity] lh = bind(appnd(first), SubstsT[Entity] (value _) { 
-									return returnS(val_i); });
 			Substs substs_i = substs; // Attention: to stay safe with the current Rascal semantics for closures!!!
-			SubstsT[Entity] rh = bind(appnd(substs_i), SubstsT[Entity] (value _) { 
+			SubstsT[Entity] lh = bind(appnd(substs_i), SubstsT[Entity] (value _) { 
 									return returnS(val_i); });
-									
-			set[Constraint[SubstsT[Entity]]] inferred = subtyping(facts, mapper, kind == -1 ? Constraint::subtype(rh,lh) : Constraint::eq(rh,lh));
+			SubstsT[Entity] rh = bind(appnd(first), SubstsT[Entity] (value _) { 
+									return returnS(val_i); });						
+			set[Constraint[SubstsT[Entity]]] inferred = {};
+			if(<val,ss0> in memoInference) { 
+				inferred = memoInference[<val,ss0>];
+			} else {
+				inferred = subtyping(facts, mapper, kind == -1 ? Constraint::subtype(lh,rh) : Constraint::eq(lh,rh));
+				memoInference[<val,ss0>] = inferred;
+			}
 			
 			// Remove the solution if there is a violated constraint
 			if(!isEmpty({ c | Constraint[SubstsT[Entity]] c <- inferred, Constraint::violated(_) := c }))
 				mvals = bind(mvals, SubstsTL_[Entity] (Entity v) { 
-							return (v != val) ? returnSL_(v) : liftTL_({}); } );
+							return (v != val_i) ? returnSL_(v) : liftTL_({}); } );
 			else constraints = constraints + { tauToSubstsTL(c) | Constraint[SubstsT[Entity]] c <- inferred };
 		}
 	}
 	SubstsTL_[Entity] res = tauToSubstsTL_(tauToSubstsT_(mvals));
-	memoInference[mvals] = res;
 	return res; // removes alternative (now under additional constraints) substitutions
+}
+
+public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper) {
+	set[Constraint[SubstsTL[Entity]]] more =
+	{  (!isZero(solutions[mvar]) && !isZero(solutions[upper])) ? c : Constraint::subtype(tauToSubstsTL(lift(mvar)), tauToSubstsTL(lift(upper)))
+			| TypeOf[Entity] mvar <- solutions,
+			  Entity var <- eval(tau(lift(mvar))), 
+			  isLowerBoundTypeArgument(var), // look up a lower bound type argument variable 
+			  !isZero(solutions[mvar]),      // the one with non-empty solution
+			  TypeOf[Entity] upper := bind(mvar, TypeOf[Entity] (Entity v) { 
+						   					return returnT(replaceWithUpper(v)); }), // introduce the upper bound type argument variable
+			  Constraint[SubstsTL[Entity]] c := Constraint::eq(tauToSubstsTL(lift(mvar)), tauToSubstsTL(lift(upper))),
+			  _ <- solveit(facts, mapper, c) // try to solve the equality constraint
+			  
+	};
+	if(isEmpty(more))
+		return false; 
+	constraints = constraints + more;
+	return true;
 }

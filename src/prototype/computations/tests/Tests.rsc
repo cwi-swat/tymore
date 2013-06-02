@@ -77,11 +77,16 @@ private void testConstraintSemantics(loc f) {
 								
 		set[Constraint[SubstsTL[Entity]]] clsSolved = {};
 		int n = 0;
+		
 		solve(solutions, n) {
-			println("solve...");
-			clsSolved = { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- cls_ };
-			clsSolved = clsSolved + { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constraints };
-			n = size(clsSolved);
+			ifLowerBoundsInferred(facts, mapper);
+			solve(solutions, n) {
+				println("solve...");
+				clsSolved = { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- cls_ };
+				clsSolved = clsSolved + { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constraints };
+				n = size(constraints);
+			}
+			n = size(constraints);
 		}
 		
 		println("done!");

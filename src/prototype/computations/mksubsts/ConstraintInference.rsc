@@ -264,11 +264,11 @@ public set[Constraint[SubstsT[Entity]]] inferTypeArguments(CompilUnit facts, Map
 @doc{EXTENSION with wildcards: extends the invariant function to also impose covariance and contravariance}
 public set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapper mapper, c:violated(_)) = { c };
 public set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapper mapper, Constraint::eq(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
-	return { c2_ | Entity rv    <- tau(eval(c.rh)),
+	return { c2_ | Entity rv    <- tau(eval(rh)),
 			   	   Entity param <- getTypeParamsOrArgs(getGenV(mapper, rv)), 
 			  
-			       Constraint[SubstsT[Entity]] c1 := apply(SubstsT[Entity] (Entity _) { return returnS(param); })(c),
-			       Constraint[SubstsT[Entity]] c2  <- boundSu_(facts, mapper, c1) + boundSl(facts, mapper, c1),
+			       Constraint[SubstsT[Entity]] c1 := apply(SubstsT[Entity] (Entity _) { return returnS(param); })(Constraint::eq(lh,rh)),
+			       Constraint[SubstsT[Entity]] c2  <- boundSu_(facts, mapper, c1) + boundSl_(facts, mapper, c1),
 			       Constraint[SubstsT[Entity]] c2_ <- catchZ(c2)
 	   };
 }
