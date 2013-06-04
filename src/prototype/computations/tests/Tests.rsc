@@ -74,25 +74,37 @@ private void testConstraintSemantics(loc f) {
 		
 		solutions = ();
 		constraints = {};
-								
-		set[Constraint[SubstsTL[Entity]]] clsSolved = {};
-		int n = 0;
+		pp = ();
 		
+		constraints = cls_; // inital constraints to be solved are the closure ones
+								
+		// set[Constraint[SubstsTL[Entity]]] clsSolved = {};
+		int n = size(constraints);
 		solve(solutions, n) {
+			solveit(facts, mapper);
+			println("solve extra <size(constraints)> ...");
 			ifLowerBoundsInferred(facts, mapper);
-			solve(solutions, n) {
-				println("solve...");
-				clsSolved = { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- cls_ };
-				clsSolved = clsSolved + { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constraints };
-				n = size(constraints);
-			}
 			n = size(constraints);
 		}
+		
+		//solve(solutions, n) {
+		//	solve(solutions, n) {
+		//		println("solve...<size(constraints)>");
+		//		set[Constraint[SubstsTL[Entity]]] constrs = constraints;
+		//		/*clsSolved = */{ *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constrs };
+		//		// clsSolved = clsSolved + { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constraints };
+		//		n = size(constraints);
+		//	}
+		//	println("solve extra...");
+		//	ifLowerBoundsInferred(facts, mapper);
+		//	n = size(constraints);
+		//}
 		
 		println("done!");
 		
 		tracer(true, "Solutions: <for(s<-solutions){>\n <prettyprint(s)> = <prettyprint(solutions[s])><}>");
 		tracer(true, "Constraints: <for(c<-constraints){>\n <prettyprint(c)><}>");
+		chooseOneSolution(facts, mapper);
 		
 	}	
 	

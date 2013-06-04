@@ -206,16 +206,17 @@ public str prettyprint(typeof(&T v)) = prettyprint(v);
 public str prettyprint(tzero()) = "zero";
 
 public str prettyprint(SubstsT[&T] mv) {
-	// TypeOf[tuple[Entity],Substs] v = run(mv)(substs([],[]));
+	//TypeOf[tuple[Entity,Substs]] v = run(mv)(substs([],[]));
 	TypeOf[Entity] v = eval(mv);
 	return prettyprint(v);
 }
 
 public str prettyprint(SubstsTL[&T] mv) {
-	// TypeOf[tuple[Entity],Substs] v = run(mv);
+	//TypeOf[tuple[Entity,list[Substs]]] v = run(mv);
 	TypeOf[Entity] v = eval(mv);
 	return prettyprint(v);
 }
 
 public str prettyprint(substsl_(rel[&T, list[Substs]] vals)) = "[ <for(val<-vals){><prettyprint(val)><}> ]";
+public str prettyprint(<&T v, Substs ss>) = "\< <prettyprint(v)>, <prettyprint(ss)> \>";
 public str prettyprint(<&T v, list[Substs] ss>) = "\< <prettyprint(v)>, <for(substs<-ss){><prettyprint(substs)><}> \>";

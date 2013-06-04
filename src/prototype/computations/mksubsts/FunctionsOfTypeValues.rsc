@@ -120,6 +120,8 @@ public Substs idS(Substs s) = s;
 
 
 @doc{EXTENSION with wildcards: extends to account for wildcards ***with capturing***}
+public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([]), &C c) 
+	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
 public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard() ]), &C c) 
 	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
 public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard(_) ]), &C c)

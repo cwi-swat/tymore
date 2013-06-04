@@ -318,21 +318,22 @@ public default set[Constraint[SubstsT[Entity]]] catchCaptureVariable(CompilUnit 
 	bool rhIsCapturedTypeArg = isCapturedTypeArgument(c_.rh);
 	if(!(lhIsCapturedTypeArg || rhIsCapturedTypeArg))
 		return {};
-	return { *( { *( lhIsCapturedTypeArg ? 
-								( { eq(cl_.lh, cu_.lh) } + { *( rhIsCapturedTypeArg ? 
-																	{ eq(cl_.rh, cu_.rh),
-																	  eq(cl_.lh, cl_.rh),
-																	  eq(cu_.lh, cu_.rh) } 
+	res = { *( { *( lhIsCapturedTypeArg ? 
+								( { eq(cl.lh, cu.lh) } + { *( rhIsCapturedTypeArg ? 
+																	{ eq(cl.rh, cu.rh),
+																	  eq(cl.lh, cl.rh),
+																	  eq(cu.lh, cu.rh) } 
 																	: {} ) 
 															} 
 								) 
 								: ( rhIsCapturedTypeArg ? 
-												{ eq(cl_.rh, cu_.rh) } 
+												{ eq(cl.rh, cu.rh) } 
 												: {} ) ) 
 				} 
 			  ) | Constraint[SubstsT[Entity]] cu  <- boundSu_(facts, mapper, c_),
 				  Constraint[SubstsT[Entity]] cl  <- boundSl_(facts, mapper, c_)
 		   };
+	return res;
 }
 
 public bool isCapturedTypeArgument(SubstsT[Entity] v) 

@@ -13,6 +13,7 @@ public loc exmpl2 = |project://TyMoReCases/src/rawtypes/Example2.java|;
 public loc exmpl3 = |project://TyMoReCases/src/rawtypes/Example3.java|;
 public loc exmpl4 = |project://TyMoReCases/src/rawtypes/Example4.java|;
 public loc exmpl5 = |project://TyMoReCases/src/rawtypes/Example5.java|;
+public loc exmpl5b = |project://TyMoReCases/src/rawtypes/Example5b.java|;
 public loc exmpl6 = |project://TyMoReCases/src/rawtypes/Example6.java|;
 public loc exmpl7 = |project://TyMoReCases/src/rawtypes/Example7.java|;
 public loc exmpl8 = |project://TyMoReCases/src/rawtypes/Example8.java|;
@@ -24,6 +25,7 @@ public list[loc] testcases = [ exmpl1,
 						 	   exmpl3,
 						 	   exmpl4,
 						 	   exmpl5,
+						 	   exmpl5b,
 						 	   exmpl6,
 						 	   exmpl7,
 						 	   exmpl8,

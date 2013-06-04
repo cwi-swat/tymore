@@ -110,7 +110,9 @@ public SubstsT_[Entity] supertypes_all(CompilUnit facts, Mapper mapper, Entity v
 	return bind(isEmpty(getTypeParamsOrArgs(v)) ? discard(returnS_(v)) : returnS_(v), SubstsT_[Entity] (Entity v) {
 				return concat(returnS_(v), 
 				   	   bind(lift(supertypes(facts, v)), SubstsT_[Entity] (Entity vS) {
-							return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, v), vS)))(mapper, vS)), SubstsT_[Entity] (Entity _) {
+				   	   		if(v in getTypeParamsOrArgs(vS))
+				   	   			return lift([]);
+				   	   		return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, v), vS)))(mapper, vS)), SubstsT_[Entity] (Entity _) {
 										return supertypes_all(facts, mapper, getGenV(mapper, vS)); }); })); });
 }
 

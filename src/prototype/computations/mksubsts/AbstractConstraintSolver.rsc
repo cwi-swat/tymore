@@ -95,7 +95,7 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 											  : solutions[lv];
 			solutions[rv] = (rv in solutions) ? intersectRHS(facts, mapper, solutions[lv], solutions[rv]) 
 											  : { sups = supertypes_all_(facts, mapper, replaceSubsts(mapper, solutions[lv], rh)); // solutions[lv];
-												  intersectRHS(facts, mapper, solutions[lv], sups); };
+												  intersectRHS(facts, mapper, solutions[lv], replaceSubsts(mapper, sups, rh)); };
 		} else if(rv in solutions) { // Note: lv is not in solutions
 			solutions[lv] = intersectLHS(facts, mapper, replaceSubsts(mapper, solutions[rv], lh), solutions[rv]); // TODO: should be actually subtypes
 		}
@@ -107,8 +107,7 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	} else if(!lhIsTypeArg && rhIsTypeArg) {
 		solutions[rv] = (rv in solutions) ? intersectRHS(facts, mapper, tauToSubstsTL_(lh), solutions[rv]) 
 								: { sups = supertypes_all_(facts, mapper, replaceSubsts(mapper, tauToSubstsTL_(lh), rh)); // tauToSubstsTL_(lh)
-									intersectRHS(facts, mapper, tauToSubstsTL_(lh), sups); };
-									
+									intersectRHS(facts, mapper, tauToSubstsTL_(lh), replaceSubsts(mapper, sups, rh)); };								
 	}
 	
 	return { Constraint::subtype(lh, rh) };
@@ -199,9 +198,10 @@ public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapp
 			}
 			
 			// Remove the solution if there is a violated constraint
-			if(!isEmpty({ c | Constraint[SubstsT[Entity]] c <- inferred, Constraint::violated(_) := c }))
+			if(!isEmpty({ c | Constraint[SubstsT[Entity]] c <- inferred, Constraint::violated(_) := c })) {
 				mvals = bind(mvals, SubstsTL_[Entity] (Entity v) { 
 							return (v != val_i) ? returnSL_(v) : liftTL_({}); } );
+			}
 			else constraints = constraints + { tauToSubstsTL(c) | Constraint[SubstsT[Entity]] c <- inferred };
 		}
 	}
@@ -211,19 +211,179 @@ public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapp
 
 public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper) {
 	set[Constraint[SubstsTL[Entity]]] more =
-	{  (!isZero(solutions[mvar]) && !isZero(solutions[upper])) ? c : Constraint::subtype(tauToSubstsTL(lift(mvar)), tauToSubstsTL(lift(upper)))
+	{  (!isZero(solutions[mvar]) && !isZero(solutions[upper])) ? c 
+															   : { // Undo equality solution - unlikely to happen (TODO: I need to think of it more)
+															   	   tracer(true, "WARNING: unlikely undo has happened");
+															       constraints = cons; solutions[mvar] = solutionLower; if(wasThere) solutions[upper] = solutionUpper; 
+															   	   Constraint[SubstsTL[Entity]] c_ = Constraint::subtype(tauToSubstsTL(lift(mvar)), tauToSubstsTL(lift(upper))); 
+															   	   constraints = constraints + c_;
+															   	   c_; }
 			| TypeOf[Entity] mvar <- solutions,
 			  Entity var <- eval(tau(lift(mvar))), 
-			  isLowerBoundTypeArgument(var), // look up a lower bound type argument variable 
-			  !isZero(solutions[mvar]),      // the one with non-empty solution
+			  isLowerBoundTypeArgument(var), // look up a lower bound type argument variable
+			  SubstsTL_[Entity] solutionLower := solutions[mvar], 
+			  !isZero(solutionLower),      // the one with non-empty solution
 			  TypeOf[Entity] upper := bind(mvar, TypeOf[Entity] (Entity v) { 
 						   					return returnT(replaceWithUpper(v)); }), // introduce the upper bound type argument variable
 			  Constraint[SubstsTL[Entity]] c := Constraint::eq(tauToSubstsTL(lift(mvar)), tauToSubstsTL(lift(upper))),
-			  _ <- solveit(facts, mapper, c) // try to solve the equality constraint
+			  bool wasThere := (upper in solutions),
+			  SubstsTL_[Entity] solutionUpper := solutions[upper] ? liftTL_({}),
+			  set[Constraint[SubstsTL[Entity]]] cons := constraints,
+			  _ := { constraints = constraints + c; solveit(facts, mapper); } // try to solve with the equality constraint
 			  
 	};
 	if(isEmpty(more))
 		return false; 
-	constraints = constraints + more;
+	
+	//tracer(true, "<for(con<-more){><prettyprint(con)>\n<}>");
+	//tracer(true, "<for(s<-solutions){><prettyprint(s)> == <prettyprint(solutions[s])>\n<}>");
+	
+	// constraints = constraints + more;
 	return true;
+}
+
+public bool solveit(CompilUnit facts, Mapper mapper) {
+	int n = size(constraints);
+	solve(solutions, n) {
+		println("solve <size(constraints)> ...");
+		set[Constraint[SubstsTL[Entity]]] constrs = constraints;
+		{ *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constrs };
+		n = size(constraints);
+	}
+	return true;
+}
+
+public map[TypeOf[Entity],str] pp = ();
+
+public void chooseOneSolution(CompilUnit facts, Mapper mapper) {
+	for(TypeOf[Entity] var <- solutions) {
+		prettyprintOneSolution(facts, mapper, var);
+	}
+	
+	tracer(true, "One solution: \n <for(var<-pp){><prettyprint(var)> = <pp[var]>\n<}>");
+	tracer(true, "More relevant part of the solution: \n <for(var<-pp,!isLowerBoundTypeArgument(var.v)&&!isUpperBoundTypeArgument(var.v)){><prettyprint(var)> = <pp[var]>\n<}>");
+}
+
+public str prettyprintOneSolution(CompilUnit facts, Mapper mapper, TypeOf[Entity] var) {
+	if(!isTypeArgument(var.v)) 
+		return "<prettyprint(var)>";
+	
+	TypeOf[Entity] lvar = tzero();
+	TypeOf[Entity] uvar = tzero();
+	TypeOf[Entity] luvar = tzero();
+		
+	if(isLowerBoundTypeArgument(var.v)) {
+		lvar = var;
+		uvar = bind(var, TypeOf[Entity] (Entity v) { return returnT(replaceWithUpper(v)); });
+		luvar = bind(lvar, TypeOf[Entity] (Entity v) { return (entity([ *ids, lower(_) ]) := v) ? returnT(entity(ids)) : tzero(); });
+	}	
+	if(isUpperBoundTypeArgument(var.v)) {
+		uvar = var;
+		lvar = bind(var, TypeOf[Entity] (Entity v) { return returnT(replaceWithLower(v)); });
+		luvar = bind(uvar, TypeOf[Entity] (Entity v) { return (entity([ *ids, upper(_) ]) := v) ? returnT(entity(ids)) : tzero(); });
+	}
+	if(isTypeArgument(var.v) && !isLowerBoundTypeArgument(var.v) && !isUpperBoundTypeArgument(var.v)) {
+		lvar = bind(var, TypeOf[Entity] (Entity v) { return returnT(entity(v.id + lower(zero()))); }); // rawtypes inference specific
+		uvar = bind(var, TypeOf[Entity] (Entity v) { return returnT(entity(v.id + upper(zero()))); }); // rawtypes inference specific
+		luvar = var;
+	}
+	
+	str lpp = pp[lvar] ? "";
+	str upp = pp[uvar] ? "";
+	
+	rel[Entity,list[Substs]] lb = run(solutions[lvar]);
+	rel[Entity,list[Substs]] ub = run(solutions[uvar]);
+	
+	rel[Entity,list[Substs]] lbOnes = {<zero(),[]>};
+	rel[Entity,list[Substs]] ubOnes = {<zero(),[]>};
+	
+	list[str] lvarpps = [];
+	list[str] uvarpps = [];
+		
+	if(lpp == "") {		
+		if(!isEmpty(lb)) {
+			lbOnes = pickTheMostSpecific(facts, mapper, lb);
+			for(tuple[Entity,list[Substs]] lbOne<-lbOnes) {
+				list[str] lbArgs = [];
+				lbArgs = [ prettyprintOneSolution(facts, mapper, returnT(lookupSubsts(lbOne[1][0], param))) 
+								| Entity param <- getTypeParamsOrArgs(lbOne[0]) ];
+				lvarpps = lvarpps + ["<prettyprint(lbOne[0])>; [<for(arg<-lbArgs){><arg>;<}>]"];
+			}
+		}
+	}
+	
+	if(upp == "") {
+		if(!isEmpty(ub)) {
+			ubOnes = pickTheMostSpecific(facts, mapper, ub);
+			for(tuple[Entity,list[Substs]] ubOne<-ubOnes) {
+				list[str] ubArgs = [];
+				ubArgs = [ prettyprintOneSolution(facts, mapper, returnT(lookupSubsts(ubOne[1][0], param))) 
+								| Entity param <- getTypeParamsOrArgs(ubOne[0]) ];
+				uvarpps = uvarpps + ["<prettyprint(ubOne[0])>; [<for(arg<-ubArgs){><arg>;<}>]"];
+			}
+		} 
+	}
+	
+	common = [ *({*lvarpps} & {*uvarpps}) ];
+	
+	if(isEmpty(lvarpps) && lpp == "")
+		pp[lvar] = "_; []";
+		
+	if(isEmpty(uvarpps) && upp == "")
+		pp[uvar] = "_; []";
+		
+	if(!isEmpty(lvarpps) && !isEmpty(uvarpps)) {
+		if(!isEmpty(common)) {
+			common0 = common - ["Serializable; []", "Cloneable; []"]; // annoying ones, always pops up
+			if(!isEmpty(common0))
+				common = common0;
+			pp[lvar] = common[0];
+			pp[uvar] = common[0];
+		} else {
+			pp[lvar] = lvarpps[0];
+			pp[uvar] = uvarpps[0];
+		}
+	} else if(!isEmpty(lvarpps)) {
+		pp[lvar] = lvarpps[0];
+	} else if(!isEmpty(uvarpps)){
+		pp[uvar] = uvarpps[0];
+	}
+	
+	if(pp[lvar] == pp[uvar] && pp[lvar] != "_; []") {
+		pp[luvar] =  pp[lvar];
+	} else if(pp[lvar] != pp[uvar] && pp[lvar] == "_; []") {
+		pp[luvar] = "! extends <pp[uvar]>";
+	} else if(pp[lvar] != "_; []" && <object(),[]> in ub) {
+		pp[luvar] =  "! super <pp[lvar]>";
+	} else {
+		pp[luvar] = "! super <pp[lvar]> & extends <pp[uvar]>";	
+	}
+	
+	return pp[var];
+	
+}
+
+public rel[Entity,list[Substs]] pickTheMostSpecific(CompilUnit facts, Mapper mapper, rel[Entity,list[Substs]] vals) {
+	rel[Entity,list[Substs]] res = { getOneFrom(vals) };
+	solve(res) {
+		for(tuple[Entity,list[Substs]] v <- vals) {
+			bool found = false;
+			for(tuple[Entity,list[Substs]] r <- res, !found) {
+				bool sup = !isEmpty(supertype(facts, mapper, <v[0],r[0]>));
+				bool sub = !isEmpty(supertype(facts, mapper, <r[0],v[0]>));
+				if(sup && !sub) {
+					res = res - {r};
+					res = res + {v};
+					found = true;
+				}
+				if(!sup && sub) {
+					found = true;
+				}
+			}
+			if(!found) {
+				res = res + {v};
+			}
+		}
+	}
+	return res;
 }

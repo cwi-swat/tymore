@@ -79,12 +79,16 @@ public default bool isTypeArgument(_) = false;
 public bool isLowerBoundTypeArgument(entity([ *ids, typeArgument(str name, _, Entity _), lower(_) ])) = true;
 public default bool isLowerBoundTypeArgument(Entity _) = false;
 public bool isUpperBoundTypeArgument(entity([ *ids, typeArgument(str name, _, Entity _), upper(_) ])) = true;
-public default bool isLowerBoundTypeArgument(Entity _) = false;
+public default bool isUpperBoundTypeArgument(Entity _) = false;
 
 @doc{EXTENSION with wildcards}
 public Entity replaceWithUpper(entity([ *ids, ta:typeArgument(str name, _, Entity _), lower(Entity b) ]))
 	= entity([ *ids, ta, upper(b) ]);
 public default Entity replaceWithUpper(Entity val) = val;
+public Entity replaceWithLower(entity([ *ids, ta:typeArgument(str name, _, Entity _), upper(Entity b) ]))
+	= entity([ *ids, ta, lower(b) ]);
+public default Entity replaceWithLower(Entity val) = val;
+
 
 public bool isCapturedTypeArgument(entity([ *ids, captureof(Entity v) ])) = isTypeArgument(v);
 public default bool isCapturedTypeArgument(Entity _) = false;
