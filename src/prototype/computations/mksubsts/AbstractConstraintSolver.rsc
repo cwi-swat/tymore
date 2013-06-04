@@ -223,25 +223,28 @@ public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper) {
 															       constraints = cons; 
 															       solutions[mvar] = solutionLower; 
 															       if(wasThere) solutions[upper] = solutionUpper; 
-															   	   c = Constraint::subtype(tauToSubstsTL(lift(mvar)), tauToSubstsTL(lift(upper))); 
-															   	   constraints = constraints + c;
+															   	   c = Constraint::subtype(mvar, upper); 
+															   	   constraints = constraints + {c};
 															   	   c; }
 			| SubstsTL[Entity] mvar <- solutions,
-			  Entity var <- eval(tauToSubstsTL_(mvar)), 
-			  isLowerBoundTypeArgument(var), // look up a lower bound type argument variable
+			  isLowerBoundTypeArgument(mvar), // look up a lower bound type argument variable
 			  SubstsTL_[Entity] solutionLower := solutions[mvar], 
-			  !isZero(solutionLower),      // the one with non-empty solution
-			  SubstsTL[Entity] upper := bind(mvar, SubstsTL[Entity] (Entity v) { 
-						   					return returnSL(replaceWithUpper(v)); }), // introduce the upper bound type argument variable
+			  !isZero(solutionLower),        // the one with non-empty solution
+			  SubstsTL[Entity] upper := { // TODO: work around
+			  							  upper0 = bind(mvar, SubstsTL[Entity] (Entity v) { 
+						   								return returnSL(replaceWithUpper(v)); });
+						   				  ss = { s | s <- solutions, s == upper };
+						   				  (!isEmpty(ss)) ? getOneFrom(ss) : upper0; 
+						   				}, // introduce the upper bound type argument variable
 			  Constraint[SubstsTL[Entity]] c := Constraint::eq(mvar, upper),
 			  bool wasThere := (upper in solutions),
 			  SubstsTL_[Entity] solutionUpper := solutions[upper] ? liftTL_({}),
 			  set[Constraint[SubstsTL[Entity]]] cons := constraints,
 			  // try to solve with the equality constraint
-			  _ := isEmpty([ cons | con <- constraints, cons == c ]) ? { constraints = constraints + c; solveit(facts, mapper); } 
-			  														 : { // DEBUG:
-			  														 	println("Extra equality constraint is already there.");
-			  														 	 {}; }
+			  _ := ( (c notin constraints) ? { constraints = constraints + {c}; solveit(facts, mapper); } 
+			  						       : { // DEBUG:
+			  							       println("Extra equality constraint is already there.");
+			  							       {}; })
 			  
 	};
 	if(isEmpty(more))
