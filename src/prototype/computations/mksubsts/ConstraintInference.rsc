@@ -61,7 +61,17 @@ public default set[Constraint[SubstsT[Entity]]] boundS(CompilUnit facts, Mapper 
 							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) }; 
 
 @doc{Computes the supertype predicate of the left-hand side given the right-hand side}
-public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapper, c:violated(_)) = { c };			
+public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapper, c:violated(_)) = { c };		
+public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapper, Constraint::eq(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
+	lh = runWithEmptySubsts(lh);
+	rh = runWithEmptySubsts(rh);
+	
+	lh_ = bind(rh, SubstsT[Entity] (Entity rv) { 
+				return bind(lh, SubstsT[Entity] (Entity lv) {
+							return lv == rv ? returnS(lv) : lift(tzero()); }); });
+	// ***Note: violation of a constraint results in a zero computation
+	return ( nonZero := catchZ(Constraint::eq(lh_, rh)) && !isEmpty(nonZero) ) ? nonZero : { Constraint::violated("Equality constraint does not hold!") } ;
+}	
 public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapper, Constraint::subtype(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
 	lh = runWithEmptySubsts(lh);
 	rh = runWithEmptySubsts(rh);
@@ -73,16 +83,6 @@ public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapp
 									return returnS(rv); }); }); });
 	// ***Note: violation of a constraint results in a zero computation
 	return ( nonZero := catchZ(Constraint::subtype(lh_, rh)) && !isEmpty(nonZero) ) ? nonZero : { Constraint::violated("Subtype constraint does not hold!") };
-}
-public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapper, Constraint::eq(SubstsT[Entity] lh, SubstsT[Entity] rh)) {
-	lh = runWithEmptySubsts(lh);
-	rh = runWithEmptySubsts(rh);
-	
-	lh_ = bind(rh, SubstsT[Entity] (Entity rv) { 
-				return bind(lh, SubstsT[Entity] (Entity lv) {
-							return lv == rv ? returnS(lv) : lift(tzero()); }); });
-	// ***Note: violation of a constraint results in a zero computation
-	return ( nonZero := catchZ(Constraint::eq(lh_, rh)) && !isEmpty(nonZero) ) ? nonZero : { Constraint::violated("Equality constraint does not hold!") } ;
 }
 
 //@doc{Infers additional type constraints from subtype constraints}
@@ -112,7 +112,8 @@ public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapp
 public set[Constraint[SubstsT[Entity]]] subtyping(CompilUnit facts, Mapper mapper, c:violated(_)) = { c };
 public default set[Constraint[SubstsT[Entity]]] subtyping(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
 	set[Constraint[SubstsT[Entity]]] constraints = 
-			{ c3 | Constraint[SubstsT[Entity]] c1  <- boundS(facts, mapper, c), 
+			{ runWithEmptySubsts(c3) 
+				 | Constraint[SubstsT[Entity]] c1  <- boundS(facts, mapper, c), 
 				   Constraint[SubstsT[Entity]] c1_ <- catchZ(c1), // zero may occur, for example, due to raw types		
 				      
 				   Constraint[SubstsT[Entity]] c2  <- supertypec(facts, mapper, c1_), 	  
@@ -159,9 +160,19 @@ public default set[Constraint[SubstsT[Entity]]] catchTypeArgVariable(Constraint[
 	return {};
 }
 
-public bool isTypeArgument(SubstsT[Entity] v) 
-	= !isZero(bind(v, SubstsT[Entity] (Entity v_) { 
-					return isTypeArgument(v_) ? returnS(v_) : lift(tzero()); }));
+public bool isTypeArgument(TypeOf[Entity] v)
+	= !isZero(bind(v, TypeOf[Entity] (Entity v_) { 
+					return isTypeArgument(v_) ? returnT(v_) : tzero(); }));
+public bool isTypeArgument(SubstsT[Entity] v) = isTypeArgument(eval(v));
+public bool isTypeArgument(SubstsTL[Entity] v) = isTypeArgument(tauToSubstsT(v));
+
+public bool isLowerBoundTypeArgument(SubstsTL[Entity] v) 
+	= !isZero(bind(v, SubstsTL[Entity] (Entity v_) { 
+				return isLowerBoundTypeArgument(v_) ? returnSL(v_) : liftTL(tzero()); }));
+
+public bool isUpperBoundTypeArgument(SubstsTL[Entity] v) 
+	= !isZero(bind(v, SubstsTL[Entity] (Entity v_) { 
+				return isUpperBoundTypeArgument(v_) ? returnSL(v_) : liftTL(tzero()); }));
 
 public set[Constraint[SubstsT[Entity]]] bindTypeArgumentIfNotRawType(Mapper mapper, c:violated(_)) = { c };
 public default set[Constraint[SubstsT[Entity]]] bindTypeArgumentIfNotRawType(Mapper mapper, Constraint[SubstsT[Entity]] c) {
@@ -240,9 +251,10 @@ public set[Constraint[SubstsT[Entity]]] boundSul(CompilUnit facts, Mapper mapper
 
 @doc{EXTENSION with wildcards: the inference function needs to use a different (lower and upper) bind semantics}
 public set[Constraint[SubstsT[Entity]]] inferTypeArguments(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
-	cons = { c2 | Constraint[SubstsT[Entity]] c1  <- gevalc(facts, mapper, c),
+	cons = { runWithEmptySubsts(c2) 
+				| Constraint[SubstsT[Entity]] c1  <- gevalc(facts, mapper, c),
 			      Constraint[SubstsT[Entity]] c2  <- boundSul_(facts, mapper, c1) // ***Note: no capture values expected
-		   };
+		    };
 		   
 	return { c4 | Constraint[SubstsT[Entity]] c1 <- cons,
 				  // adds only constraints that have type argument variables
@@ -291,6 +303,10 @@ public default set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapp
 @doc{EXTENSION with wildcards: adds constraints to account for covariance}
 public set[Constraint[SubstsT[Entity]]] covariant(CompilUnit facts, Mapper mapper, c:violated(_)) = { c };
 public default set[Constraint[SubstsT[Entity]]] covariant(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
+	bool lhIsCapturedTypeArg = isCapturedTypeArgument(c.lh);
+	bool rhIsCapturedTypeArg = isCapturedTypeArgument(c.rh);
+	if(lhIsCapturedTypeArg && rhIsCapturedTypeArg)
+		return {};
 	return { c2 | Entity rv    <- tau(eval(c.rh)), 
 				  Entity param <- getTypeParamsOrArgs(getGenV(mapper, rv)),
 				  
@@ -302,6 +318,10 @@ public default set[Constraint[SubstsT[Entity]]] covariant(CompilUnit facts, Mapp
 @doc{EXTENSION with wildcards: adds constraints to account for contravariance}
 public set[Constraint[SubstsT[Entity]]] contravariant(CompilUnit facts, Mapper mapper, c:violated(_)) = { c };
 public default set[Constraint[SubstsT[Entity]]] contravariant(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
+	bool lhIsCapturedTypeArg = isCapturedTypeArgument(c.lh);
+	bool rhIsCapturedTypeArg = isCapturedTypeArgument(c.rh);
+	if(lhIsCapturedTypeArg && rhIsCapturedTypeArg)
+		return {};
 	return { c2 | Entity rv    <- tau(eval(c.rh)),
 				  Entity param <- getTypeParamsOrArgs(getGenV(mapper, rv)), 
 				  
@@ -321,7 +341,8 @@ public default set[Constraint[SubstsT[Entity]]] catchCaptureVariable(CompilUnit 
 	res = { *( { *( lhIsCapturedTypeArg ? 
 								( { eq(cl.lh, cu.lh) } + { *( rhIsCapturedTypeArg ? 
 																	{ eq(cl.rh, cu.rh),
-																	  eq(cl.lh, cl.rh),
+																	
+																	 // eq(cl.lh, cl.rh), // one should be sufficient
 																	  eq(cu.lh, cu.rh) } 
 																	: {} ) 
 															} 

@@ -105,17 +105,6 @@ public SubstsT_[Entity] supertypes_(CompilUnit facts, Mapper mapper, Entity v) {
 										return returnS_(vS1); }); }); });
 }
 
-@doc{Computes ***all*** the supertypes; ***note: it assumes that the input value is a type value in its generic form}
-public SubstsT_[Entity] supertypes_all(CompilUnit facts, Mapper mapper, Entity v) {
-	return bind(isEmpty(getTypeParamsOrArgs(v)) ? discard(returnS_(v)) : returnS_(v), SubstsT_[Entity] (Entity v) {
-				return concat(returnS_(v), 
-				   	   bind(lift(supertypes(facts, v)), SubstsT_[Entity] (Entity vS) {
-				   	   		if(v in getTypeParamsOrArgs(vS))
-				   	   			return lift([]);
-				   	   		return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, v), vS)))(mapper, vS)), SubstsT_[Entity] (Entity _) {
-										return supertypes_all(facts, mapper, getGenV(mapper, vS)); }); })); });
-}
-
 @doc{Supertype predicate under substitution computation that checks subtype relation}
 public SubstsT_[bool] supertypec_(CompilUnit facts, Mapper mapper, tuple[Entity l, Entity r] tpl) {
 	if(isSub(mapper, tpl.l, tpl.r)) return returnS_(true);

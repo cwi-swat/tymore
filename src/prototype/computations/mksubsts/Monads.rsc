@@ -110,7 +110,7 @@ public SubstsT_[&T] lift(list[&T] vs) = !isEmpty(vs) ? substs_( lrel[&T, Substs]
 public bool isZero(SubstsT_[&T] mv) = isEmpty(eval(mv));
 													 
 @doc{SubstsTL monad that adds explicit substitution in a slightly different manner}
-public data SubstsTL[&T] = substsl( TypeOf[tuple[&T,list[Substs]]] v);
+public data SubstsTL[&T] = substsl(TypeOf[tuple[&T,list[Substs]]] v);
 
 public SubstsTL[&T] returnSL(&T v) = substsl(returnT(<v, []>));
 public TypeOf[tuple[&T,list[Substs]]] run(SubstsTL[&T] mv) = mv.v;
@@ -170,6 +170,7 @@ public SubstsT[&T] tauToSubstsT(SubstsTL[&T] mv) {
 						return bind(v, TypeOf[tuple[&T,Substs]] (tuple[&T,list[Substs]] v_) { return returnT(<v_[0], (!isEmpty(v_[1])) ? v_[1][0] : substs([],[]) >); }); });
 }
 
+// TODO: rename to tau
 @doc{tauToSubstsT: SubstsTL -> SubstsTL'}
 public SubstsTL_[&T] tauToSubstsTL_(SubstsTL[&T] mv) {
 	TypeOf[tuple[&T,list[Substs]]] v = run(mv);
