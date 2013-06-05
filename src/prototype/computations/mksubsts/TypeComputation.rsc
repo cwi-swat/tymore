@@ -54,7 +54,7 @@ public SubstsT[Entity] glookupc(CompilUnit facts, Mapper mapper, AstNode t)
 												return returnS(zero()); }); }), 
 						  	   returnS(zero())), SubstsT[Entity] (Entity _) {
 						  	   Substs s = getExprSubsts(mapper, v);
-						  	return bind(appnd(paramSubstsWith(mapper, <t, t@location>)(s)), SubstsT[Entity] (value _) {
+						  	return bind(appnd(paramSubstsWith(mapper, <prettyprint(t), "<t@location.begin.line>; <t@location.begin.column>">)(s)), SubstsT[Entity] (value _) {
 						  				return returnS(v); }); } ); });
 //@doc{Contextual sublookup: t = t0.<...>}
 //public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)

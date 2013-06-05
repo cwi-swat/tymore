@@ -110,18 +110,18 @@ public SubstsT_[&T] lift(list[&T] vs) = !isEmpty(vs) ? substs_( lrel[&T, Substs]
 public bool isZero(SubstsT_[&T] mv) = isEmpty(eval(mv));
 													 
 @doc{SubstsTL monad that adds explicit substitution in a slightly different manner}
-public data SubstsTL[&T] = substsl(TypeOf[tuple[&T,list[Substs]]] v);
+public data SubstsTL[&T] = substsl(TypeOf[tuple[&T,list[Substs]]] val);
 
 public SubstsTL[&T] returnSL(&T v) = substsl(returnT(<v, []>));
-public TypeOf[tuple[&T,list[Substs]]] run(SubstsTL[&T] mv) = mv.v;
+public TypeOf[tuple[&T,list[Substs]]] run(SubstsTL[&T] mv) = mv.val;
 public TypeOf[&T] eval(SubstsTL[&T] mv) 
-	= bind(mv.v, TypeOf[&T] (tuple[&T,list[Substs]] v) { 
+	= bind(mv.val, TypeOf[&T] (tuple[&T,list[Substs]] v) { 
 			return returnT(v[0]); });
 
 public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl( TypeOf[tuple[&T1,list[Substs]]] mv1 ), SubstsTL[&T2] (&T1) f)
 	= substsl( bind(mv1, TypeOf[tuple[&T2,list[Substs]]] (tuple[&T1,list[Substs]] v1) { 
 						SubstsTL[&T2] mv2 = f(v1[0]);
-						return bind(mv2.v, TypeOf[tuple[&T2,list[Substs]]] (tuple[&T2,list[Substs]] v2) { 
+						return bind(mv2.val, TypeOf[tuple[&T2,list[Substs]]] (tuple[&T2,list[Substs]] v2) { 
 									return returnT(<v2[0], v1[1] + v2[1]>); } ); }) );
 
 public bool isZero(SubstsTL[&T] mv) = isZero(eval(mv));

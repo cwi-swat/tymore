@@ -78,7 +78,6 @@ private void testConstraintSemantics(loc f) {
 		
 		constraints = cls_; // inital constraints to be solved are the closure ones
 								
-		// set[Constraint[SubstsTL[Entity]]] clsSolved = {};
 		int n = size(constraints);
 		solve(solutions, n) {
 			solveit(facts, mapper);
@@ -86,19 +85,6 @@ private void testConstraintSemantics(loc f) {
 			ifLowerBoundsInferred(facts, mapper);
 			n = size(constraints);
 		}
-		
-		//solve(solutions, n) {
-		//	solve(solutions, n) {
-		//		println("solve...<size(constraints)>");
-		//		set[Constraint[SubstsTL[Entity]]] constrs = constraints;
-		//		/*clsSolved = */{ *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constrs };
-		//		// clsSolved = clsSolved + { *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constraints };
-		//		n = size(constraints);
-		//	}
-		//	println("solve extra...");
-		//	ifLowerBoundsInferred(facts, mapper);
-		//	n = size(constraints);
-		//}
 		
 		println("done!");
 		

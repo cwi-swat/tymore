@@ -67,7 +67,7 @@ public str prettyprint(Id::parameter(int i)) = "parameter(<i>)";
 public str prettyprint(Id::upper(Entity init)) = "UPPER(<prettyprint(init)>)";
 public str prettyprint(Id::lower(Entity init)) = "LOWER(<prettyprint(init)>)";
 public str prettyprint(Id::typeArgument(str name, c, Entity init)) = "<name>(<prettyprint(c)> - <prettyprint(init)>)";
-public str prettyprint(tuple[AstNode,loc] c) = "<prettyprint(c[0])> <c[1].begin.line>, <c[1].begin.column>";
+public str prettyprint(tuple[str,str] c) = "<c[0]> <c[1]>";
 
 public str prettyprint(substs(list[Entity] args, list[Entity] params)) = "[ <for(arg<-args){><prettyprint(arg)>;<}> <for(param<-params){><prettyprint(param)>;<}> ]";
 public str prettyprint(pentity(Substs s, Entity genval)) = "<if((s.args != []) && (s.params != [])){><prettyprint(s)><}><prettyprint(genval)>";

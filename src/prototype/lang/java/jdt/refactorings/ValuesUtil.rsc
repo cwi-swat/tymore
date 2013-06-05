@@ -95,8 +95,8 @@ public default bool isCapturedTypeArgument(Entity _) = false;
 
 public Entity getTypeParameter(entity([ *ids, typeArgument(str name, _,_) ])) = entity([typeParameter(name)]);
 @doc{EXTENSION with wildcards}
-public Entity getTypeParameter(entity([ *ids, typeArgument(str name, _,_), upper() ])) = entity([typeParameter(name)]);
-public Entity getTypeParameter(entity([ *ids, typeArgument(str name, _,_), lower() ])) = entity([typeParameter(name)]);
+public Entity getTypeParameter(entity([ *ids, typeArgument(str name, _,_), upper(_) ])) = entity([typeParameter(name)]);
+public Entity getTypeParameter(entity([ *ids, typeArgument(str name, _,_), lower(_) ])) = entity([typeParameter(name)]);
 
 public Entity getInit(entity([ *ids, typeArgument(str name, _, Entity init) ])) = init;
 public default Entity getInit(_) = zero();

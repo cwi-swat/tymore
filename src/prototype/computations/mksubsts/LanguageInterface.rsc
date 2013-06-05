@@ -79,4 +79,4 @@ public bool isStatic(CompilUnit facts, Entity v) {
 }
 
 @doc{Bound semantics}
-public list[Entity] typeParamBounds(CompilUnit facts, Entity val) = [ v | <Entity k, Entity v> <- facts["bounds_func"], k == val];
+public list[Entity] typeParamBounds(CompilUnit facts, Entity val) = [ v | <Entity k, Entity v> <- facts["bounds_func"], k.id[0].name == val.id[0].name];
