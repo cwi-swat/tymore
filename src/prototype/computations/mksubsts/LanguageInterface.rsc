@@ -17,6 +17,7 @@ import prototype::lang::java::jdt::refactorings::ValuesUtil;
 
 import IO;
 import List;
+import Relation;
 import Set;
 
 @doc{Basic lookup semantics, the typed terms are: expressions (e) and declarations (d)}

@@ -338,6 +338,7 @@ public default set[Constraint[SubstsT[Entity]]] catchCaptureVariable(CompilUnit 
 	bool rhIsCapturedTypeArg = isCapturedTypeArgument(c_.rh);
 	if(!(lhIsCapturedTypeArg || rhIsCapturedTypeArg))
 		return {};
+	println("capture: <prettyprint(c)>");
 	res = { *( { *( lhIsCapturedTypeArg ? 
 								( { eq(cl.lh, cu.lh) } + { *( rhIsCapturedTypeArg ? 
 																	{ eq(cl.rh, cu.rh),

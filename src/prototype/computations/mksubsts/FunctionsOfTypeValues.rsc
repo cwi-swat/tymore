@@ -131,10 +131,12 @@ public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str na
 //	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
 
 @doc{EXTENSION with wildcards: extends to account for wildcards ***without capturing***}
+public Entity typeArgumentNoCapture(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([]), &C c) 
+	= entity([ typeArgument(name, c, init) ]);
 public Entity typeArgumentNoCapture(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard() ]), &C c) 
-	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
+	= entity([ typeArgument(name, c, init) ]);
 public Entity typeArgumentNoCapture(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard(_) ]), &C c)
-	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
+	= entity([ typeArgument(name, c, init) ]);
 public default Entity typeArgumentNoCapture(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), Entity init, &C c)
 	= typeArgument(mapper, tp, init, c);	
 
