@@ -53,6 +53,12 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	bool lhIsTypeArg = isTypeArgument(lh);
 	bool rhIsTypeArg = isTypeArgument(rh);
 	
+	// TODO: work around - somehow map carries keys that are structurally equal
+	lhs = { s | s <- solutions, s == lh };
+	rhs = { s | s <- solutions, s == rh };
+	if(!isEmpty(lhs)) lh = getOneFrom(lhs);
+	if(!isEmpty(rhs)) rh = getOneFrom(rhs);
+	
 	// left- and right-hand side are both type argument variables	
 	if(lhIsTypeArg && rhIsTypeArg) {
 		if(lh in solutions) {		
@@ -82,14 +88,21 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	bool lhIsTypeArg = isTypeArgument(lh);
 	bool rhIsTypeArg = isTypeArgument(rh);
 	
+	// TODO: work around
+	lhs = { s | s <- solutions, s == lh };
+	rhs = { s | s <- solutions, s == rh };
+	if(!isEmpty(lhs)) lh = getOneFrom(lhs);
+	if(!isEmpty(rhs)) rh = getOneFrom(rhs);
+	
 	// left- and right-hand side are both type argument variables	
 	if(lhIsTypeArg && rhIsTypeArg) {
 		if(lh in solutions) {		
 			solutions[lh] = (rh in solutions) ? intersectLHS(facts, mapper, solutions[lh], solutions[rh])
 											  : solutions[lh];
 			solutions[rh] = (rh in solutions) ? intersectRHS(facts, mapper, solutions[lh], solutions[rh]) 
-											  : { sups = supertypes_all_(facts, mapper, replaceSubsts(mapper, solutions[lh], rh)); // solutions[lv];
-												  intersectRHS(facts, mapper, solutions[lh], replaceSubsts(mapper, sups, rh)); };
+											  : // { sups = supertypes_all_(facts, mapper, replaceSubsts(mapper, solutions[lh], rh)); // solutions[lh];
+												//  intersectRHS(facts, mapper, solutions[lh], replaceSubsts(mapper, sups, rh)); };
+												intersectRHS(facts, mapper, solutions[lh], rh); // the case of an uninitialized variable (universe solution)
 		} else if(rh in solutions) { // Note: lh is not in solutions
 			solutions[lh] = intersectLHS(facts, mapper, replaceSubsts(mapper, solutions[rh], lh), solutions[rh]); // TODO: should be actually subtypes
 		}
@@ -100,8 +113,9 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	// only right-hand side is a type argument variable
 	} else if(!lhIsTypeArg && rhIsTypeArg) {
 		solutions[rh] = (rh in solutions) ? intersectRHS(facts, mapper, tauToSubstsTL_(lh), solutions[rh]) 
-								: { sups = supertypes_all_(facts, mapper, replaceSubsts(mapper, tauToSubstsTL_(lh), rh)); // tauToSubstsTL_(lh)
-									intersectRHS(facts, mapper, tauToSubstsTL_(lh), replaceSubsts(mapper, sups, rh)); };								
+								: //{ sups = supertypes_all_(facts, mapper, replaceSubsts(mapper, tauToSubstsTL_(lh), rh)); // tauToSubstsTL_(lh)
+								  //  intersectRHS(facts, mapper, tauToSubstsTL_(lh), replaceSubsts(mapper, sups, rh)); };
+								  intersectRHS(facts, mapper, tauToSubstsTL_(lh), rh);								
 	}
 	
 	return { Constraint::subtype(lh,rh) };
@@ -130,6 +144,25 @@ public SubstsT_[Entity] supertypes_all(CompilUnit facts, Mapper mapper, Entity v
 										return supertypes_all(facts, mapper, getGenV(mapper, vS)); }); })); });
 }
 
+public SubstsT_[Entity] supertypes_all(CompilUnit facts, Mapper mapper, Entity v, Entity r) {
+	// introduces new type argument variables before computing supertypes
+	list[Entity] params = getTypeParamsOrArgs(v);
+	mv = bind(lift(params), SubstsT_[Entity] (Entity param) { 
+			return bind(tau(boundS_(mapper, param)), SubstsT_[Entity] (Entity b) {
+						return bind(tau(appnd(substs([ entity([ typeArgument(isTypeArgument(b) ? b.id[0].name : param.id[0].name, r, zero()) ]) ],
+												 	 [ param ]))), SubstsT_[Entity] (value _) {
+									return returnS_(v); }); }); });
+	if(isEmpty(params)) mv = returnS_(v);
+	return bind(mv, SubstsT_[Entity] (Entity v) {
+				return bind(isEmpty(getTypeParamsOrArgs(v)) ? discard(returnS_(v)) : returnS_(v), SubstsT_[Entity] (Entity v) {	
+							return concat(returnS_(v), 
+				   	   					  bind(lift(supertypes(facts, v)), SubstsT_[Entity] (Entity vS) {
+				   	   							if(v in getTypeParamsOrArgs(vS)) // takes care of cycling
+				   	   								return lift([]);
+				   	   							return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, v), vS)))(mapper, vS)), SubstsT_[Entity] (Entity _) {
+															return supertypes_all(facts, mapper, getGenV(mapper, vS), r); }); })); }); });
+}
+
 public map[SubstsTL_[Entity],SubstsTL_[Entity]] memoSupertypes = ();
 
 public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mv) {
@@ -138,6 +171,14 @@ public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, Substs
 												SubstsT_[Entity] sups = supertypes_all(facts, mapper, v);
 												return sups; }));
 	memoSupertypes[mv] = res;
+	return res;
+}
+
+public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mv, SubstsTL[Entity] r) {
+	SubstsTL_[Entity] res = tauToSubstsTL_(bind(tau(tauToSubstsT(r)), SubstsT_[Entity] (Entity rv) {
+												return bind(tauToSubstsT_(mv), SubstsT_[Entity] (Entity v) {
+															SubstsT_[Entity] sups = supertypes_all(facts, mapper, v, rv);
+															return sups; }); }));
 	return res;
 }
 
@@ -160,6 +201,11 @@ public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, SubstsTL_
 }
 
 public map[tuple[SubstsTL_[Entity],SubstsTL_[Entity]],SubstsTL_[Entity]] memoIntersectRHS = ();
+
+public SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL[Entity] r) { // the case when rhs is an unitialized variable (universe solution)
+	SubstsTL_[Entity] res = intersect(facts, mapper, supertypes_all_(facts, mapper, l, r), supertypes_all_(facts, mapper, l), -1);
+	return res;
+}
 
 public SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
 	if(<l,r> in memoIntersectRHS) return memoIntersectRHS[<l,r>];
@@ -233,10 +279,10 @@ public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper) {
 			  SubstsTL[Entity] upper := { // TODO: work around
 			  							  upper0 = bind(mvar, SubstsTL[Entity] (Entity v) { 
 						   								return returnSL(replaceWithUpper(v)); });
-						   				  ss = { s | s <- solutions, s == upper };
+						   				  ss = { s | s <- solutions, s == upper0 };
 						   				  (!isEmpty(ss)) ? getOneFrom(ss) : upper0; 
 						   				}, // introduce the upper bound type argument variable
-			  Constraint[SubstsTL[Entity]] c := Constraint::eq(mvar, upper),
+			  Constraint[SubstsTL[Entity]] c := Constraint::subtype(mvar, upper),
 			  bool wasThere := (upper in solutions),
 			  SubstsTL_[Entity] solutionUpper := solutions[upper] ? liftTL_({}),
 			  set[Constraint[SubstsTL[Entity]]] cons := constraints,
