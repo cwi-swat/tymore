@@ -53,7 +53,7 @@ public set[Constraint[SubstsTL[Entity]]] constraints = {};
 @doc{EXTENSION with plain generics}
 public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper, 
 												 Constraint::eq(SubstsTL[Entity] lh, SubstsTL[Entity] rh) 
-												 /*bool allConstraints = true*/) {
+												 bool allConstraints = true) {
 												 
 	bool lhIsTypeArg = isTypeArgument(lh);
 	bool rhIsTypeArg = isTypeArgument(rh);
@@ -89,7 +89,7 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 
 public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper, 
 												 Constraint::subtype(SubstsTL[Entity] lh, SubstsTL[Entity] rh)//, 
-												 /*bool allConstraints = true*/) {
+												 bool allConstraints = true) {
 	
 	Constraint[SubstsTL[Entity]] c = Constraint::subtype(lh,rh);
 	
@@ -110,12 +110,12 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 			solutions[rh] = (rh in solutions) ? intersectRHS(facts, mapper, c, solutions[lh], solutions[rh]) 
 											  : intersectRHS(facts, mapper, c, solutions[lh]); // the case of an uninitialized variable (universe solution)
 		} else if(rh in solutions) { // Note: lh is not in solutions
-			//if(allConstraints) 
+			if(allConstraints) 
 				solutions[lh] = intersectLHS(facts, mapper, c, solutions[rh]);
 		}
 	// only left-hand side is a type argument variable
 	} else if(lhIsTypeArg && !rhIsTypeArg) {
-		//if(lh in solutions || allConstraints)
+		if(lh in solutions || allConstraints)
 			solutions[lh] = (lh in solutions) ? intersectLHS(facts, mapper, c, solutions[lh], tauToSubstsTL_(rh))
 										  	  : intersectLHS(facts, mapper, c, tauToSubstsTL_(rh));
 	// only right-hand side is a type argument variable
@@ -364,10 +364,8 @@ public bool solveit(CompilUnit facts, Mapper mapper) {
 	solve(solutions, n) {
 		println("solve <size(constraints)> ...");
 		set[Constraint[SubstsTL[Entity]]] constrs = constraints;
-		//{ *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constrs };
-		println("<size(solutions)>");
+		{ *solveit(facts, mapper, c, allConstraints = false) | Constraint[SubstsTL[Entity]] c <- constrs };
 		{ *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constrs };
-		println("<size(solutions)>");
 		n = size(constraints);
 	}
 	return true;
