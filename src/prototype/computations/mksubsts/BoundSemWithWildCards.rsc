@@ -84,7 +84,7 @@ public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, ta:typeArgument(st
 public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([]))])) // case of 'Ta'
 	= boundSu_(mapper, entity( ids + ta + upper(init)));
 public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-	= returnS(entity( ids + ta ));
+	= boundS(mapper, entity( ids + ta ));
 //public SubstsT[Entity] boundSu_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
 //	= boundSu_(mapper, entity( ids + ta + upper(init)));
 
@@ -153,7 +153,7 @@ public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(st
 public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([]))])) // case of 'Ta'
 	= boundSl_(mapper, entity( ids + ta + lower(init)));
 public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-	= returnS(entity( ids + ta ));
+	= boundS(mapper, entity( ids + ta ));
 //public SubstsT[Entity] boundSl_(Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
 //	= boundSl_(mapper, entity( ids + ta + lower(init)));
 

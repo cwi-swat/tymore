@@ -26,7 +26,6 @@ import org.eclipse.imp.pdb.facts.IMapWriter;
 import org.eclipse.imp.pdb.facts.ISetWriter;
 import org.eclipse.imp.pdb.facts.IValue;
 import org.eclipse.imp.pdb.facts.IValueFactory;
-import org.eclipse.imp.pdb.facts.type.TypeFactory;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
@@ -50,7 +49,7 @@ import org.rascalmpl.eclipse.library.lang.java.jdt.internal.BindingsResolver;
 
 public class TypeComputationModelBuilder {
 	
-	private static final TypeFactory ftypes = TypeFactory.getInstance();
+	//private static final TypeFactory ftypes = TypeFactory.getInstance();
 	/*
 	 *  Type computation model as a set of functions on types: 
 	 */
@@ -75,31 +74,29 @@ public class TypeComputationModelBuilder {
 	private IValue typeComputationModel;
 	private IValue semanticsOfParameterizedTypes;
 	
-	private final org.eclipse.imp.pdb.facts.type.Type functionTupleType = ftypes.tupleType(ADT_ENTITY, ADT_ENTITY);
-	private final org.eclipse.imp.pdb.facts.type.Type 
-		semantics_of_paramaterized_types = ftypes.tupleType( ftypes.tupleType( ftypes.listType(ADT_ENTITY), ftypes.listType(ADT_ENTITY) ), 
-														     ADT_ENTITY );
+//	private final org.eclipse.imp.pdb.facts.type.Type functionTupleType = ftypes.tupleType(ADT_ENTITY, ADT_ENTITY);
+//	private final org.eclipse.imp.pdb.facts.type.Type 
+//		semantics_of_paramaterized_types = ftypes.tupleType( ftypes.tupleType( ftypes.listType(ADT_ENTITY), ftypes.listType(ADT_ENTITY) ), 
+//														     ADT_ENTITY );
 	
 	private final IValueFactory values;
 	private final BindingConverter bindingConverter; 
 		
-	@SuppressWarnings("deprecation")
 	public TypeComputationModelBuilder(final IValueFactory values, final BindingConverter bindingConverter) {	
 		this.values = values;
 		this.bindingConverter = bindingConverter;
 		
-		evaluation_func = values.setWriter(functionTupleType);
-		subtypes_func = values.setWriter(functionTupleType);
-		declares_func = values.setWriter(functionTupleType);
-		overrides_func = values.setWriter(functionTupleType);
-		bounds_func = values.setWriter(functionTupleType);
-		isStaticDecl_func = values.setWriter(functionTupleType);
-		semantics_of_paramaterized_types_func = values.mapWriter(ADT_ENTITY, semantics_of_paramaterized_types);
+		evaluation_func = values.setWriter();
+		subtypes_func = values.setWriter();
+		declares_func = values.setWriter();
+		overrides_func = values.setWriter();
+		bounds_func = values.setWriter();
+		isStaticDecl_func = values.setWriter();
+		semantics_of_paramaterized_types_func = values.mapWriter();
 	}
 	
-	@SuppressWarnings("deprecation")
 	public void extract(CompilationUnit cu) {
-		IMapWriter computations = values.mapWriter(ftypes.stringType(), ftypes.relTypeFromTuple(functionTupleType));
+		IMapWriter computations = values.mapWriter();
 		TypeValuesCollector collector = new TypeValuesCollector(this.bindingConverter);
 		cu.accept(collector);
 		

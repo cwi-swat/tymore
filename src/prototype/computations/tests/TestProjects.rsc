@@ -19,6 +19,8 @@ public loc exmpl7 = |project://TyMoReCases/src/rawtypes/Example7.java|;
 public loc exmpl8 = |project://TyMoReCases/src/rawtypes/Example8.java|;
 public loc exmpl9 = |project://TyMoReCases/src/rawtypes/Example9.java|;
 public loc exmpl10 = |project://TyMoReCases/src/rawtypes/Example10.java|;
+public loc exmpl11 = |project://TyMoReCases/src/rawtypes/Example11.java|;
+public loc exmplG = |project://TyMoReCases/src/rawtypes/G.java|;
 
 public list[loc] testcases = [ exmpl1,
 						 	   exmpl2,

@@ -58,8 +58,7 @@ public class BindingConverter extends org.rascalmpl.eclipse.library.lang.java.jd
 																				 "declaredType", TF.integerType(),  // '+' declared type
 																				 "id");
 	public static final Type CONS_TYPE_PARAMETER_BOUNDED = TF.constructor(store, ADT_ID, "typeParameter", TF.stringType(), 
-																						 "name", TF.listType(ADT_ENTITY), 
-																						 "bounds"); // '+' bounds (problematic due to cycles)
+																						 "name"); // '+' bounds (problematic due to cycles)
 		
 	public IValue getId(IMethodBinding mb) {
 		 // Takes into account type parameters and type arguments of generic and parameterized methods	
@@ -95,9 +94,8 @@ public class BindingConverter extends org.rascalmpl.eclipse.library.lang.java.jd
 		return VF.constructor(CONS_VARIABLE_TYPED, VF.string(vb.getName()), getEntity(vb.getType(), null), VF.integer(vb.getVariableId()));
 	}
 	
-	@SuppressWarnings("deprecation")
 	public IList getEntities(ITypeBinding[] tbs) {
-		IListWriter params = VF.listWriter(ADT_ENTITY);
+		IListWriter params = VF.listWriter();
 		for(ITypeBinding tb : tbs) 
 			params.append(getEntity(tb));
 		return params.done();

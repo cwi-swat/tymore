@@ -23,6 +23,8 @@ import List;
 import Map;
 import Set;
 
+import Type;
+
 @doc{Type monad with identity behaviour}
 public data TypeOf[&T] = typeof(&T v) | tzero();
 public TypeOf[&T] returnT(&T v) = typeof(v);
@@ -60,10 +62,10 @@ public SubstsT[&T] discard(SubstsT[&T] mv)
 							return returnT(<v_[0], substs([],[])>); }); });
 			  
 public SubstsT[&T] catchZ(SubstsT[&T] mv1, SubstsT[&T] mv2) 
-	= substs( TypeOf[tuple[&T, Substs]] (Substs s) {
-				TypeOf[tuple[&T, Substs]] v1 = run(mv1)(s);
+	= substs( TypeOf[tuple[&T,Substs]] (Substs s) {
+				TypeOf[tuple[&T,Substs]] v1 = run(mv1)(s);
 				if(!(tzero() := v1)) return v1;
-				TypeOf[tuple[&T, Substs]] v2 = run(mv2)(s);
+				TypeOf[tuple[&T,Substs]] v2 = run(mv2)(s);
 				return v2 ; } );
 			  
 public SubstsT[&T] lift(TypeOf[&T] v) 
@@ -121,7 +123,7 @@ public TypeOf[&T] eval(SubstsTL[&T] mv)
 public SubstsTL[&T2] bind(SubstsTL[&T1] _:substsl( TypeOf[tuple[&T1,list[Substs]]] mv1 ), SubstsTL[&T2] (&T1) f)
 	= substsl( bind(mv1, TypeOf[tuple[&T2,list[Substs]]] (tuple[&T1,list[Substs]] v1) { 
 						SubstsTL[&T2] mv2 = f(v1[0]);
-						return bind(mv2.val, TypeOf[tuple[&T2,list[Substs]]] (tuple[&T2,list[Substs]] v2) { 
+						return bind(mv2.val, TypeOf[tuple[&T2,list[Substs]]] (tuple[&T2,list[Substs]] v2) {
 									return returnT(<v2[0], v1[1] + v2[1]>); } ); }) );
 
 public bool isZero(SubstsTL[&T] mv) = isZero(eval(mv));

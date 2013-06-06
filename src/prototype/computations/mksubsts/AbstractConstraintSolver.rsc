@@ -27,6 +27,8 @@ import prototype::computations::mksubsts::Monads;
 import prototype::computations::mksubsts::TypeComputation;
 import prototype::computations::mksubsts::FunctionsOfTypeValues;
 
+import Type;
+
 import IO;
 import List;
 import Map;
@@ -58,11 +60,8 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	bool lhIsTypeArg = isTypeArgument(lh);
 	bool rhIsTypeArg = isTypeArgument(rh);
 	
-	// TODO: temporary work around *
-	lhs = { s | s <- solutions, "<s>" == "<lh>" };
-	rhs = { s | s <- solutions, "<s>" == "<rh>" };
-	if(!isEmpty(lhs)) lh = getOneFrom(lhs);
-	if(!isEmpty(rhs)) rh = getOneFrom(rhs);
+	if(lh notin solutions) assert(isEmpty({ s | s <- solutions, "<s>" == "<lh>"}));
+	if(rh notin solutions) assert(isEmpty({ s | s <- solutions, "<s>" == "<rh>"}));
 	
 	// left- and right-hand side are both type argument variables	
 	if(lhIsTypeArg && rhIsTypeArg) {
@@ -96,12 +95,6 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	bool lhIsTypeArg = isTypeArgument(lh);
 	bool rhIsTypeArg = isTypeArgument(rh);
 	
-	// TODO: work around
-	lhs = { s | s <- solutions, "<s>" == "<lh>" };
-	rhs = { s | s <- solutions, "<s>" == "<rh>" };
-	if(!isEmpty(lhs)) lh = getOneFrom(lhs);
-	if(!isEmpty(rhs)) rh = getOneFrom(rhs);
-	
 	// left- and right-hand side are both type argument variables	
 	if(lhIsTypeArg && rhIsTypeArg) {
 		if(lh in solutions) {		
@@ -127,16 +120,20 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	return { c };
 }
 
-public map[tuple[SubstsTL_[Entity],SubstsTL_[Entity]],SubstsTL_[Entity]] memoIntersectLHS = ();
+public map[tuple[SubstsTL_[Entity],SubstsTL[Entity]],SubstsTL_[Entity]] memoIntersectLHS1 = ();
+public map[tuple[SubstsTL_[Entity],SubstsTL_[Entity]],SubstsTL_[Entity]] memoIntersectLHS2 = ();
 
 public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, Constraint[SubstsTL[Entity]] c, 
-																	   SubstsTL_[Entity] r)
-	= intersect(facts, mapper, r, replaceSubsts(mapper, r, c.lh), -1);
+																	   SubstsTL_[Entity] r) {
+	if(<r,c.lh> in memoIntersectLHS1) return memoIntersectLHS1[<r,c.lh>];
+	res = intersect(facts, mapper, r, replaceSubsts(mapper, r, c.lh), -1);
+	memoIntersectLHS1[<r,c.lh>] = res;
+	return res;
+}
 
 public default SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, Constraint[SubstsTL[Entity]] c, 
 																	   SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
-	if(<l,r> in memoIntersectLHS) return memoIntersectLHS[<l,r>];
-	
+	if(<l,r> in memoIntersectLHS2) return memoIntersectLHS2[<l,r>];
 	SubstsT_[&T] res = bind(tauToSubstsT_(l), SubstsT_[Entity] (Entity lv) { 
 							return bind(tau(popSubsts()), SubstsT_[Entity] (Substs substs) {
 										SubstsTL_[Entity] cond = intersectRHS(facts, mapper,
@@ -146,24 +143,28 @@ public default SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, C
 															   				  r);				 
 										return !isZero(cond) ? returnS_(lv) : lift([]); });
 						});
-	res_ = tauToSubstsTL_(res);
-	
-	memoIntersectLHS[<l,r>] = res_;
+	res_ = tauToSubstsTL_(res);	
+	memoIntersectLHS2[<l,r>] = res_;
 	return res_;
 }
 
-public map[tuple[SubstsTL_[Entity],SubstsTL_[Entity]],SubstsTL_[Entity]] memoIntersectRHS = ();
+public map[tuple[SubstsTL_[Entity],SubstsTL[Entity]],SubstsTL_[Entity]] memoIntersectRHS1 = ();
+public map[tuple[SubstsTL_[Entity],SubstsTL_[Entity]],SubstsTL_[Entity]] memoIntersectRHS2 = ();
 
 // the case when rhs is an unitialized variable (universe solution)
 public SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, Constraint[SubstsTL[Entity]] c, 
-																	   SubstsTL_[Entity] l)
-	 = intersect(facts, mapper, supertypes_all_(facts, mapper, l, c.rh), supertypes_all_(facts, mapper, l, c.lh), -1);
+																	   SubstsTL_[Entity] l) {
+	if(<l,c.rh> in memoIntersectRHS1) return memoIntersectRHS1[<l,c.rh>];															   
+	res = intersect(facts, mapper, supertypes_all_(facts, mapper, l, c.rh), supertypes_all_(facts, mapper, l, c.lh), -1);
+	memoIntersectRHS1[<l,c.rh>] = res;
+	return res;
+}
 
 public default SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, Constraint[SubstsTL[Entity]] c, 
 																			   SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
-	if(<l,r> in memoIntersectRHS) return memoIntersectRHS[<l,r>];
+	if(<l,r> in memoIntersectRHS2) return memoIntersectRHS2[<l,r>];
 	SubstsTL_[Entity] res = intersect(facts, mapper, r, supertypes_all_(facts, mapper, l, returnSL(zero())), -1);
-	memoIntersectRHS[<l,r>] = res;
+	memoIntersectRHS2[<l,r>] = res;
 	return res;
 }
 
@@ -241,13 +242,15 @@ public Substs invert(Substs s) {
 	return substs(params, args);
 }
 
-public map[SubstsTL_[Entity],SubstsTL_[Entity]] memoSupertypes = ();
+public map[tuple[SubstsTL_[Entity],SubstsTL[Entity]],SubstsTL_[Entity]] memoSupertypes = ();
 
 public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mv, SubstsTL[Entity] var) {
+	if(<mv,var> in memoSupertypes) return memoSupertypes[<mv,var>];
 	SubstsTL_[Entity] res = tauToSubstsTL_(bind(tau(lift(eval(var))), SubstsT_[Entity] (Entity varv) {
 												return bind(tauToSubstsT_(mv), SubstsT_[Entity] (Entity v) {
 															SubstsT_[Entity] sups = supertypes_all(facts, mapper, v, varv);
 															return sups; }); }));
+	memoSupertypes[<mv,var>] = res;
 	return res;
 }
 //public SubstsTL_[Entity] supertypes_all_(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mv) {
@@ -321,12 +324,8 @@ public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper) {
 			  isLowerBoundTypeArgument(mvar), // look up a lower bound type argument variable
 			  SubstsTL_[Entity] solutionLower := solutions[mvar], 
 			  !isZero(solutionLower),        // the one with non-empty solution
-			  SubstsTL[Entity] upper := { // TODO: work around *
-			  							  upper0 = bind(mvar, SubstsTL[Entity] (Entity v) { 
-						   								return returnSL(replaceWithUpper(v)); });
-						   				  ss = { s | s <- solutions, "<s>" == "<upper0>" };
-						   				  (!isEmpty(ss)) ? getOneFrom(ss) : upper0; 
-						   				}, // introduce the upper bound type argument variable
+			  SubstsTL[Entity] upper := bind(mvar, SubstsTL[Entity] (Entity v) { 
+						   						return returnSL(replaceWithUpper(v)); }), // introduce the upper bound type argument variable
 			  Constraint[SubstsTL[Entity]] c := Constraint::subtype(mvar, upper),
 			  bool wasThere := (upper in solutions),
 			  SubstsTL_[Entity] solutionUpper := solutions[upper] ? liftTL_({}),
@@ -345,10 +344,8 @@ public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper) {
 		  SubstsTL[Entity] b := bind(mvar, SubstsTL[Entity] (Entity v_) { 
 		  						return tauToSubstsTL(bind(boundEnvWithNoCapture(facts, mapper, getTypeParameter(v_)), SubstsT[Entity] (Entity bv) {
 		  									return (bv == object()) ? lift(tzero()) : returnS(getGenV(mapper, bv)); })); }),
-		  // TODO: work around *
-		  SubstsTL[Entity] b0 := { ss = { s | s <- solutions, "<s>" == "<b>" }; (!isEmpty(ss)) ? getOneFrom(ss) : b; },
 		  !isZero(b),
-		  Constraint[SubstsTL[Entity]] c := Constraint::subtype(mvar, b0),
+		  Constraint[SubstsTL[Entity]] c := Constraint::subtype(mvar, b),
 		  c notin constraints,
 		  _ := { constraints = constraints + {c}; solveit(facts, mapper); {}; }
 	};
@@ -393,38 +390,25 @@ public str prettyprintOneSolution(CompilUnit facts, Mapper mapper, SubstsTL[Enti
 		
 	if(isLowerBoundTypeArgument(var)) {
 		lvar = var;
-		uvar = bind(var, SubstsTL[Entity] (Entity v) { return returnSL(replaceWithUpper(v)); });
-		
-		// TODO: work around *
-		uvar = getOneFrom({ s | s <- solutions, "<s>" == "<uvar>" });
-		
+		uvar = bind(var, SubstsTL[Entity] (Entity v) { return returnSL(replaceWithUpper(v)); });		
 		luvar = bind(lvar, SubstsTL[Entity] (Entity v) { return (entity([ *ids, lower(_) ]) := v) ? returnSL(entity(ids)) : liftTL(tzero()); });
 	}	
 	if(isUpperBoundTypeArgument(var)) {
 		uvar = var;
 		lvar = bind(var, SubstsTL[Entity] (Entity v) { return returnSL(replaceWithLower(v)); });
-		
-		// TODO: work around *
-		lvar = getOneFrom({ s | s <- solutions, "<s>" == "<lvar>" });
-		
 		luvar = bind(uvar, SubstsTL[Entity] (Entity v) { return (entity([ *ids, upper(_) ]) := v) ? returnSL(entity(ids)) : liftTL(tzero()); });
 	}
 	if(isTypeArgument(var) && !isLowerBoundTypeArgument(var) && !isUpperBoundTypeArgument(var)) {
 		lvar = bind(var, SubstsTL[Entity] (Entity v) { return returnSL(entity(v.id + lower(zero()))); }); // rawtypes inference specific
 		uvar = bind(var, SubstsTL[Entity] (Entity v) { return returnSL(entity(v.id + upper(zero()))); }); // rawtypes inference specific
-		
-		// TODO: work around *
-		lvar = getOneFrom({ s | s <- solutions, "<s>" == "<lvar>" });
-		uvar = getOneFrom({ s | s <- solutions, "<s>" == "<uvar>" });
-		
 		luvar = var;
 	}
 	
 	str lpp = pp[lvar] ? "";
 	str upp = pp[uvar] ? "";
 	
-	rel[Entity,list[Substs]] lb = run(solutions[lvar]);
-	rel[Entity,list[Substs]] ub = run(solutions[uvar]);
+	rel[Entity,list[Substs]] lb =/* lvarThere ?*/ run(solutions[lvar]);// : {};
+	rel[Entity,list[Substs]] ub =/* uvarThere ?*/ run(solutions[uvar]);// : {};
 	
 	rel[Entity,list[Substs]] lbOnes = {<zero(),[]>};
 	rel[Entity,list[Substs]] ubOnes = {<zero(),[]>};
@@ -458,12 +442,12 @@ public str prettyprintOneSolution(CompilUnit facts, Mapper mapper, SubstsTL[Enti
 	
 	common = [ *({*lvarpps} & {*uvarpps}) ];
 	
-	if(isEmpty(lvarpps) && lpp == "")
+	if(isEmpty(lvarpps) && lpp == ""/* && lvarThere*/)
 		pp[lvar] = "_; []";
 		
-	if(isEmpty(uvarpps) && upp == "")
+	if(isEmpty(uvarpps) && upp == ""/* && uvarThere*/)
 		pp[uvar] = "_; []";
-		
+				
 	if(!isEmpty(lvarpps) && !isEmpty(uvarpps)) {
 		if(!isEmpty(common)) {
 			common0 = common - ["Serializable; []", "Cloneable; []"]; // annoying ones, always pops up
@@ -479,7 +463,16 @@ public str prettyprintOneSolution(CompilUnit facts, Mapper mapper, SubstsTL[Enti
 		pp[lvar] = lvarpps[0];
 	} else if(!isEmpty(uvarpps)){
 		pp[uvar] = uvarpps[0];
-	}
+	}	
+	
+	//if(!lvarThere && uvarThere)
+	//	pp[lvar] = pp[uvar];
+	//if(lvarThere && !uvarThere)
+	//	pp[uvar] = pp[lvar];
+	//if(!lvarThere && !uvarThere) {
+	//	pp[lvar] = "Any";
+	//	pp[uvar] = "Any";
+	//}	
 	
 	if(pp[lvar] == pp[uvar] && pp[lvar] != "_; []") {
 		pp[luvar] =  pp[lvar];

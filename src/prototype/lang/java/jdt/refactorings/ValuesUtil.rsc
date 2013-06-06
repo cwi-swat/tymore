@@ -12,6 +12,7 @@ import lang::java::jdt::Java;
 import lang::java::jdt::JavaADT;
 import prototype::lang::java::jdt::refactorings::Java;
 import prototype::lang::java::jdt::refactorings::JavaADT;
+import prototype::lang::java::jdt::refactorings::PrettyPrintUtil;
 
 import List;
 import IO;
@@ -134,7 +135,6 @@ public Entity lookupSubsts(Substs s, Entity v) {
 			mapOfs[s.params[i]] = s.args[i];
 	return mapOfs[v] ? zero();
 }
-
 @doc{Concatenates substitutions}
 public Substs concat(Substs s1, Substs s2) { 
 	assert(size(s1.args) == size(s1.params)); assert(size(s2.args) == size(s2.params));		
@@ -152,7 +152,8 @@ public Substs normalize(Substs s) {
 	int n = -1;
 	Entity bnd = zero();
 	if(int i <- [0..size(args)], 
-			isTypeParameter(args[i]), Entity b := lookupSubsts(s, args[i]), b != zero()) {
+			isTypeParameter(args[i]), Entity b := lookupSubsts(s, args[i]), 
+			b != zero()) {
 		n = i;
 		bnd = b;
 	}
@@ -160,6 +161,8 @@ public Substs normalize(Substs s) {
 	// DEBUG: println("normalization ..."); println(s);
 	Entity arg = args[n];
 	args[n] = bnd;
+	//params0 = params;
+	//args0 = args;
 	if(int i <- [0..size(params)], params[i] == arg) {
 		args = delete(args,i);
 		params = delete(params,i);

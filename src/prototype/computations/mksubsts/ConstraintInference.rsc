@@ -49,7 +49,8 @@ public default set[Constraint[SubstsT[Entity]]] boundS_(CompilUnit facts, Mapper
 				return bind(boundS_(mapper, v), SubstsT[Entity] (Entity b) {
 							// ***Note: type value is a generic type value 
 							Entity gen = getGenV(mapper, b);
-							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) }; 
+							return (isEmpty(getTypeParamsOrArgs(gen)) 
+									/*&& !isTypeArgument(gen)*/) ? discard(returnS(gen)) : returnS(gen); }); })(c) }; 
 
 @doc{Binds type parameters and type argument variables}
 public set[Constraint[SubstsT[Entity]]] boundS(CompilUnit facts, Mapper mapper, c:violated(_)) = { c };
@@ -112,7 +113,7 @@ public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapp
 public set[Constraint[SubstsT[Entity]]] subtyping(CompilUnit facts, Mapper mapper, c:violated(_)) = { c };
 public default set[Constraint[SubstsT[Entity]]] subtyping(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
 	set[Constraint[SubstsT[Entity]]] constraints = 
-			{ runWithEmptySubsts(c3) 
+			{ runWithEmptySubsts(c3)
 				 | Constraint[SubstsT[Entity]] c1  <- boundS(facts, mapper, c), 
 				   Constraint[SubstsT[Entity]] c1_ <- catchZ(c1), // zero may occur, for example, due to raw types		
 				      
@@ -156,7 +157,7 @@ public default set[Constraint[SubstsT[Entity]]] catchTypeArgVariable(Constraint[
 	if(lhIsTypeArg && rhIsTypeArg 
 			&& eval(c_.lh) == eval(c_.rh)) return {};
 	if(lhIsTypeArg || rhIsTypeArg)
-		return { c };
+		return { c_ };
 	return {};
 }
 
@@ -178,13 +179,14 @@ public set[Constraint[SubstsT[Entity]]] bindTypeArgumentIfNotRawType(Mapper mapp
 public default set[Constraint[SubstsT[Entity]]] bindTypeArgumentIfNotRawType(Mapper mapper, Constraint[SubstsT[Entity]] c) {
 	SubstsT[Entity] (Entity) f = SubstsT[Entity] (Entity v) {
 									if(isTypeArgument(v)) {
-										SubstsT[Entity] b = bind(boundS(mapper, v), SubstsT[Entity] (Entity b) { 
-																// DEBUG: println("Bind type argument variables if not a raw type: <prettyprint(v)> <prettyprint(b)>"); 
-																return returnS(getGenV(mapper, b)); });
-										SubstsT[Entity] b_ = runWithEmptySubsts(b);
-										if(!isZero(b_)) return b_;
-										// ***Note: rawtypes specific optimization
-										return discard(returnS(v));
+										SubstsT[Entity] b = bind(boundS(mapper, v), SubstsT[Entity] (Entity bnd) { 
+																// DEBUG: 
+																// println("Bind type argument variables if not a raw type: <prettyprint(v)> <prettyprint(bnd)>"); 
+																return returnS(getGenV(mapper, bnd)); });
+										// SubstsT[Entity] b_ = runWithEmptySubsts(b);
+										// if(!isZero(b_)) return b_;
+										// ***Note: rawtypes specific optimization, should not be earlier
+										return catchZ(b, discard(returnS(v))); // discard(returnS(v));
 									}
 									return returnS(v);  };
 	return { apply(f)(c) };
@@ -206,7 +208,8 @@ public set[Constraint[SubstsT[Entity]]] boundSu_(CompilUnit facts, Mapper mapper
 				return bind(boundSu_(mapper, v), SubstsT[Entity] (Entity b) {
 							// ***Note: type value is a generic type value
 							Entity gen = getGenV(mapper, b);
-							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) }; 
+							return (isEmpty(getTypeParamsOrArgs(gen)) 
+										/*&& !isTypeArgument(gen)*/) ? discard(returnS(gen)) : returnS(gen); }); })(c) }; 
 public set[Constraint[SubstsT[Entity]]] boundSu(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 	= { apply(SubstsT[Entity] (Entity v) { 
 				return bind(boundSu(mapper, v), SubstsT[Entity] (Entity b) {
@@ -218,7 +221,8 @@ public set[Constraint[SubstsT[Entity]]] boundSl_(CompilUnit facts, Mapper mapper
 				return bind(boundSl_(mapper, v), SubstsT[Entity] (Entity b) {
 							// ***Note: type value is a generic type value
 							Entity gen = getGenV(mapper, b);
-							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) };
+							return (isEmpty(getTypeParamsOrArgs(gen))
+										/*&& !isTypeArgument(gen)*/) ? discard(returnS(gen)) : returnS(gen); }); })(c) };
 public set[Constraint[SubstsT[Entity]]] boundSl(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 	= { apply(SubstsT[Entity] (Entity v) { 
 				return bind(boundSl(mapper, v), SubstsT[Entity] (Entity b) {
@@ -230,12 +234,14 @@ public set[Constraint[SubstsT[Entity]]] boundSul_(CompilUnit facts, Mapper mappe
 				return bind(boundSu_(mapper, v), SubstsT[Entity] (Entity b) {
 							// ***Note: type value is a generic type value
 							Entity gen = getGenV(mapper, b);
-							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); },
+							return (isEmpty(getTypeParamsOrArgs(gen))
+										/*&& !isTypeArgument(gen)*/) ? discard(returnS(gen)) : returnS(gen); }); },
 			  SubstsT[Entity] (Entity v) { 
 				return bind(boundSl_(mapper, v), SubstsT[Entity] (Entity b) {
 							// ***Note: type value is a generic type value
 							Entity gen = getGenV(mapper, b);
-							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) };
+							return (isEmpty(getTypeParamsOrArgs(gen))
+										/*&& !isTypeArgument(gen)*/) ? discard(returnS(gen)) : returnS(gen); }); })(c) };
 public set[Constraint[SubstsT[Entity]]] boundSul(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 	= { apply(SubstsT[Entity] (Entity v) { 
 				return bind(boundSu(mapper, v), SubstsT[Entity] (Entity b) {
@@ -338,11 +344,9 @@ public default set[Constraint[SubstsT[Entity]]] catchCaptureVariable(CompilUnit 
 	bool rhIsCapturedTypeArg = isCapturedTypeArgument(c_.rh);
 	if(!(lhIsCapturedTypeArg || rhIsCapturedTypeArg))
 		return {};
-	println("capture: <prettyprint(c)>");
 	res = { *( { *( lhIsCapturedTypeArg ? 
 								( { eq(cl.lh, cu.lh) } + { *( rhIsCapturedTypeArg ? 
 																	{ eq(cl.rh, cu.rh),
-																	
 																	 // eq(cl.lh, cl.rh), // one should be sufficient
 																	  eq(cu.lh, cu.rh) } 
 																	: {} ) 

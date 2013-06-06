@@ -108,7 +108,9 @@ public default PEntity toGensNonRecByCase(Mapper mapper, Entity val) {
 	Entity genval = val_.val; 
 	list[Entity] args = val_.substs.targs; 
 	list[Entity] params = val_.substs.tparams;	
-		
+	
+	// TODO: take care of static members!!!
+	
 	assert(size(args)==size(params));
 		
 	if(isEmpty(params)) return pentity(substs([],[]), genval)[@paramval=val];
@@ -117,7 +119,6 @@ public default PEntity toGensNonRecByCase(Mapper mapper, Entity val) {
 }
 
 public Substs idS(Substs s) = s;
-
 
 @doc{EXTENSION with wildcards: extends to account for wildcards ***with capturing***}
 public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([]), &C c) 
