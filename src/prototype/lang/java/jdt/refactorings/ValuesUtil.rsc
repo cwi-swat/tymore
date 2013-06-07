@@ -170,3 +170,15 @@ public Substs normalize(Substs s) {
 	// DEBUG: println(substs(args,params));
 	return normalize(substs(args,params));
 }
+
+public Entity getDeclaringType(entity([ *ids, method(_,_,_) ])) = entity(ids);
+public Entity getDeclaringType(entity([ *ids, method(_,_,_,_) ])) = entity(ids);
+public Entity getDeclaringType(entity([ *ids, constr(_) ])) = getDeclaringType(entity(ids));
+public Entity getDeclaringType(entity([ *ids, constr(_,_) ])) = getDeclaringType(entity(ids));
+public Entity getDeclaringType(entity([ *ids, field(_,_) ])) = entity(ids);
+public Entity getDeclaringType(entity([ *ids, class(_) ])) = (d := entity(ids) && isType(d)) ? d : zero();
+public Entity getDeclaringType(entity([ *ids, class(_,_) ])) = (d := entity(ids) && isType(d)) ? d : zero();
+public Entity getDeclaringType(entity([ *ids, interface(_) ])) = (d := entity(ids) && isType(d)) ? d : zero();
+public Entity getDeclaringType(entity([ *ids, interface(_,_) ])) = (d := entity(ids) && isType(d)) ? d : zero();
+public default Entity getDeclaringType(Entity _) = zero();
+

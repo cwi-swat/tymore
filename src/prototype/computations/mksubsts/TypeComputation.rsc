@@ -34,12 +34,12 @@ public SubstsT[Entity] gdeclc(Entity v) = returnS(decl(v));
 public SubstsT[Entity] (Entity) gparamc(int i) = SubstsT[Entity] (Entity v) { return returnS(param(i)(v)); };
 
 @doc{Evaluation in presence of plain generics}
-public SubstsT[Entity] gevalc(Mapper mapper, Entity v)
+public SubstsT[Entity] gevalc(CompilUnit facts, Mapper mapper, Entity v)
 	= bind(evalc(v), SubstsT[Entity] (Entity vT) { 
-			Entity vg = getGenV(mapper, v);
+			Entity vg = getGenV(facts, mapper, v);
 			Entity vgT = eval(vg);
 			if(vg == vgT) return returnS(vT);
-			return bind(pushSubsts(paramSubstsWith(mapper, vg))(mapper, vgT), SubstsT[Entity] (Entity _) { 
+			return bind(pushSubsts(paramSubstsWith(facts, mapper, vg))(facts, mapper, vgT), SubstsT[Entity] (Entity _) { 
 						return returnS(vT); }); });
 
 @doc{Lookup semantics}
@@ -53,20 +53,20 @@ public SubstsT[Entity] glookupc(CompilUnit facts, Mapper mapper, AstNode t)
 												assert(b);
 												return returnS(zero()); }); }), 
 						  	   returnS(zero())), SubstsT[Entity] (Entity _) {
-						  	   Substs s = getExprSubsts(mapper, v);
-						  	return bind(appnd(paramSubstsWith(mapper, <prettyprint(t), "<t@location.begin.line>; <t@location.begin.column>">)(s)), SubstsT[Entity] (value _) {
+						  	   Substs s = getExprSubsts(facts, mapper, v);
+						  	return bind(appnd(paramSubstsWith(facts, mapper, <prettyprint(t), "<t@location.begin.line>; <t@location.begin.column>">)(s)), SubstsT[Entity] (value _) {
 						  				return returnS(v); }); } ); });
 //@doc{Contextual sublookup: t = t0.<...>}
 //public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)
 //	= bind(lift(subterm(facts, mapper, t)), SubstsT[Entity] (AstNode t0) {
 //			return bind(glookupc(facts, mapper, t0), SubstsT[Entity] (Entity v0) { 
-//						return bind(gevalc(mapper, v0), SubstsT[Entity] (Entity vT0) { 
+//						return bind(gevalc(facts, mapper, v0), SubstsT[Entity] (Entity vT0) { 
 //								return bind(boundLkp(facts, mapper, v0), SubstsT[Entity] (Entity _) {  
 //										return lift(eval(boundEnv(facts, mapper, vT0))); }); }); }); });
 
 @doc{Explicit substitution of type arguments locally scoped to a term}
-public Substs getExprSubsts(Mapper mapper, Entity v) {
-	PEntity pv = mkSubsts(mapper, v);
+public Substs getExprSubsts(CompilUnit facts, Mapper mapper, Entity v) {
+	PEntity pv = mkSubsts(facts, mapper, v);
 	if(pv.s == substs([],[])) return pv.s;
 	list[Entity] params_ = getGenericTypes(pv.genval);
 	if(isEmpty(params_)) return substs([],[]);
@@ -80,34 +80,34 @@ public Substs getExprSubsts(Mapper mapper, Entity v) {
 //	the latter takes care of the cases when either the type parameter is not found in the substitution,
 //	or it binds to a raw type}	
 //public SubstsT[Entity] boundLkp(CompilUnit facts, Mapper mapper, Entity v) {
-//	Entity vT = eval(getGenV(mapper, v)); 
+//	Entity vT = eval(getGenV(facts, mapper, v)); 
 //	// DEBUG: tracer(true, "boundLkp: <prettyprint(vT)>; <prettyprint(v)>");
-//	return catchZ(boundS(mapper, vT), boundEnv(facts, mapper, vT));
+//	return catchZ(boundS(facts, mapper, vT), boundEnv(facts, mapper, vT));
 //}
 
 @doc{Supertype predicate that checks subtype relation}
 public list[bool] supertype(CompilUnit facts, Mapper mapper, tuple[Entity l, Entity r] ts) {
-	if(isSub(mapper, ts.l, ts.r)) return [ true ];
+	if(isSub(facts, mapper, ts.l, ts.r)) return [ true ];
 	return [ b | Entity vS <- supertypes(facts, ts.l), 
 		   		 bool b <- supertype(facts, mapper, <vS, ts.r>) ];
 }
 
 @doc{Simple way to take care of raw types, and wildcards; 
 	 the assumption of initial program type correctness makes it sufficient for Java}
-public bool isSub(Mapper mapper, Entity sub, Entity sup) = (mkSubsts(mapper, sub).genval == mkSubsts(mapper, sup).genval);
+public bool isSub(CompilUnit facts, Mapper mapper, Entity sub, Entity sup) = (mkSubsts(facts, mapper, sub).genval == mkSubsts(facts, mapper, sup).genval);
 
 @doc{Computes ***direct*** supertypes}
 public SubstsT_[Entity] supertypes_(CompilUnit facts, Mapper mapper, Entity v) {
 	return bind(lift(supertypes(facts, v)), SubstsT_[Entity] (Entity vS1) { 
-			return bind(lift(supertypes(facts, getGenV(mapper, v))), SubstsT_[Entity] (Entity vS2) {
-							if(getGenV(mapper, vS1) != getGenV(mapper, vS2)) return lift([]);
-							return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, v), vS2)))(mapper, vS2)), SubstsT_[Entity] (Entity _) {
+			return bind(lift(supertypes(facts, getGenV(facts, mapper, v))), SubstsT_[Entity] (Entity vS2) {
+							if(getGenV(facts, mapper, vS1) != getGenV(facts, mapper, vS2)) return lift([]);
+							return bind(tau(pushSubsts(paramSubstsWith(facts, mapper, inherits(getGenV(facts, mapper, v), vS2)))(facts, mapper, vS2)), SubstsT_[Entity] (Entity _) {
 										return returnS_(vS1); }); }); });
 }
 
 @doc{Supertype predicate under substitution computation that checks subtype relation}
 public SubstsT_[bool] supertypec_(CompilUnit facts, Mapper mapper, tuple[Entity l, Entity r] tpl) {
-	if(isSub(mapper, tpl.l, tpl.r)) return returnS_(true);
+	if(isSub(facts, mapper, tpl.l, tpl.r)) return returnS_(true);
 	return bind(supertypes_(facts, mapper, tpl.l), SubstsT_[bool] (Entity vS) { 
 			return bind(supertypec_(facts, mapper, <vS, tpl.r>), SubstsT_[bool] (bool b) {
 						return returnS_(b); }); });
@@ -115,13 +115,13 @@ public SubstsT_[bool] supertypec_(CompilUnit facts, Mapper mapper, tuple[Entity 
 //@doc{Supertype predicate under substitution computation that checks subtype relation: FACTORED OUT, see above}
 //public SubstsT_[bool] supertypec_(CompilUnit facts, Mapper mapper, tuple[Entity, Entity] ts) {
 //	if(ts[0] == object()) return returnS_(ts[0] == ts[1] ? true : false);
-//	if(isSub(mapper, ts[0],ts[1])) return returnS_(true);
+//	if(isSub(facts, mapper, ts[0],ts[1])) return returnS_(true);
 //	return bind(lift(supertypes(facts, ts[0])), SubstsT_[bool] (Entity vS1) { 
 //			return bind(supertypec_(facts, mapper, <vS1, ts[1]>), SubstsT_[bool] (bool b) {
 //						if(!b) return lift([]);
-//						return bind(lift(supertypes(facts, getGenV(mapper, ts[0]))), SubstsT_[bool] (Entity vS2) { 
-//									if(getGenV(mapper, vS1) != getGenV(mapper, vS2)) return lift([]);
-//									return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, ts[0]), vS2)))(mapper, vS2)), SubstsT_[bool] (Entity _) { 
+//						return bind(lift(supertypes(facts, getGenV(facts, mapper, ts[0]))), SubstsT_[bool] (Entity vS2) { 
+//									if(getGenV(facts, mapper, vS1) != getGenV(facts, mapper, vS2)) return lift([]);
+//									return bind(tau(pushSubsts(paramSubstsWith(facts, mapper, inherits(getGenV(facts, mapper, ts[0]), vS2)))(facts, mapper, vS2)), SubstsT_[bool] (Entity _) { 
 //												return returnS_(b); }); }); }); });
 //}
 
@@ -173,12 +173,12 @@ public TypeOf[Entity] scopec(CompilUnit facts, Mapper mapper, AstNode e) {
 
 
 @doc{EXTENSION with wildcards: split of the evaluation semantics into 'left' (capturing) and 'right'} 
-public SubstsT[Entity] gevalcNoCapture(Mapper mapper, Entity v)
+public SubstsT[Entity] gevalcNoCapture(CompilUnit facts, Mapper mapper, Entity v)
 	= bind(evalc(v), SubstsT[Entity] (Entity vT) { 
-			Entity vg = getGenV(mapper, v);
+			Entity vg = getGenV(facts, mapper, v);
 			Entity vgT = eval(vg);
 			if(vg == vgT) return returnS(vT);
-			return bind(pushSubsts(paramSubstsWithNoCapture(mapper, vg))(mapper, vgT), SubstsT[Entity] (Entity _) { 
+			return bind(pushSubsts(paramSubstsWithNoCapture(facts, mapper, vg))(facts, mapper, vgT), SubstsT[Entity] (Entity _) { 
 						return returnS(vT); }); });
 						
 @doc{EXTENSION with wildcards: extends/overrides the contextual sublookup to account for wildcards and captures}
@@ -190,14 +190,14 @@ public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)
 public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)
 	= bind(lift(subterm(facts, mapper, t)), SubstsT[Entity] (AstNode t0) {
 			return bind(glookupc(facts, mapper, t0), SubstsT[Entity] (Entity v0) { 
-						return bind(gevalc(mapper, v0), SubstsT[Entity] (Entity vT0) { 
+						return bind(gevalc(facts, mapper, v0), SubstsT[Entity] (Entity vT0) { 
 								return bind(boundLkp(facts, mapper, v0), SubstsT[Entity] (Entity _) {  
 										return lift(eval(boundEnv(facts, mapper, boundWildcardUB(vT0)))); }); }); }); });
 
 
 @doc{EXTENSION with wildcards: overrides the lookup bind semantics to account for wildcards: the upper bind replaces the previous bind}
 public SubstsT[Entity] boundLkp(CompilUnit facts, Mapper mapper, Entity v) {
-	Entity vT = eval(getGenV(mapper, v)); 
+	Entity vT = eval(getGenV(facts, mapper, v)); 
 	// DEBUG: tracer(true, "boundLkp: <prettyprint(vT)>; <prettyprint(v)>");
-	return catchZ(boundSu(mapper, vT), boundEnv(facts, mapper, vT));
+	return catchZ(boundSu(facts, mapper, vT), boundEnv(facts, mapper, vT));
 }

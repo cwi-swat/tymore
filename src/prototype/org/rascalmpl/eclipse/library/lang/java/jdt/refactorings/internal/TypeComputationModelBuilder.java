@@ -10,9 +10,7 @@
 *******************************************************************************/
 package prototype.org.rascalmpl.eclipse.library.lang.java.jdt.refactorings.internal;
 
-import static org.rascalmpl.eclipse.library.lang.java.jdt.internal.Java.ADT_ENTITY;
 import static org.rascalmpl.eclipse.library.lang.java.jdt.internal.Java.CONS_ENTITY;
-import static org.rascalmpl.eclipse.library.lang.java.jdt.internal.Java.ADT_ID;
 
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -106,7 +104,6 @@ public class TypeComputationModelBuilder {
 		computations.put(values.string(OVERRIDES_FUNCTION), overrides_func.done());
 		computations.put(values.string(BOUNDS_FUNCTION), bounds_func.done());
 		computations.put(values.string(IsSTATIC_DECL_FUNCTION), isStaticDecl_func.done());
-		System.out.println("Static decl sem must be there!!!");
 		typeComputationModel = computations.done();
 		semanticsOfParameterizedTypes = semantics_of_paramaterized_types_func.done();
 	}
@@ -265,6 +262,9 @@ public class TypeComputationModelBuilder {
 				importSupertypesSemantics(binding, initializer);
 				importSemanticsOfParameterizedTypes(binding, initializer);
 				importBinding(binding.getTypeDeclaration(), null);
+				if(binding.getDeclaringClass() != null) importBinding(binding.getDeclaringClass(), null);
+				importStaticSemantics(binding, initializer);
+				importStaticSemantics(binding.getTypeDeclaration(), null);
 			}
 			
 			public void importBinding(IVariableBinding binding, Initializer initializer) {
@@ -288,8 +288,7 @@ public class TypeComputationModelBuilder {
 				evaluation_func.insert(values.tuple(bindingConverter.getEntity(binding, initializer), bindingConverter.getEntity(binding.getType())));
 			}
 
-			@SuppressWarnings("deprecation")
-			private final IValue zerobindings = values.tuple(values.listWriter(ADT_ENTITY).done(), values.listWriter(ADT_ENTITY).done());
+			private final IValue zerobindings = values.tuple(values.listWriter().done(), values.listWriter().done());
 			
 			private void importSemanticsOfParameterizedTypes(IMethodBinding binding) {
 				IValue bindings = zerobindings;
@@ -316,9 +315,8 @@ public class TypeComputationModelBuilder {
 						.put(bindingConverter.getEntity(binding, initializer), values.tuple(bindings, bindingConverter.getEntity(binding.getVariableDeclaration())));
 			}
 
-			@SuppressWarnings("deprecation")
 			private IList getTypeArguments(IMethodBinding binding) {
-				IListWriter args = values.listWriter(ADT_ENTITY);
+				IListWriter args = values.listWriter();
 				if(binding.getTypeArguments().length != 0) 
 					for(ITypeBinding arg: binding.getTypeArguments()) {
 						args.append(bindingConverter.getEntity(arg));
@@ -333,9 +331,8 @@ public class TypeComputationModelBuilder {
 				return args.done();
 			}
 			
-			@SuppressWarnings("deprecation")
 			private IList getTypeArguments(ITypeBinding binding) {
-				IListWriter args = values.listWriter(ADT_ENTITY);
+				IListWriter args = values.listWriter();
 				if(binding.getTypeArguments().length != 0) 
 					for(ITypeBinding arg: binding.getTypeArguments()) {
 						args.append(bindingConverter.getEntity(arg));
@@ -352,9 +349,8 @@ public class TypeComputationModelBuilder {
 				return args.done();
 			}
 			
-			@SuppressWarnings("deprecation")
 			private IList getTypeArguments(IVariableBinding binding) {
-				IListWriter args = values.listWriter(ADT_ENTITY);
+				IListWriter args = values.listWriter();
 				if(binding.getDeclaringMethod() != null) 
 					return args.done();
 				if(binding.getDeclaringClass() != null) 
@@ -362,9 +358,8 @@ public class TypeComputationModelBuilder {
 				return args.done();
 			}
 			
-			@SuppressWarnings("deprecation")
 			private IList getTypeParameters(IMethodBinding binding) {
-				IListWriter params = values.listWriter(ADT_ENTITY);
+				IListWriter params = values.listWriter();
 				for(ITypeBinding param: binding.getTypeParameters()) {
 					params.append(bindingConverter.getEntity(param));
 					importBinding(param, null);
@@ -374,9 +369,8 @@ public class TypeComputationModelBuilder {
 				return params.done();
 			}
 			
-			@SuppressWarnings("deprecation")
 			private IList getTypeParameters(ITypeBinding binding) {
-				IListWriter params = values.listWriter(ADT_ENTITY);
+				IListWriter params = values.listWriter();
 				for(ITypeBinding param: binding.getTypeParameters()) {
 					params.append(bindingConverter.getEntity(param));
 					importBinding(param, null);
@@ -388,9 +382,8 @@ public class TypeComputationModelBuilder {
 				return params.done();
 			};
 			
-			@SuppressWarnings("deprecation")
 			private IList getTypeParameters(IVariableBinding binding) {
-				IListWriter params = values.listWriter(ADT_ENTITY);
+				IListWriter params = values.listWriter();
 				if(binding.getDeclaringMethod() != null) 
 					return params.done(); 
 				if(binding.getDeclaringClass() != null) 
@@ -515,6 +508,13 @@ public class TypeComputationModelBuilder {
 				}
 			}
 			
+			private void importStaticSemantics(ITypeBinding binding, Initializer initializer) {
+				if(Modifier.isStatic(binding.getModifiers())) {
+					IValue vb = bindingConverter.getEntity(binding, initializer);
+					isStaticDecl_func.insert(values.tuple(vb, vb));
+				}
+			}
+			
 			private void importStaticSemantics(IVariableBinding binding, Initializer initializer) {
 				if(Modifier.isStatic(binding.getModifiers())) {
 					IValue vb = bindingConverter.getEntity(binding, initializer);
@@ -522,9 +522,8 @@ public class TypeComputationModelBuilder {
 				}
 			}
 			
-			@SuppressWarnings("deprecation")
 			private IValue createZeroEntity() {
-				return values.constructor(CONS_ENTITY, values.listWriter(ADT_ID).done());
+				return values.constructor(CONS_ENTITY, values.listWriter().done());
 			}
 
 			public void importBinding(IPackageBinding binding) {}

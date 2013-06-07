@@ -76,9 +76,9 @@ public SubstsT[&T] lift(TypeOf[&T] v)
 public SubstsT[value] appnd(Substs s) = substs(TypeOf[tuple[value, Substs]] (Substs ps) { return returnT(<zero(), concat(ps, s)>); });
 public SubstsT[Substs] popSubsts() = substs(TypeOf[tuple[Substs, Substs]] (Substs s) { return returnT(<s, s>); });
 
-public SubstsT[Entity] (Mapper, Entity) pushSubsts(Substs (Substs) f) 
-	= SubstsT[Entity] (Mapper mapper, Entity v) {
-		Substs s = getSubsts(mapper, v);
+public SubstsT[Entity] (CompilUnit, Mapper, Entity) pushSubsts(Substs (Substs) f) 
+	= SubstsT[Entity] (CompilUnit facts, Mapper mapper, Entity v) {
+		Substs s = getSubsts(facts, mapper, v);
 		return bind(appnd(f(s)), SubstsT[Entity] (value _) { return returnS(v); });
 	};
 
@@ -209,14 +209,14 @@ public str prettyprint(typeof(&T v)) = prettyprint(v);
 public str prettyprint(tzero()) = "zero";
 
 public str prettyprint(SubstsT[&T] mv) {
-	//TypeOf[tuple[Entity,Substs]] v = run(mv)(substs([],[]));
-	TypeOf[Entity] v = eval(mv);
+	TypeOf[tuple[Entity,Substs]] v = run(mv)(substs([],[]));
+	//TypeOf[Entity] v = eval(mv);
 	return prettyprint(v);
 }
 
 public str prettyprint(SubstsTL[&T] mv) {
-	//TypeOf[tuple[Entity,list[Substs]]] v = run(mv);
-	TypeOf[Entity] v = eval(mv);
+	TypeOf[tuple[Entity,list[Substs]]] v = run(mv);
+	//TypeOf[Entity] v = eval(mv);
 	return prettyprint(v);
 }
 

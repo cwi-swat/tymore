@@ -60,9 +60,6 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 	bool lhIsTypeArg = isTypeArgument(lh);
 	bool rhIsTypeArg = isTypeArgument(rh);
 	
-	if(lh notin solutions) assert(isEmpty({ s | s <- solutions, "<s>" == "<lh>"}));
-	if(rh notin solutions) assert(isEmpty({ s | s <- solutions, "<s>" == "<rh>"}));
-	
 	// left- and right-hand side are both type argument variables	
 	if(lhIsTypeArg && rhIsTypeArg) {
 		if(lh in solutions) {		
@@ -126,7 +123,10 @@ public map[tuple[SubstsTL_[Entity],SubstsTL_[Entity]],SubstsTL_[Entity]] memoInt
 public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, Constraint[SubstsTL[Entity]] c, 
 																	   SubstsTL_[Entity] r) {
 	if(<r,c.lh> in memoIntersectLHS1) return memoIntersectLHS1[<r,c.lh>];
-	res = intersect(facts, mapper, r, replaceSubsts(mapper, r, c.lh), -1);
+	SubstsT_[Entity] l = bind(tau(tauToSubstsT(c.lh)), SubstsT_[Entity] (Entity var) {
+							  return bind(tauToSubstsT_(r), SubstsT_[Entity] (Entity val) {
+										return tau(replaceSubsts(facts, mapper, val, var)); }); });
+	res = intersect(facts, mapper, tauToSubstsTL_(l), r, -1);
 	memoIntersectLHS1[<r,c.lh>] = res;
 	return res;
 }
@@ -168,39 +168,34 @@ public default SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, C
 	return res;
 }
 
-public SubstsTL_[Entity] replaceSubsts(Mapper mapper, SubstsTL_[Entity] vals, SubstsTL[Entity] var) {
-	return tauToSubstsTL_(bind(tau(lift(eval(var))), SubstsT_[Entity] (Entity varv) {
-								return bind(tauToSubstsT_(vals), SubstsT_[Entity] (Entity val) {
-											list[Entity] params = getTypeParamsOrArgs(val);
-											if(isEmpty(params) || !isTypeArgument(var)) 
-												return returnS_(val);
-											return bind(lift(params), SubstsT_[Entity] (Entity param) {
-														return bind(tau(boundS_(mapper, param)), SubstsT_[Entity] (Entity v) {
-																	return bind(tau(appnd(substs([ entity([ typeArgument(isTypeArgument(v) ? v.id[0].name : param.id[0].name, varv, zero()) ]) ], 
-																		   		   		   		 [ param ]))), SubstsT_[Entity] (value _) {
-																				return returnS_(val); }); }); }); }); }));
+public SubstsT[Entity] replaceSubsts(CompilUnit facts, Mapper mapper, Entity val, Entity var) {
+	list[Entity] params = getTypeParamsOrArgs(val);
+	if(isEmpty(params) || !isTypeArgument(var)) 
+		return returnS(val);
+	return bind(popSubsts(), SubstsT[Entity] (Substs s) {
+							 Substs repl = (  substs([],[]) | concat(it, s_) 
+															| Entity param <- params, 
+															  Entity arg := lookupSubsts(s, param),
+															  arg != zero(),
+															  Substs s_ := substs([ entity([ typeArgument(isTypeArgument(arg) ? arg.id[0].name 
+																														 	  : param.id[0].name, var, zero()) ]) ], 
+														 		 				  [ param ]) );
+				return bind(appnd(repl), SubstsT[Entity] (value _) {
+							return returnS(val); }); });
 }
 
 @doc{Computes ***all*** the supertypes; ***note: it assumes that the input value is a type value in its generic form}
 public SubstsT_[Entity] supertypes_all(CompilUnit facts, Mapper mapper, Entity v, Entity var) {
 	// New substitution related aspect: introduces new type argument variables, if necessary, before computing supertypes
-	SubstsT_[Entity] mv = returnS_(v);
-	list[Entity] params = getTypeParamsOrArgs(v);
-	if(!isEmpty(params) && isTypeArgument(var))
-		mv = bind(lift(params), SubstsT_[Entity] (Entity param) { 
-				return bind(tau(boundS_(mapper, param)), SubstsT_[Entity] (Entity b) {
-							return bind(tau(appnd(substs([ entity([ typeArgument(isTypeArgument(b) ? b.id[0].name : param.id[0].name, var, zero()) ]) ],
-												 	 	 [ param ]))), SubstsT_[Entity] (value _) {
-										return returnS_(v); }); }); });
-	
+	SubstsT_[Entity] mv = tau(replaceSubsts(facts, mapper, v, var));
 	return bind(mv, SubstsT_[Entity] (Entity v) {
 				return bind(isEmpty(getTypeParamsOrArgs(v)) ? discard(returnS_(v)) : returnS_(v), SubstsT_[Entity] (Entity v) {	
 							return concat(returnS_(v), 
 				   	   					  bind(lift(supertypes(facts, v)), SubstsT_[Entity] (Entity vS) {
 				   	   							if(v in getTypeParamsOrArgs(vS)) // takes care of possible cycling dependencies
 				   	   								return lift([]);
-				   	   							return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, v), vS)))(mapper, vS)), SubstsT_[Entity] (Entity _) {
-															return supertypes_all(facts, mapper, getGenV(mapper, vS), var); }); })); }); });
+				   	   							return bind(tau(pushSubsts(paramSubstsWith(facts, mapper, inherits(getGenV(facts, mapper, v), vS)))(facts, mapper, vS)), SubstsT_[Entity] (Entity _) {
+															return supertypes_all(facts, mapper, getGenV(facts, mapper, vS), var); }); })); }); });
 }
 //public SubstsT_[Entity] supertypes_all(CompilUnit facts, Mapper mapper, Entity v) {
 //	return bind(isEmpty(getTypeParamsOrArgs(v)) ? discard(returnS_(v)) : returnS_(v), SubstsT_[Entity] (Entity v) {	
@@ -208,17 +203,17 @@ public SubstsT_[Entity] supertypes_all(CompilUnit facts, Mapper mapper, Entity v
 //				   	   bind(lift(supertypes(facts, v)), SubstsT_[Entity] (Entity vS) {
 //				   	   		if(v in getTypeParamsOrArgs(vS)) // takes care of cycling
 //				   	   			return lift([]);
-//				   	   		return bind(tau(pushSubsts(paramSubstsWith(mapper, inherits(getGenV(mapper, v), vS)))(mapper, vS)), SubstsT_[Entity] (Entity _) {
-//										return supertypes_all(facts, mapper, getGenV(mapper, vS)); }); })); });
+//				   	   		return bind(tau(pushSubsts(paramSubstsWith(facts, mapper, inherits(getGenV(facts, mapper, v), vS)))(facts, mapper, vS)), SubstsT_[Entity] (Entity _) {
+//										return supertypes_all(facts, mapper, getGenV(facts, mapper, vS)); }); })); });
 //}
 
 @doc{Subtypes semantics; assumes generic type values}
 public SubstsT_[Entity] subtypes(CompilUnit facts, Mapper mapper, Entity v) { 
 	lrel[Entity,Substs] subs = [ <psub.genval, invert(psup.s)> 
 										| <Entity sub, Entity sup> <- facts["supertypes_func"], 
-										  psup := mkSubsts(mapper, sup), 
+										  psup := mkSubsts(facts, mapper, sup), 
 										  psup.genval == v,
-										  psub := mkSubsts(mapper, sub),
+										  psub := mkSubsts(facts, mapper, sub),
 										  psub.genval == sub ]; // subtype in a generic form
 	if(isEmpty(getTypeParamsOrArgs(v)))
 		subs = [ <sub,substs> | <sub,substs> <- subs, isEmpty(getTypeParamsOrArgs(sub)) ];
@@ -343,7 +338,7 @@ public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper) {
 		  isUpperBoundTypeArgument(mvar),
 		  SubstsTL[Entity] b := bind(mvar, SubstsTL[Entity] (Entity v_) { 
 		  						return tauToSubstsTL(bind(boundEnvWithNoCapture(facts, mapper, getTypeParameter(v_)), SubstsT[Entity] (Entity bv) {
-		  									return (bv == object()) ? lift(tzero()) : returnS(getGenV(mapper, bv)); })); }),
+		  									return (bv == object()) ? lift(tzero()) : returnS(getGenV(facts, mapper, bv)); })); }),
 		  !isZero(b),
 		  Constraint[SubstsTL[Entity]] c := Constraint::subtype(mvar, b),
 		  c notin constraints,
@@ -406,6 +401,8 @@ public str prettyprintOneSolution(CompilUnit facts, Mapper mapper, SubstsTL[Enti
 	
 	str lpp = pp[lvar] ? "";
 	str upp = pp[uvar] ? "";
+	
+	println("lvar: <prettyprint(lvar)>");
 	
 	rel[Entity,list[Substs]] lb =/* lvarThere ?*/ run(solutions[lvar]);// : {};
 	rel[Entity,list[Substs]] ub =/* uvarThere ?*/ run(solutions[uvar]);// : {};
