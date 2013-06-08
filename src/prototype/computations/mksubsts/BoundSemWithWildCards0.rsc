@@ -6,7 +6,7 @@
   http://www.eclipse.org/legal/epl-v10.html
 }
 @contributor{Anastasia Izmaylova - A.Izmaylova@cwi.nl}
-module prototype::computations::mksubsts::BoundSemWithWildCards
+module prototype::computations::mksubsts::BoundSemWithWildCards0
 
 import lang::java::jdt::Java;
 import lang::java::jdt::JavaADT;
@@ -31,7 +31,7 @@ import Set;
 public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, tp:entity([ *ids, typeParameter(str _)]))
 	= bind(popSubsts(), SubstsT[Entity] (Substs s) {
 			Entity b = lookupSubsts(s, tp);
-			if(b == tp) return returnS(tp);
+			if(b == tp || b == zero()) return returnS(tp);
 			return bind(pushSubsts(idS)(facts, mapper, b), SubstsT[Entity] (Entity b_) { 
 						return boundSu(facts, mapper, b_); });
 			});
@@ -69,7 +69,7 @@ public default SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, Entity v
 public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, tp:entity([ *ids, typeParameter(str _)]))
 	= bind(popSubsts(), SubstsT[Entity] (Substs s) {
 			Entity b = lookupSubsts(s, tp);
-			if(b == tp) return returnS(tp);
+			if(b == tp || b == zero()) return returnS(tp);
 			return bind(pushSubsts(idS)(facts, mapper, b), SubstsT[Entity] (Entity b_) { 
 						return boundSu_(facts, mapper, b_); });
 			});
@@ -103,7 +103,7 @@ public default SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, Entity 
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, tp:entity([ *ids, typeParameter(str _)]))
 	= bind(popSubsts(), SubstsT[Entity] (Substs s) {
 			Entity b = lookupSubsts(s, tp);
-			if(b == tp) return returnS(tp);
+			if(b == tp || b == zero()) return returnS(tp);
 			return bind(pushSubsts(idS)(facts, mapper, b), SubstsT[Entity] (Entity b_) { 
 						return boundSl(facts, mapper, b_); });
 			});
@@ -142,7 +142,7 @@ public default SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, Entity v
 public SubstsT[Entity] boundSl_(CompilUnit facts, Mapper mapper, tp:entity([ *ids, typeParameter(str _)]))
 	= bind(popSubsts(), SubstsT[Entity] (Substs s) {
 			Entity b = lookupSubsts(s, tp);
-			if(b == tp) return returnS(tp);
+			if(b == tp || b == zero()) return returnS(tp);
 			return bind(pushSubsts(idS)(facts, mapper, b), SubstsT[Entity] (Entity b_) { 
 						return boundSl_(facts, mapper, b_); });
 			});

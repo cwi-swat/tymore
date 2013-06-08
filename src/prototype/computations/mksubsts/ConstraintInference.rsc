@@ -17,8 +17,8 @@ import prototype::lang::java::jdt::refactorings::PrettyPrintUtil;
 import prototype::lang::java::jdt::refactorings::ValuesUtil;
 
 import prototype::computations::mksubsts::ConstraintComputation;
-import prototype::computations::mksubsts::BoundSemWithoutWildCards;
-import prototype::computations::mksubsts::BoundSemWithWildCards;
+import prototype::computations::mksubsts::BoundSemWithoutWildCards0;
+import prototype::computations::mksubsts::BoundSemWithWildCards0;
 import prototype::computations::mksubsts::LanguageInterface;
 import prototype::computations::mksubsts::Monads;
 import prototype::computations::mksubsts::TypeComputation;
@@ -59,7 +59,7 @@ public default set[Constraint[SubstsT[Entity]]] boundS(CompilUnit facts, Mapper 
 				return bind(boundS(facts, mapper, v), SubstsT[Entity] (Entity b) {
 							// ***Note: type value is a generic type value
 							Entity gen = getGenV(facts, mapper, b);
-							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) }; 
+							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) };
 
 @doc{Computes the supertype predicate of the left-hand side given the right-hand side}
 public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapper, c:violated(_)) = { c };		
@@ -212,7 +212,7 @@ public set[Constraint[SubstsT[Entity]]] boundSu(CompilUnit facts, Mapper mapper,
 				return bind(boundSu(facts, mapper, v), SubstsT[Entity] (Entity b) {
 							// ***Note: type value is a generic type value
 							Entity gen = getGenV(facts, mapper, b);
-							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) }; 
+							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) };
 public set[Constraint[SubstsT[Entity]]] boundSl_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 	= { apply(SubstsT[Entity] (Entity v) { 
 				return bind(boundSl_(facts, mapper, v), SubstsT[Entity] (Entity b) {
@@ -250,7 +250,6 @@ public set[Constraint[SubstsT[Entity]]] boundSul(CompilUnit facts, Mapper mapper
 							// ***Note: type value is a generic type value
 							Entity gen = getGenV(facts, mapper, b);
 							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) };    
-
 
 @doc{EXTENSION with wildcards: the inference function needs to use a different (lower and upper) bind semantics}
 public set[Constraint[SubstsT[Entity]]] inferTypeArguments(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {

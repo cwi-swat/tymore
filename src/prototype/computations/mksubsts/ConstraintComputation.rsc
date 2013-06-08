@@ -103,6 +103,11 @@ public set[Constraint[SubstsT[Entity]]] constrain(t:variableDeclarationFragment(
 public set[Constraint[SubstsT[Entity]]] constrain(t:variableDeclarationFragment(str name, some(AstNode initializer)), CompilUnit facts, Mapper mapper) 
 	= { subtype(glookupc(facts, mapper, rmv(initializer)), glookupc(facts, mapper, setAnnotations(simpleName(name), getAnnotations(t)))) }
 	;
+public set[Constraint[SubstsT[Entity]]] constrain(t:methodDeclaration(_,_,_, some(AstNode returnType), str name, _, _, some(AstNode implementation))) {
+	if(/re:returnStatement(some(AstNode expr)) := implementation) {
+		return { subtype(glookupc(facts, mapper, expr), glookupc(facts, mapper, t)) };
+	}
+}
 public default set[Constraint[SubstsT[Entity]]] constrain(AstNode t, CompilUnit facts, Mapper mapper) = {};
 
 public bool isDownCast(CompilUnit facts, Mapper mapper, t:castExpression(_, AstNode e)) {

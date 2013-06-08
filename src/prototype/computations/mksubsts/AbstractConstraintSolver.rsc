@@ -20,8 +20,8 @@ import prototype::lang::java::jdt::refactorings::ValuesUtil;
 
 import prototype::computations::mksubsts::ConstraintComputation;
 import prototype::computations::mksubsts::ConstraintInference;
-import prototype::computations::mksubsts::BoundSemWithoutWildCards;
-import prototype::computations::mksubsts::BoundSemWithWildCards;
+import prototype::computations::mksubsts::BoundSemWithoutWildCards0;
+import prototype::computations::mksubsts::BoundSemWithWildCards0;
 import prototype::computations::mksubsts::LanguageInterface;
 import prototype::computations::mksubsts::Monads;
 import prototype::computations::mksubsts::TypeComputation;
@@ -34,9 +34,6 @@ import List;
 import Map;
 import Relation;
 import Set;
-
-// FIXME: * somehow map carries keys that are structurally equal, 
-//		 or does not find an entry when it is certainly there
 
 
 public alias ParamSolutions = map[SubstsTL[Entity], SubstsTL_[Entity]];
@@ -54,7 +51,7 @@ public set[Constraint[SubstsTL[Entity]]] constraints = {};
 
 @doc{EXTENSION with plain generics}
 public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper, 
-												 Constraint::eq(SubstsTL[Entity] lh, SubstsTL[Entity] rh) 
+												 Constraint::eq(SubstsTL[Entity] lh, SubstsTL[Entity] rh), 
 												 bool allConstraints = true) {
 												 
 	bool lhIsTypeArg = isTypeArgument(lh);
@@ -84,7 +81,7 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 }
 
 public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper, 
-												 Constraint::subtype(SubstsTL[Entity] lh, SubstsTL[Entity] rh)//, 
+												 Constraint::subtype(SubstsTL[Entity] lh, SubstsTL[Entity] rh), 
 												 bool allConstraints = true) {
 	
 	Constraint[SubstsTL[Entity]] c = Constraint::subtype(lh,rh);
@@ -100,7 +97,7 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 			solutions[rh] = (rh in solutions) ? intersectRHS(facts, mapper, c, solutions[lh], solutions[rh]) 
 											  : intersectRHS(facts, mapper, c, solutions[lh]); // the case of an uninitialized variable (universe solution)
 		} else if(rh in solutions) { // Note: lh is not in solutions
-			if(allConstraints) 
+			if(allConstraints)
 				solutions[lh] = intersectLHS(facts, mapper, c, solutions[rh]);
 		}
 	// only left-hand side is a type argument variable
@@ -140,10 +137,10 @@ public default SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, C
 																			  c, 
 															   				  tauToSubstsTL_(bind(appnd(substs), SubstsT[Entity] (value _) { 
 																									return returnS(lv); })),
-															   				  r);				 
+															   				  r);
 										return !isZero(cond) ? returnS_(lv) : lift([]); });
-						});
-	res_ = tauToSubstsTL_(res);	
+						});				 
+	res_ = tauToSubstsTL_(res);
 	memoIntersectLHS2[<l,r>] = res_;
 	return res_;
 }
@@ -304,7 +301,7 @@ public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapp
 	return res; // removes alternative (now under additional constraints) substitutions
 }
 
-public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper) {
+public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper, bool allConstraints = true) {
 	set[Constraint[SubstsTL[Entity]]] more =
 	{  (!isZero(solutions[mvar]) && !isZero(solutions[upper])) ? c 
 															   : { // Undo equality solution - unlikely to happen (TODO: I need to think of it more)
@@ -326,7 +323,7 @@ public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper) {
 			  SubstsTL_[Entity] solutionUpper := solutions[upper] ? liftTL_({}),
 			  set[Constraint[SubstsTL[Entity]]] cons := constraints,
 			  // try to solve with the equality constraint
-			  _ := ( (c notin constraints) ? { constraints = constraints + {c}; solveit(facts, mapper); } 
+			  _ := ( (c notin constraints) ? { constraints = constraints + {c}; solveit(facts, mapper, allConstraints = allConstraints); } 
 			  						       : { // DEBUG:
 			  							       println("Extra equality constraint is already there.");
 			  							       {}; })
@@ -336,13 +333,13 @@ public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper) {
 	{ c
 		| SubstsTL[Entity] mvar <- solutions,
 		  isUpperBoundTypeArgument(mvar),
-		  SubstsTL[Entity] b := bind(mvar, SubstsTL[Entity] (Entity v_) { 
-		  						return tauToSubstsTL(bind(boundEnvWithNoCapture(facts, mapper, getTypeParameter(v_)), SubstsT[Entity] (Entity bv) {
+		  SubstsTL[Entity] b := bind(mvar, SubstsTL[Entity] (Entity v) { 
+		  						return tauToSubstsTL(bind(boundEnvWithNoCapture(facts, mapper, getTypeParameter(v)), SubstsT[Entity] (Entity bv) {
 		  									return (bv == object()) ? lift(tzero()) : returnS(getGenV(facts, mapper, bv)); })); }),
 		  !isZero(b),
 		  Constraint[SubstsTL[Entity]] c := Constraint::subtype(mvar, b),
 		  c notin constraints,
-		  _ := { constraints = constraints + {c}; solveit(facts, mapper); {}; }
+		  _ := { constraints = constraints + {c}; solveit(facts, mapper, allConstraints = allConstraints); {}; }
 	};
 	
 	if(isEmpty(more))
@@ -351,13 +348,12 @@ public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper) {
 	return true;
 }
 
-public bool solveit(CompilUnit facts, Mapper mapper) {
+public bool solveit(CompilUnit facts, Mapper mapper, bool allConstraints = true) {
 	int n = size(constraints);
 	solve(solutions, n) {
-		println("solve <size(constraints)> ...");
+		println("solve: size == <size(constraints)>; allConstraints == <allConstraints>; ...");
 		set[Constraint[SubstsTL[Entity]]] constrs = constraints;
-		{ *solveit(facts, mapper, c, allConstraints = false) | Constraint[SubstsTL[Entity]] c <- constrs };
-		{ *solveit(facts, mapper, c) | Constraint[SubstsTL[Entity]] c <- constrs };
+		{ *solveit(facts, mapper, c, allConstraints = allConstraints) | Constraint[SubstsTL[Entity]] c <- constrs };
 		n = size(constraints);
 	}
 	return true;
@@ -397,15 +393,14 @@ public str prettyprintOneSolution(CompilUnit facts, Mapper mapper, SubstsTL[Enti
 		lvar = bind(var, SubstsTL[Entity] (Entity v) { return returnSL(entity(v.id + lower(zero()))); }); // rawtypes inference specific
 		uvar = bind(var, SubstsTL[Entity] (Entity v) { return returnSL(entity(v.id + upper(zero()))); }); // rawtypes inference specific
 		luvar = var;
+		if(lvar notin solutions && uvar notin solutions) return "ANY";
 	}
 	
 	str lpp = pp[lvar] ? "";
 	str upp = pp[uvar] ? "";
 	
-	println("lvar: <prettyprint(lvar)>");
-	
-	rel[Entity,list[Substs]] lb =/* lvarThere ?*/ run(solutions[lvar]);// : {};
-	rel[Entity,list[Substs]] ub =/* uvarThere ?*/ run(solutions[uvar]);// : {};
+	rel[Entity,list[Substs]] lb = run(solutions[lvar]);
+	rel[Entity,list[Substs]] ub = run(solutions[uvar]);
 	
 	rel[Entity,list[Substs]] lbOnes = {<zero(),[]>};
 	rel[Entity,list[Substs]] ubOnes = {<zero(),[]>};
@@ -420,7 +415,7 @@ public str prettyprintOneSolution(CompilUnit facts, Mapper mapper, SubstsTL[Enti
 				list[str] lbArgs = [];
 				lbArgs = [ prettyprintOneSolution(facts, mapper, returnSL(lookupSubsts(lbOne[1][0], param))) 
 								| Entity param <- getTypeParamsOrArgs(lbOne[0]) ];
-				lvarpps = lvarpps + ["<prettyprint(lbOne[0])>; [<for(arg<-lbArgs){><arg>;<}>]"];
+				lvarpps = lvarpps + ["<prettyprint(lbOne[0])> [<for(arg<-lbArgs){><arg>;<}>]"];
 			}
 		}
 	}
@@ -432,17 +427,17 @@ public str prettyprintOneSolution(CompilUnit facts, Mapper mapper, SubstsTL[Enti
 				list[str] ubArgs = [];
 				ubArgs = [ prettyprintOneSolution(facts, mapper, returnSL(lookupSubsts(ubOne[1][0], param))) 
 								| Entity param <- getTypeParamsOrArgs(ubOne[0]) ];
-				uvarpps = uvarpps + ["<prettyprint(ubOne[0])>; [<for(arg<-ubArgs){><arg>;<}>]"];
+				uvarpps = uvarpps + ["<prettyprint(ubOne[0])> [<for(arg<-ubArgs){><arg>;<}>]"];
 			}
 		} 
 	}
 	
 	common = [ *({*lvarpps} & {*uvarpps}) ];
 	
-	if(isEmpty(lvarpps) && lpp == ""/* && lvarThere*/)
+	if(isEmpty(lvarpps) && lpp == "")
 		pp[lvar] = "_; []";
 		
-	if(isEmpty(uvarpps) && upp == ""/* && uvarThere*/)
+	if(isEmpty(uvarpps) && upp == "")
 		pp[uvar] = "_; []";
 				
 	if(!isEmpty(lvarpps) && !isEmpty(uvarpps)) {
@@ -461,15 +456,6 @@ public str prettyprintOneSolution(CompilUnit facts, Mapper mapper, SubstsTL[Enti
 	} else if(!isEmpty(uvarpps)){
 		pp[uvar] = uvarpps[0];
 	}	
-	
-	//if(!lvarThere && uvarThere)
-	//	pp[lvar] = pp[uvar];
-	//if(lvarThere && !uvarThere)
-	//	pp[uvar] = pp[lvar];
-	//if(!lvarThere && !uvarThere) {
-	//	pp[lvar] = "Any";
-	//	pp[uvar] = "Any";
-	//}	
 	
 	if(pp[lvar] == pp[uvar] && pp[lvar] != "_; []") {
 		pp[luvar] =  pp[lvar];

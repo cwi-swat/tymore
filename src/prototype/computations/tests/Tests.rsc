@@ -80,11 +80,19 @@ private void testConstraintSemantics(loc f) {
 								
 		int n = size(constraints);
 		solve(solutions, n) {
+			solveit(facts, mapper, allConstraints = false);
+			println("solve extra <size(constraints)> ...");
+			ifLowerBoundsInferred(facts, mapper, allConstraints = false);
+			n = size(constraints);
+		}
+		
+		solve(solutions, n) {
 			solveit(facts, mapper);
 			println("solve extra <size(constraints)> ...");
 			ifLowerBoundsInferred(facts, mapper);
 			n = size(constraints);
 		}
+		
 		
 		println("done!");
 		

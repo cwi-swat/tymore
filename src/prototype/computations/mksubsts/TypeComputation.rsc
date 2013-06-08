@@ -24,6 +24,7 @@ import prototype::computations::mksubsts::FunctionsOfTypeValues;
 import IO;
 import List;
 import Map;
+import Prelude;
 import Set;
 
 @doc{Base computations lifted to SubstsT}
@@ -54,7 +55,7 @@ public SubstsT[Entity] glookupc(CompilUnit facts, Mapper mapper, AstNode t)
 												return returnS(zero()); }); }), 
 						  	   returnS(zero())), SubstsT[Entity] (Entity _) {
 						  	   Substs s = getExprSubsts(facts, mapper, v);
-						  	return bind(appnd(paramSubstsWith(facts, mapper, <prettyprint(t), "<t@location.begin.line>; <t@location.begin.column>">)(s)), SubstsT[Entity] (value _) {
+						  	return bind(appnd(paramSubstsWith(facts, mapper, ("location" in getAnnotations(t)) ? <prettyprint(t), "<t@location.begin.line>; <t@location.begin.column>"> : <prettyprint(t)>)(s)), SubstsT[Entity] (value _) {
 						  				return returnS(v); }); } ); });
 //@doc{Contextual sublookup: t = t0.<...>}
 //public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)
