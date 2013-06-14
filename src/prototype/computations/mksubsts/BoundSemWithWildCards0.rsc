@@ -15,7 +15,7 @@ import prototype::lang::java::jdt::refactorings::JavaADT;
 import prototype::lang::java::jdt::refactorings::PrettyPrintUtil;
 import prototype::lang::java::jdt::refactorings::ValuesUtil;
 
-import prototype::computations::mksubsts::BoundSemWithoutWildCards;
+import prototype::computations::mksubsts::BoundSemWithoutWildCards0;
 import prototype::computations::mksubsts::LanguageInterface;
 import prototype::computations::mksubsts::Monads;
 import prototype::computations::mksubsts::TypeComputation;
@@ -41,19 +41,21 @@ public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, t
 	= boundSu(facts, mapper, entity( ids + ta + upper(wcb) ));
 public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSu(facts, mapper, entity( ids + ta + upper(zero()) ));
-	
-// ***Note: optimization in case of only inference of rawtypes
 public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([]))])) // case of 'Ta'
 	= boundSu(facts, mapper, entity( ids + ta + upper(init) ));
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-	= boundS(facts, mapper, entity( ids + ta ));	
-//public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-//	= boundSu(facts, mapper, entity( ids + ta + upper(init) ));
-
+// ***Note: optimization in case of only inference of rawtypes
+public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity init)])) // case of 'Ta'
+	= boundS(facts, mapper, ta); // optimization
 public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) // case of 'Ta_u'
 	= boundS(facts, mapper, ta);
 public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) // case of 'Ta_l'
 	= boundS(facts, mapper, ta);
+	
+// ***Note: explicit capturing
+public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, ta:entity([ *_, captured(entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) ])) // case of 'Ta_u'
+	= boundS(facts, mapper, ta); // explicit capturing
+public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, ta:entity([ *_, captured(entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) ])) // case of 'Ta_l'
+	= boundS(facts, mapper, ta); // explicit capturing
 
 public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([])) = lift(tzero());
 public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
@@ -79,15 +81,20 @@ public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, entity([ *ids, 
 	= boundSu_(facts, mapper, entity( ids + ta + upper(wcb) ));
 public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSu_(facts, mapper, entity( ids + ta + upper(zero()) ));
-	
-// ***Note: optimization in case of only inference of rawtypes
 public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([]))])) // case of 'Ta'
 	= boundSu_(facts, mapper, entity( ids + ta + upper(init)));
-public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-	= boundS(facts, mapper, entity( ids + ta ));
-//public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-//	= boundSu_(facts, mapper, entity( ids + ta + upper(init)));
-
+// ***Note: optimization in case of only inference of rawtypes
+public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, ta:entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
+	= boundS_(facts, mapper, ta); // optimization
+public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) // case of 'Ta_u'
+	= boundS_(facts, mapper, ta);
+public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) // case of 'Ta_l'
+	= boundS_(facts, mapper, ta);
+// ***Note: explicit capturing
+public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, ta:entity([ *_, captured(entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) ])) // case of 'Ta_u'
+	= boundS_(facts, mapper, ta); // explicit capturing
+public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, ta:entity([ *_, captured(entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) ])) // case of 'Ta_l'
+	= boundS_(facts, mapper, ta); // explicit capturing
 public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, entity([])) = lift(tzero());
 public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
 public SubstsT[Entity] boundSu_(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) // wildcard value
@@ -112,20 +119,21 @@ public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, t
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSl(facts, mapper, entity( ids + ta + lower(zero()) ));
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
-	= boundSl(facts, mapper, entity( ids + ta + lower(wcb) ));
-	
-// ***Note: optimization in case of only inference of rawtypes
+	= boundSl(facts, mapper, entity( ids + ta + lower(wcb) ));	
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([]))])) // case of 'Ta'
 	= boundSl(facts, mapper, entity( ids + ta + lower(init)));
+// ***Note: optimization in case of only inference of rawtypes
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-	= boundS(facts, mapper, entity( ids + ta ));
-//public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-//	= boundSl(facts, mapper, entity( ids + ta + lower(init)));
-
+	= boundS(facts, mapper, entity( ids + ta )); // optimization
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) // case of 'Ta_l'
 	= boundS(facts, mapper, ta);
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) // case of 'Ta_u'
 	= boundS(facts, mapper, ta);
+// ***Note: explicit capturing
+public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, ta:entity([ *_, captured(entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) ])) // case of 'Ta_l'
+	= boundS(facts, mapper, ta); // explicit capturing
+public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, ta:entity([ *_, captured(entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) ])) // case of 'Ta_u'
+	= boundS(facts, mapper, ta); // explicit capturing
 
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([])) = lift(tzero());
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
@@ -152,15 +160,20 @@ public SubstsT[Entity] boundSl_(CompilUnit facts, Mapper mapper, entity([ *ids, 
 	= boundSl_(facts, mapper, entity( ids + ta + lower(zero()) ));
 public SubstsT[Entity] boundSl_(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSl_(facts, mapper, entity( ids + ta + lower(wcb) ));
-	
-// ***Note: optimization in case of only inference of rawtypes
 public SubstsT[Entity] boundSl_(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([]))])) // case of 'Ta'
 	= boundSl_(facts, mapper, entity( ids + ta + lower(init)));
+// ***Note: optimization in case of only inference of rawtypes
 public SubstsT[Entity] boundSl_(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-	= boundS(facts, mapper, entity( ids + ta ));
-//public SubstsT[Entity] boundSl_(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-//	= boundSl_(facts, mapper, entity( ids + ta + lower(init)));
-
+	= boundS_(facts, mapper, entity( ids + ta )); // optimization
+public SubstsT[Entity] boundSl_(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) // case of 'Ta_l'
+	= boundS_(facts, mapper, ta);
+public SubstsT[Entity] boundSl_(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) // case of 'Ta_u'
+	= boundS_(facts, mapper, ta);
+// ***Note: explicit capturing
+public SubstsT[Entity] boundSl_(CompilUnit facts, Mapper mapper, ta:entity([ *_, captured(entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) ])) // case of 'Ta_u'
+	= boundS_(facts, mapper, ta); // explicit capturing
+public SubstsT[Entity] boundSl_(CompilUnit facts, Mapper mapper, ta:entity([ *_, captured(entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) ])) // case of 'Ta_l'
+	= boundS_(facts, mapper, ta); // explicit capturing
 public SubstsT[Entity] boundSl_(CompilUnit facts, Mapper mapper, entity([])) = lift(tzero());
 public SubstsT[Entity] boundSl_(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
 public SubstsT[Entity] boundSl_(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) = lift(tzero()); // wildcard value

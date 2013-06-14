@@ -114,9 +114,7 @@ public default PEntity toGensNonRecByCase(CompilUnit facts, Mapper mapper, Entit
 	// special treatment of static members
 	if(isStatic(facts, val) && Entity d := getDeclaringType(val) && d != zero()) {
 		// DEBUG static entities:
-		println("STATIC value : <prettyprint(val)>; <prettyprint(d)>; [ <for(p<-params){><prettyprint(p)>; <}> ]");
 		Substs ds = getSubsts(facts, mapper, d);
-		println("Substitution: <prettyprint(ds)>");
 		list[int] paramsOut = []; // increasing indices
 		if(ds != substs([],[]) && !isEmpty(params)) {
 			for(int i <- [0..size(params)]) {

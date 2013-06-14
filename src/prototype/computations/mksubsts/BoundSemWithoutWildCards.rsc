@@ -74,10 +74,3 @@ public SubstsT[Entity] boundS(CompilUnit facts, Mapper mapper, ta:entity([ *ids,
 	= lift(tzero());
 public SubstsT[Entity] boundS(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity init)]))
 	= pushSubsts(paramSubstsWith(facts, mapper, ta))(facts, mapper, init);
-
-@doc{EXTENSION with wildcards}
-@doc{The bound semantics against a global type environment}
-public SubstsT[Entity] boundEnvWithNoCapture(CompilUnit facts, Mapper mapper, tp:entity([ *ids, typeParameter(str name)]))
-	= bind(pushSubsts(paramSubstsWithNoCapture(facts, mapper, tp))(facts, mapper, lookupEnv(facts, tp)), SubstsT[Entity] (Entity b) {
-			return boundEnv(facts, mapper, b); }); 	
-public default SubstsT[Entity] boundEnv(CompilUnit facts, Mapper mapper, Entity v) = returnS(v);

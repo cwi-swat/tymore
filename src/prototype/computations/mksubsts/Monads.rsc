@@ -209,14 +209,14 @@ public str prettyprint(typeof(&T v)) = prettyprint(v);
 public str prettyprint(tzero()) = "zero";
 
 public str prettyprint(SubstsT[&T] mv) {
-	//TypeOf[tuple[Entity,Substs]] v = run(mv)(substs([],[]));
-	TypeOf[Entity] v = eval(mv);
+	TypeOf[tuple[Entity,Substs]] v = run(mv)(substs([],[]));
+	// TypeOf[Entity] v = eval(mv);
 	return prettyprint(v);
 }
 
 public str prettyprint(SubstsTL[&T] mv) {
-	//TypeOf[tuple[Entity,list[Substs]]] v = run(mv);
-	TypeOf[Entity] v = eval(mv);
+	TypeOf[tuple[Entity,list[Substs]]] v = run(mv);
+	// TypeOf[Entity] v = eval(mv);
 	return prettyprint(v);
 }
 

@@ -26,6 +26,7 @@ import prototype::computations::mksubsts::FunctionsOfTypeValues;
 import Prelude;
 public data Constraint[&M] = eq(&M lh, &M rh)
 					  		 | subtype(&M lh, &M rh)
+					  		 | supertype(&M lh, &M rh)
 					  		 | violated(str msg)
 					  		 ;
 					  		 
@@ -43,7 +44,7 @@ public set[Constraint[SubstsT[Entity]]] constrain(t:assignment(AstNode lt, AstNo
 	= { subtype(glookupc(facts, mapper, rmv(rt)), glookupc(facts, mapper, rmv(lt))) }
 	;
 public set[Constraint[SubstsT[Entity]]] constrain(t:castExpression(_, AstNode e), CompilUnit facts, Mapper mapper) 
-	= { (isDownCast(facts, mapper, t)) ? subtype(glookupc(facts, mapper, t), glookupc(facts, mapper, rmv(e))) 
+	= { (isDownCast(facts, mapper, t)) ? Constraint::supertype(glookupc(facts, mapper, rmv(e)), glookupc(facts, mapper, t)) 
 									   : subtype(glookupc(facts, mapper, rmv(e)), glookupc(facts, mapper, t)) }
 	;
 public set[Constraint[SubstsT[Entity]]] constrain(t:classInstanceCreation(none(),_, [], [],_), CompilUnit facts, Mapper mapper) 
@@ -120,8 +121,9 @@ public bool isDownCast(CompilUnit facts, Mapper mapper, t:castExpression(_, AstN
 public Constraint[SubstsT[&T1]] (Constraint[SubstsT[&T]]) apply(SubstsT[&T1] (&T) f) 
 	= Constraint[SubstsT[&T1]] (Constraint[SubstsT[&T]] c) {
 			switch(c) {
-				case subtype(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::subtype(bind(lh, f), bind(rh, f));
-				case eq(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::eq(bind(lh, f), bind(rh, f));
+				case subtype(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::subtype(bind(lh,f), bind(rh,f));
+				case eq(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::eq(bind(lh,f), bind(rh,f));
+				case Constraint::supertype(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::supertype(bind(lh,f), bind(rh,f));
 			}
 	  }; 
 
@@ -129,8 +131,9 @@ public Constraint[SubstsT[&T1]] (Constraint[SubstsT[&T]]) apply(SubstsT[&T1] (&T
 public Constraint[SubstsT[&T1]] (Constraint[SubstsT[&T]]) apply(SubstsT[&T1] (&T) f1, SubstsT[&T1] (&T) f2) 
 	= Constraint[SubstsT[&T1]] (Constraint[SubstsT[&T]] c) {
 			switch(c) {
-				case subtype(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::subtype(bind(lh, f1), bind(rh, f2));
-				case eq(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::eq(bind(lh, f1), bind(rh, f2));
+				case subtype(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::subtype(bind(lh,f1), bind(rh,f2));
+				case eq(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::eq(bind(lh,f1), bind(rh,f2));
+				case Constraint::supertype(SubstsT[&T] lh, SubstsT[&T] rh): return Constraint::supertype(bind(lh,f1), bind(rh,f2));
 			}
 	  }; 
 	  
@@ -142,6 +145,7 @@ public default set[Constraint[SubstsT[&T]]] catchZ(Constraint[SubstsT[&T]] c) {
 }
 
 public Constraint[SubstsT[&T]] runWithEmptySubsts(Constraint[SubstsT[&T]] c:violated(str msg)) = c;
+public Constraint[SubstsT[&T]] runWithEmptySubsts(Constraint::supertype(SubstsT[&T] lh, SubstsT[&T] rh)) = Constraint::supertype(runWithEmptySubsts(lh), runWithEmptySubsts(rh));
 public Constraint[SubstsT[&T]] runWithEmptySubsts(Constraint::subtype(SubstsT[&T] lh, SubstsT[&T] rh)) = Constraint::subtype(runWithEmptySubsts(lh), runWithEmptySubsts(rh));
 public Constraint[SubstsT[&T]] runWithEmptySubsts(Constraint::eq(SubstsT[&T] lh, SubstsT[&T] rh)) = Constraint::eq(runWithEmptySubsts(lh), runWithEmptySubsts(rh));	  
 

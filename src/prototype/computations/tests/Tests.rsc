@@ -77,22 +77,25 @@ private void testConstraintSemantics(loc f) {
 		pp = ();
 		
 		constraints = cls_; // inital constraints to be solved are the closure ones
-								
+		
+		// First, solves constraints that do not require computation of subtypes					
 		int n = size(constraints);
 		solve(solutions, n) {
 			solveit(facts, mapper, allConstraints = false);
 			println("solve extra <size(constraints)> ...");
 			ifLowerBoundsInferred(facts, mapper, allConstraints = false);
+			// addTypeParameterBoundConstraints(facts, mapper, allConstraints = false);
 			n = size(constraints);
 		}
 		
+		// Second, all the constraints
 		solve(solutions, n) {
 			solveit(facts, mapper);
 			println("solve extra <size(constraints)> ...");
 			ifLowerBoundsInferred(facts, mapper);
+			// addTypeParameterBoundConstraints(facts, mapper);
 			n = size(constraints);
 		}
-		
 		
 		println("done!");
 		

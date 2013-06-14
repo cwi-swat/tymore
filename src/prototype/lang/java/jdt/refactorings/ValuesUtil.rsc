@@ -74,6 +74,8 @@ public bool isTypeArgument(entity([ *ids, typeArgument(str name, _, Entity _) ])
 @doc{EXTENSION with wildcards}
 public bool isTypeArgument(entity([ *ids, typeArgument(str name, _, Entity _), upper(_) ])) = true;
 public bool isTypeArgument(entity([ *ids, typeArgument(str name, _, Entity _), lower(_) ])) = true;
+public bool isTypeArgument(entity([ *ids, captured(Entity v) ])) = isTypeArgument(v);
+public bool isTypeArgument(entity([ *ids, captureof(Entity v) ])) = isTypeArgument(v);
 public default bool isTypeArgument(_) = false;
 
 @doc{EXTENSION with wildcards}
@@ -90,8 +92,12 @@ public Entity replaceWithLower(entity([ *ids, ta:typeArgument(str name, _, Entit
 	= entity([ *ids, ta, lower(b) ]);
 public default Entity replaceWithLower(Entity val) = val;
 
+public Entity capture(ta:entity([ *ids, typeArgument(_,_,_)])) = entity([ captured(ta) ]);
+public Entity capture(ta:entity([ *ids, typeArgument(_,_,_), lower(_) ])) = entity([ captured(ta) ]);
+public Entity capture(ta:entity([ *ids, typeArgument(_,_,_), upper(_) ])) = entity([ captured(ta) ]);
 
 public bool isCapturedTypeArgument(entity([ *ids, captureof(Entity v) ])) = isTypeArgument(v);
+public bool isCapturedTypeArgument(entity([ *ids, captured(Entity v)])) = isTypeArgument(v);
 public default bool isCapturedTypeArgument(Entity _) = false;
 
 public Entity getTypeParameter(entity([ *ids, typeArgument(str name, _,_) ])) = entity([typeParameter(name)]);
