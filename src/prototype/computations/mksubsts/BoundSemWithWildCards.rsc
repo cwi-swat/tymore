@@ -28,74 +28,74 @@ import Map;
 import Set;
 
 @doc{EXTENSION with wildcards: the upper bind semantics that introduces new type argument variables and uses the extended bind semantics}
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, tp:entity([ *ids, typeParameter(str _)]))
+public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, tp:entity([ *ids, typeParameter(str _)]))
 	= bind(popSubsts(), SubstsT[Entity] (Substs s) {
 			Entity b = lookupSubsts(s, tp);
 			if(b == tp) return returnS(tp);
 			return bind(pushSubsts(idS)(facts, mapper, b), SubstsT[Entity] (Entity b_) { 
-						return boundSu(facts, mapper, b_); });
+						return bindSu(facts, mapper, b_); });
 			});
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str name,_, init:entity([ *ids, wildcard() ]))])) // case of 'Ta'
-	= boundSu(facts, mapper, entity( ids + ta + upper(boundEnv(facts, mapper, entity([ typeParameter(name) ]))) ));
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
-	= boundSu(facts, mapper, entity( ids + ta + upper(wcb) ));
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str name,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
-	= boundSu(facts, mapper, entity( ids + ta + upper(boundEnv(facts, mapper, entity([ typeParameter(name) ]))) )); // there is always non-zero init
+public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str name,_, init:entity([ *ids, wildcard() ]))])) // case of 'Ta'
+	= bindSu(facts, mapper, entity( ids + ta + upper(boundEnv(facts, mapper, entity([ typeParameter(name) ]))) ));
+public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
+	= bindSu(facts, mapper, entity( ids + ta + upper(wcb) ));
+public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str name,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
+	= bindSu(facts, mapper, entity( ids + ta + upper(boundEnv(facts, mapper, entity([ typeParameter(name) ]))) )); // there is always non-zero init
 // ***Note: optimization in case of only inference of rawtypes
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([]))])) // case of 'Ta'
-	= boundSu(facts, mapper, entity( ids + ta + upper(init) ));
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-	= boundS(facts, mapper, entity( ids + ta ));	
-//public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-//	= boundSu(facts, mapper, entity( ids + ta + upper(init) ));
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) // case of 'Ta_u'
-	= boundS(facts, mapper, ta);
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) // case of 'Ta_l'
-	= boundS(facts, mapper, ta);
+public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([]))])) // case of 'Ta'
+	= bindSu(facts, mapper, entity( ids + ta + upper(init) ));
+public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
+	= bindS(facts, mapper, entity( ids + ta ));	
+//public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
+//	= bindSu(facts, mapper, entity( ids + ta + upper(init) ));
+public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) // case of 'Ta_u'
+	= bindS(facts, mapper, ta);
+public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) // case of 'Ta_l'
+	= bindS(facts, mapper, ta);
 
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([])) = lift(tzero());
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard() ])) = returnS(object()); // wildcard value
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) // wildcard value
-	= bind(pushSubsts(idS)(facts, mapper, wcb), SubstsT[Entity] (Entity _) { return boundSu(mapper, wcb); }); // wildcard value
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) = returnS(object()); // wildcard value
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, captureof(Entity wcd) ])) 
-	= boundSu(facts, mapper, wcd); // capture value
+public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, entity([])) = lift(tzero());
+public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard() ])) = returnS(object()); // wildcard value
+public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) // wildcard value
+	= bind(pushSubsts(idS)(facts, mapper, wcb), SubstsT[Entity] (Entity _) { return bindSu(mapper, wcb); }); // wildcard value
+public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) = returnS(object()); // wildcard value
+public SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, entity([ *ids, captureof(Entity wcd) ])) 
+	= bindSu(facts, mapper, wcd); // capture value
 
-public default SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, Entity v) = returnS(v);
+public default SubstsT[Entity] bindSu(CompilUnit facts, Mapper mapper, Entity v) = returnS(v);
 	
 @doc{EXTENSION with wildcards: the lower bind semantics that introduces new type argument variables and uses the extended bind semantics}
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, tp:entity([ *ids, typeParameter(str _)]))
+public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, tp:entity([ *ids, typeParameter(str _)]))
 	= bind(popSubsts(), SubstsT[Entity] (Substs s) {
 			Entity b = lookupSubsts(s, tp);
 			if(b == tp) return returnS(tp);
 			return bind(pushSubsts(idS)(facts, mapper, b), SubstsT[Entity] (Entity b_) { 
-						return boundSl(facts, mapper, b_); });
+						return bindSl(facts, mapper, b_); });
 			});
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard() ]))])) // case of 'Ta'
-	= boundSl(facts, mapper, entity( ids + ta + lower(entity([ bottom() ])) ));
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
-	= boundSl(facts, mapper, entity( ids + ta + lower(entity([ bottom() ])) ));
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
-	= boundSl(facts, mapper, entity( ids + ta + lower(wcb) ));	
+public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard() ]))])) // case of 'Ta'
+	= bindSl(facts, mapper, entity( ids + ta + lower(entity([ bottom() ])) ));
+public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
+	= bindSl(facts, mapper, entity( ids + ta + lower(entity([ bottom() ])) ));
+public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
+	= bindSl(facts, mapper, entity( ids + ta + lower(wcb) ));	
 // ***Note: optimization in case of only inference of rawtypes
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([]))])) // case of 'Ta'
-	= boundSl(facts, mapper, entity( ids + ta + lower(init)));
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-	= boundS(facts, mapper, entity( ids + ta ));
-//public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
-//	= boundSl(facts, mapper, entity( ids + ta + lower(init)));
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) // case of 'Ta_l'
-	= boundS(facts, mapper, ta);
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) // case of 'Ta_u'
-	= boundS(facts, mapper, ta);
+public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([]))])) // case of 'Ta'
+	= bindSl(facts, mapper, entity( ids + ta + lower(init)));
+public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
+	= bindS(facts, mapper, entity( ids + ta ));
+//public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, Entity init)])) // case of 'Ta'
+//	= bindSl(facts, mapper, entity( ids + ta + lower(init)));
+public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), lower(Entity _)])) // case of 'Ta_l'
+	= bindS(facts, mapper, ta);
+public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, ta:entity([ *ids, typeArgument(str _,_, Entity _), upper(Entity _)])) // case of 'Ta_u'
+	= bindS(facts, mapper, ta);
 
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([])) = lift(tzero());
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard() ])) = returnS(entity([ bottom() ])); // wildcard value
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) = returnS(entity([ bottom() ])); // wildcard value
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) // wildcard value
+public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, entity([])) = lift(tzero());
+public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard() ])) = returnS(entity([ bottom() ])); // wildcard value
+public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) = returnS(entity([ bottom() ])); // wildcard value
+public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) // wildcard value
 	= bind(pushSubsts(idS)(facts, mapper, wcb), SubstsT[Entity] (Entity _) { 
-			return boundSl(facts, mapper, wcb); }); // wildcard value
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, captureof(Entity wcd) ])) 
-	= boundSl(facts, mapper, wcd); // capture value
+			return bindSl(facts, mapper, wcb); }); // wildcard value
+public SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, entity([ *ids, captureof(Entity wcd) ])) 
+	= bindSl(facts, mapper, wcd); // capture value
 	
-public default SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, Entity v) = returnS(v);
+public default SubstsT[Entity] bindSl(CompilUnit facts, Mapper mapper, Entity v) = returnS(v);

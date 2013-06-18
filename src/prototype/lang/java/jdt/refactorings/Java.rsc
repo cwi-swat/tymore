@@ -32,9 +32,9 @@ data Id = method(list[Entity] genericTypes, str name, list[Entity] params, Entit
 		
 		| upper(Entity init)
 		| lower(Entity init)
-		| captured(Entity \type)
+		| captured(Entity \type) // captured non-wildcard types; may have wildcard types as type arguments though;
 		
-		| bottom()
+		| bottom() // unknown bottom type value, subtype of all the types
         ;
 
 public Entity object() = entity([package("java"), package("lang"), class("Object")]);

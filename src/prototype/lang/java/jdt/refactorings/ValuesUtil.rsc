@@ -174,8 +174,6 @@ public Substs normalize(Substs s) {
 	// DEBUG: println("normalization ..."); println(s);
 	Entity arg = args[n];
 	args[n] = bnd;
-	//params0 = params;
-	//args0 = args;
 	if(int i <- [0..size(params)], params[i] == arg) {
 		args = delete(args,i);
 		params = delete(params,i);

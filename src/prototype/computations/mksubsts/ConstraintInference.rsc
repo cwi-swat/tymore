@@ -29,9 +29,6 @@ import Map;
 import Set;
 import IO;
 
-// FIXME: rename "boundS" -> "bindS"
-// EXTEND: "boundS_" and "boundS" may return zero in case of raw types ***and*** free variables
-
 //@doc{Evaluates the left and right hand side of a constraint;
 //	 Note: semantically, left- and right-hand side may be of the forms:
 //	 		(a) C (non-generic type); (b) C<...Ai...> (generic type); (c) A (type parameter); 
@@ -43,20 +40,20 @@ import IO;
 
 @doc{Binds type parameters ignoring the case of a type argument variable,
 	 i.e. stops when bound to a type argument variable}
-public set[Constraint[SubstsT[Entity]]] boundS_(CompilUnit facts, Mapper mapper, c:violated(_)) = { c };
-public default set[Constraint[SubstsT[Entity]]] boundS_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+public set[Constraint[SubstsT[Entity]]] bindS_(CompilUnit facts, Mapper mapper, c:violated(_)) = { c };
+public default set[Constraint[SubstsT[Entity]]] bindS_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 	= { apply(SubstsT[Entity] (Entity v) { 
-				return bind(boundS_(facts, mapper, v), SubstsT[Entity] (Entity b) {
+				return bind(bindS_(facts, mapper, v), SubstsT[Entity] (Entity b) {
 							// ***Note: type value is a generic type value 
 							Entity gen = getGenV(facts, mapper, b);
 							return (isEmpty(getTypeParamsOrArgs(gen)) 
 									/*&& !isTypeArgument(gen)*/) ? discard(returnS(gen)) : returnS(gen); }); })(c) }; 
 
 @doc{Binds type parameters and type argument variables}
-public set[Constraint[SubstsT[Entity]]] boundS(CompilUnit facts, Mapper mapper, c:violated(_)) = { c };
-public default set[Constraint[SubstsT[Entity]]] boundS(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+public set[Constraint[SubstsT[Entity]]] bindS(CompilUnit facts, Mapper mapper, c:violated(_)) = { c };
+public default set[Constraint[SubstsT[Entity]]] bindS(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 	= { apply(SubstsT[Entity] (Entity v) { 
-				return bind(boundS(facts, mapper, v), SubstsT[Entity] (Entity b) {
+				return bind(bindS(facts, mapper, v), SubstsT[Entity] (Entity b) {
 							// ***Note: type value is a generic type value
 							Entity gen = getGenV(facts, mapper, b);
 							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) };
@@ -93,7 +90,7 @@ public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapp
 //@doc{Infers additional type constraints from subtype constraints}
 //public set[Constraint[SubstsT[Entity]]] inferTypeArguments(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
 //	cons = { c2 | Constraint[SubstsT[Entity]] c1  <- gevalc(facts, mapper, c),
-//			      Constraint[SubstsT[Entity]] c2  <- boundS_(facts, mapper, c1) 
+//			      Constraint[SubstsT[Entity]] c2  <- bindS_(facts, mapper, c1) 
 //		   };
 //		   
 //	return { c2 | Constraint[SubstsT[Entity]] c1 <- cons,
@@ -103,7 +100,7 @@ public set[Constraint[SubstsT[Entity]]] supertypec(CompilUnit facts, Mapper mapp
 //		   + 
 //		   { c3 | Constraint[SubstsT[Entity]] c1  <- cons,
 //		   
-//				  Constraint[SubstsT[Entity]] c2  <- boundS(facts, mapper, c1),
+//				  Constraint[SubstsT[Entity]] c2  <- bindS(facts, mapper, c1),
 //				  Constraint[SubstsT[Entity]] c2_ <- catchZ(c2), // zero may occur due to raw types
 //				  
 //				  Constraint[SubstsT[Entity]] c3  <- subtyping(facts, mapper, c2_)
@@ -115,7 +112,7 @@ public set[Constraint[SubstsT[Entity]]] subtyping(CompilUnit facts, Mapper mappe
 public default set[Constraint[SubstsT[Entity]]] subtyping(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
 	set[Constraint[SubstsT[Entity]]] constraints = 
 			{ runWithEmptySubsts(c3)
-				 | Constraint[SubstsT[Entity]] c1  <- boundS(facts, mapper, c), 
+				 | Constraint[SubstsT[Entity]] c1  <- bindS(facts, mapper, c), 
 				   Constraint[SubstsT[Entity]] c1_ <- catchZ(c1), // zero may occur, for example, due to raw types		
 				      
 				   Constraint[SubstsT[Entity]] c2  <- supertypec(facts, mapper, c1_), 	  
@@ -141,7 +138,7 @@ public default set[Constraint[SubstsT[Entity]]] subtyping(CompilUnit facts, Mapp
 //				   Entity param <- getTypeParamsOrArgs(getGenV(facts, mapper, rv)), 
 //				   Constraint[SubstsT[Entity]] c1  := { p = param; apply(SubstsT[Entity] (Entity _) { return returnS(p); })(c); }, // Attension: current rascal closure semantics
 //				   Constraint[SubstsT[Entity]] c1_ := eq(c1.lh, c1.rh), // turns into an equality constraint and adds it
-//				   Constraint[SubstsT[Entity]] c2  <- boundS_(facts, mapper, c1_),
+//				   Constraint[SubstsT[Entity]] c2  <- bindS_(facts, mapper, c1_),
 //				   Constraint[SubstsT[Entity]] c2_ <- catchZ(c2)
 //		   };
 //}
@@ -174,7 +171,7 @@ public bool isTypeArgument(SubstsTL[Entity] v) = isTypeArgument(tauToSubstsT(v))
 //public default set[Constraint[SubstsT[Entity]]] bindTypeArgumentIfNotRawType(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) {
 //	SubstsT[Entity] (Entity) f = SubstsT[Entity] (Entity v) {
 //									if(isTypeArgument(v)) {
-//										SubstsT[Entity] b = bind(boundS(facts, mapper, v), SubstsT[Entity] (Entity bnd) { 
+//										SubstsT[Entity] b = bind(bindS(facts, mapper, v), SubstsT[Entity] (Entity bnd) { 
 //																// DEBUG: println("Bind type argument variables if not a raw type: <prettyprint(v)> <prettyprint(bnd)>"); 
 //																return returnS(getGenV(facts, mapper, bnd)); });
 //										// ***Note: rawtypes specific optimization, should not be earlier
@@ -194,34 +191,34 @@ public default set[Constraint[SubstsT[Entity]]] gevalc(CompilUnit facts, Mapper 
 								return returnS(eval(getGenV(facts, mapper, v))); }); })(c) }; 
 
 @doc{EXTENSION with wildcards: extends the bind semantics to account for wildcards and splits it into the lower and upper bind semantics }
-public set[Constraint[SubstsT[Entity]]] boundSu_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+public set[Constraint[SubstsT[Entity]]] bindSu_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 	= { apply(SubstsT[Entity] (Entity v) { 
-				return bind(boundSu_(facts, mapper, v), SubstsT[Entity] (Entity b) {
+				return bind(bindSu_(facts, mapper, v), SubstsT[Entity] (Entity b) {
 							// ***Note: type value is a generic type value
 							Entity gen = getGenV(facts, mapper, b);
 							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) }; 
-public set[Constraint[SubstsT[Entity]]] boundSu(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+public set[Constraint[SubstsT[Entity]]] bindSu(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 	= { apply(SubstsT[Entity] (Entity v) { 
-				return bind(boundSu(facts, mapper, v), SubstsT[Entity] (Entity b) {
+				return bind(bindSu(facts, mapper, v), SubstsT[Entity] (Entity b) {
 							// ***Note: type value is a generic type value
 							Entity gen = getGenV(facts, mapper, b);
 							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) };
-public set[Constraint[SubstsT[Entity]]] boundSl_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+public set[Constraint[SubstsT[Entity]]] bindSl_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 	= { apply(SubstsT[Entity] (Entity v) { 
-				return bind(boundSl_(facts, mapper, v), SubstsT[Entity] (Entity b) {
+				return bind(bindSl_(facts, mapper, v), SubstsT[Entity] (Entity b) {
 							// ***Note: type value is a generic type value
 							Entity gen = getGenV(facts, mapper, b);
 							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) };
-public set[Constraint[SubstsT[Entity]]] boundSl(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
+public set[Constraint[SubstsT[Entity]]] bindSl(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 	= { apply(SubstsT[Entity] (Entity v) { 
-				return bind(boundSl(facts, mapper, v), SubstsT[Entity] (Entity b) {
+				return bind(bindSl(facts, mapper, v), SubstsT[Entity] (Entity b) {
 							// ***Note: type value is a generic type value
 							Entity gen = getGenV(facts, mapper, b);
 							return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) };
 // Explicit one level capturing
 public set[Constraint[SubstsT[Entity]]] boundSul_(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 	= { c2 | Constraint[SubstsT[Entity]] c1 := apply(SubstsT[Entity] (Entity v) { 
-														return bind(boundS_(facts, mapper, v), SubstsT[Entity] (Entity b) {
+														return bind(bindS_(facts, mapper, v), SubstsT[Entity] (Entity b) {
 																	// ***Note: type value is a generic type value
 																	Entity gen = getGenV(facts, mapper, b);
 																	return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c),
@@ -230,12 +227,12 @@ public set[Constraint[SubstsT[Entity]]] boundSul_(CompilUnit facts, Mapper mappe
 // Explicit one level capturing
 public set[Constraint[SubstsT[Entity]]] boundSul(CompilUnit facts, Mapper mapper, Constraint[SubstsT[Entity]] c) 
 	= { c1 | Constraint[SubstsT[Entity]] c1 := apply(SubstsT[Entity] (Entity v) { 
-														return bind(boundSu(facts, mapper, v), SubstsT[Entity] (Entity b) {
+														return bind(bindSu(facts, mapper, v), SubstsT[Entity] (Entity b) {
 																	// ***Note: type value is a generic type value
 																	Entity gen = getGenV(facts, mapper, b);
 																	return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); },
 			  										 SubstsT[Entity] (Entity v) { 
-														return bind(boundSl(facts, mapper, v), SubstsT[Entity] (Entity b) {
+														return bind(bindSl(facts, mapper, v), SubstsT[Entity] (Entity b) {
 																	// ***Note: type value is a generic type value
 																	Entity gen = getGenV(facts, mapper, b);
 																	return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); })(c) 
@@ -245,11 +242,11 @@ public set[Constraint[SubstsT[Entity]]] capture(CompilUnit facts, Mapper mapper,
 	Constraint[SubstsT[Entity]] c_ = runWithEmptySubsts(Constraint::supertype(lh,rh));
 	bool lhIsCapturedTypeArg = isCapturedTypeArgument(c_.lh);
 	SubstsT[Entity] (Entity) fu = SubstsT[Entity] (Entity v) { 
-												return bind(boundSu_(facts, mapper, v), SubstsT[Entity] (Entity b) {
+												return bind(bindSu_(facts, mapper, v), SubstsT[Entity] (Entity b) {
 															Entity gen = getGenV(facts, mapper, b);
 															return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); };
 	SubstsT[Entity] (Entity) fl = SubstsT[Entity] (Entity v) { 
-												return bind(boundSl_(facts, mapper, v), SubstsT[Entity] (Entity b) {
+												return bind(bindSl_(facts, mapper, v), SubstsT[Entity] (Entity b) {
 															Entity gen = getGenV(facts, mapper, b);
 															return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); };
 	Constraint[SubstsT[Entity]] cul = apply(fu,fl)(c_);
@@ -270,11 +267,11 @@ public default set[Constraint[SubstsT[Entity]]] capture(CompilUnit facts, Mapper
 	Constraint[SubstsT[Entity]] c_ = runWithEmptySubsts(c);
 	bool lhIsCapturedTypeArg = isCapturedTypeArgument(c_.lh);
 	SubstsT[Entity] (Entity) fu = SubstsT[Entity] (Entity v) { 
-												return bind(boundSu_(facts, mapper, v), SubstsT[Entity] (Entity b) {
+												return bind(bindSu_(facts, mapper, v), SubstsT[Entity] (Entity b) {
 															Entity gen = getGenV(facts, mapper, b);
 															return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); };
 	SubstsT[Entity] (Entity) fl = SubstsT[Entity] (Entity v) { 
-												return bind(boundSl_(facts, mapper, v), SubstsT[Entity] (Entity b) {
+												return bind(bindSl_(facts, mapper, v), SubstsT[Entity] (Entity b) {
 															Entity gen = getGenV(facts, mapper, b);
 															return isEmpty(getTypeParamsOrArgs(gen)) ? discard(returnS(gen)) : returnS(gen); }); };
 	Constraint[SubstsT[Entity]] cul = apply(fu,fl)(c_);
@@ -314,8 +311,8 @@ public set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapper mappe
 			   	   Entity param <- getTypeParamsOrArgs(getGenV(facts, mapper, rv)), 
 			  
 			       Constraint[SubstsT[Entity]] c1 := { p = param; apply(SubstsT[Entity] (Entity _) { return returnS(p); })(Constraint::eq(lh,rh)); }, // Attension: current rascal closure semantics
-			       Constraint[SubstsT[Entity]] c2  <- boundSu_(facts, mapper, c1) 
-			       									  + boundSl_(facts, mapper, c1),
+			       Constraint[SubstsT[Entity]] c2  <- bindSu_(facts, mapper, c1) 
+			       									  + bindSl_(facts, mapper, c1),
 			       Constraint[SubstsT[Entity]] c2_ <- catchZ(c2)
 	   };
 }
@@ -324,7 +321,7 @@ public default set[Constraint[SubstsT[Entity]]] invariant(CompilUnit facts, Mapp
 				   Entity param <- getTypeParamsOrArgs(getGenV(facts, mapper, rv)), 
 				  
 				   Constraint[SubstsT[Entity]] c1 := { p = param; apply(SubstsT[Entity] (Entity _) { return returnS(p); })(c); }, // Attension: current rascal closure semantics
-				   Constraint[SubstsT[Entity]] c2  <- boundS_(facts, mapper, eq(c1.lh, c1.rh)), // ***Note: capture values could occur here
+				   Constraint[SubstsT[Entity]] c2  <- bindS_(facts, mapper, eq(c1.lh, c1.rh)), // ***Note: capture values could occur here
 				   Constraint[SubstsT[Entity]] c2_ <- catchZ(c2),
 				  
 				   // leaves equality constraints (invariance) only in case of captures, otherwise drops it
@@ -341,12 +338,12 @@ public default set[Constraint[SubstsT[Entity]]] covariant(CompilUnit facts, Mapp
 	return { c4 | Entity rv    <- eval(tau(c.rh)), 
 				  Entity param <- getTypeParamsOrArgs(getGenV(facts, mapper, rv)),
 				  Constraint[SubstsT[Entity]] c1 := { p = param; apply(SubstsT[Entity] (Entity _) { return returnS(p); })(c); }, // Attension: current rascal closure semantics
-				  Constraint[SubstsT[Entity]] c2 <- boundS_(facts, mapper, c1),
+				  Constraint[SubstsT[Entity]] c2 <- bindS_(facts, mapper, c1),
 				  Constraint[SubstsT[Entity]] c2_ <- catchZ(c2),
 				  
 				  // adds a subtype constraint on upper bounds
 				  Constraint[SubstsT[Entity]] c3 <- { isCapturedTypeArgument(c2_.rh) ? {} : { c2_ }; },
-				  Constraint[SubstsT[Entity]] c4 <- boundSu_(facts, mapper, subtype(c3.lh,c3.rh))
+				  Constraint[SubstsT[Entity]] c4 <- bindSu_(facts, mapper, subtype(c3.lh,c3.rh))
 		   };
 }
 
@@ -356,12 +353,12 @@ public default set[Constraint[SubstsT[Entity]]] contravariant(CompilUnit facts, 
 	return { c4 | Entity rv    <- eval(tau(c.rh)),
 				  Entity param <- getTypeParamsOrArgs(getGenV(facts, mapper, rv)), 	  
 				  Constraint[SubstsT[Entity]] c1 := { p = param; apply(SubstsT[Entity] (Entity _) { return returnS(p); })(c); }, // Attension: current rascal closure semantics
-				  Constraint[SubstsT[Entity]] c2 <- boundS_(facts, mapper, c1),
+				  Constraint[SubstsT[Entity]] c2 <- bindS_(facts, mapper, c1),
 				  Constraint[SubstsT[Entity]] c2_ <- catchZ(c2),
 				  
 				  // adds a subtype constraint on lower bounds
 				  Constraint[SubstsT[Entity]] c3 <- { isCapturedTypeArgument(c2_.rh) ? {} : { c2_ }; },			  
-				  Constraint[SubstsT[Entity]] c4 <- boundSl_(facts, mapper, subtype(c3.rh, c3.lh)) 
+				  Constraint[SubstsT[Entity]] c4 <- bindSl_(facts, mapper, subtype(c3.rh, c3.lh)) 
 		   };
 }
 
@@ -402,8 +399,8 @@ public default set[Constraint[SubstsT[Entity]]] catchCaptureVariable(CompilUnit 
 														} )
 												: {} ) ) 
 				} 
-			  ) | Constraint[SubstsT[Entity]] cu  <- boundSu_(facts, mapper, c_),
-				  Constraint[SubstsT[Entity]] cl  <- boundSl_(facts, mapper, c_)
+			  ) | Constraint[SubstsT[Entity]] cu  <- bindSu_(facts, mapper, c_),
+				  Constraint[SubstsT[Entity]] cl  <- bindSl_(facts, mapper, c_)
 		   };
 	return res;
 }

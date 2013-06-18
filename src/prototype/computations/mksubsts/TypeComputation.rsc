@@ -62,7 +62,7 @@ public SubstsT[Entity] glookupc(CompilUnit facts, Mapper mapper, AstNode t)
 //	= bind(lift(subterm(facts, mapper, t)), SubstsT[Entity] (AstNode t0) {
 //			return bind(glookupc(facts, mapper, t0), SubstsT[Entity] (Entity v0) { 
 //						return bind(gevalc(facts, mapper, v0), SubstsT[Entity] (Entity vT0) { 
-//								return bind(boundLkp(facts, mapper, v0), SubstsT[Entity] (Entity _) {  
+//								return bind(bindLkp(facts, mapper, v0), SubstsT[Entity] (Entity _) {  
 //										return lift(eval(boundEnv(facts, mapper, vT0))); }); }); }); });
 
 @doc{Explicit substitution of type arguments locally scoped to a term}
@@ -80,10 +80,10 @@ public Substs getExprSubsts(CompilUnit facts, Mapper mapper, Entity v) {
 //@doc{Lookup-bind semantics against explicit substitution or bounds of the global type environment;
 //	the latter takes care of the cases when either the type parameter is not found in the substitution,
 //	or it binds to a raw type}	
-//public SubstsT[Entity] boundLkp(CompilUnit facts, Mapper mapper, Entity v) {
+//public SubstsT[Entity] bindLkp(CompilUnit facts, Mapper mapper, Entity v) {
 //	Entity vT = eval(getGenV(facts, mapper, v)); 
-//	// DEBUG: tracer(true, "boundLkp: <prettyprint(vT)>; <prettyprint(v)>");
-//	return catchZ(boundS(facts, mapper, vT), boundEnv(facts, mapper, vT));
+//	// DEBUG: tracer(true, "bindLkp: <prettyprint(vT)>; <prettyprint(v)>");
+//	return catchZ(bindS(facts, mapper, vT), boundEnv(facts, mapper, vT));
 //}
 
 @doc{Supertype predicate that checks subtype relation}
@@ -194,14 +194,14 @@ public SubstsT[Entity] subLookupc(CompilUnit facts, Mapper mapper, AstNode t)
 	= bind(lift(subterm(facts, mapper, t)), SubstsT[Entity] (AstNode t0) {
 			return bind(glookupc(facts, mapper, t0), SubstsT[Entity] (Entity v0) { 
 						return bind(gevalc(facts, mapper, v0), SubstsT[Entity] (Entity vT0) { 
-								return bind(boundLkp(facts, mapper, v0), SubstsT[Entity] (Entity _) {  
+								return bind(bindLkp(facts, mapper, v0), SubstsT[Entity] (Entity _) {  
 										return lift(eval(boundEnv(facts, mapper, boundWildcardUB(vT0)))); }); }); }); });
 
 @doc{EXTENSION with wildcards: overrides the lookup bind semantics to account for wildcards: the upper bind replaces the previous bind}
-public SubstsT[Entity] boundLkp(CompilUnit facts, Mapper mapper, Entity v) {
+public SubstsT[Entity] bindLkp(CompilUnit facts, Mapper mapper, Entity v) {
 	Entity vT = eval(getGenV(facts, mapper, v)); 
-	// DEBUG: tracer(true, "boundLkp: <prettyprint(vT)>; <prettyprint(v)>");
-	return catchZ(boundSu(facts, mapper, vT), boundEnv(facts, mapper, vT));
+	// DEBUG: tracer(true, "bindLkp: <prettyprint(vT)>; <prettyprint(v)>");
+	return catchZ(bindSu(facts, mapper, vT), boundEnv(facts, mapper, vT));
 }
 
 @doc{EXTENSION with wildcards}
