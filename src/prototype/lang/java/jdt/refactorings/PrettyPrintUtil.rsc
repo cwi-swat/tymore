@@ -71,6 +71,8 @@ public str prettyprint(tuple[str,str] c) = "<c[0]> <c[1]>";
 
 public str prettyprint(Id:captured(Entity ta)) = "captured(<prettyprint(ta)>)";
 
+public str prettyprint(Id::bottom()) = " _|_ ";
+
 public str prettyprint(substs(list[Entity] args, list[Entity] params)) = "[ <for(arg<-args){><prettyprint(arg)>;<}> <for(param<-params){><prettyprint(param)>;<}> ]";
 public str prettyprint(pentity(Substs s, Entity genval)) = "<if((s.args != []) && (s.params != [])){><prettyprint(s)><}><prettyprint(genval)>";
 

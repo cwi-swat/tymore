@@ -84,7 +84,7 @@ private void testConstraintSemantics(loc f) {
 			solveit(facts, mapper, allConstraints = false);
 			println("solve extra <size(constraints)> ...");
 			ifLowerBoundsInferred(facts, mapper, allConstraints = false);
-			// addTypeParameterBoundConstraints(facts, mapper, allConstraints = false);
+			// addTypeParameterBoundConstraints(facts, mapper, allConstraints = false); // no-wildcards case
 			n = size(constraints);
 		}
 		
@@ -93,7 +93,7 @@ private void testConstraintSemantics(loc f) {
 			solveit(facts, mapper);
 			println("solve extra <size(constraints)> ...");
 			ifLowerBoundsInferred(facts, mapper);
-			// addTypeParameterBoundConstraints(facts, mapper);
+			// addTypeParameterBoundConstraints(facts, mapper); // no-wildcards case
 			n = size(constraints);
 		}
 		

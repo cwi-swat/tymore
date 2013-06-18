@@ -78,6 +78,9 @@ public bool isTypeArgument(entity([ *ids, captured(Entity v) ])) = isTypeArgumen
 public bool isTypeArgument(entity([ *ids, captureof(Entity v) ])) = isTypeArgument(v);
 public default bool isTypeArgument(_) = false;
 
+public bool isTypeArgumentOfCastExpression(entity([ *_, typeArgument(_, entity([ *_, anonymous(_,_) ]), _) ])) = true;
+public default bool isTypeArgumentOfCastExpression(Entity _) = false;
+
 @doc{EXTENSION with wildcards}
 public bool isLowerBoundTypeArgument(entity([ *ids, typeArgument(str name, _, Entity _), lower(_) ])) = true;
 public default bool isLowerBoundTypeArgument(Entity _) = false;
@@ -112,26 +115,30 @@ public Entity getInit(entity([ *ids, typeArgument(str name, _, Entity _), upper(
 public Entity getInit(entity([ *ids, typeArgument(str name, _, Entity _), lower(Entity init) ])) = init;
 
 @doc{EXTENSION with wildcards}
-public Entity boundWildcardUB(entity([ *ids, wildcard() ])) = zero();
+public Entity boundWildcardUB(entity([ *ids, wildcard() ])) = object();
 public Entity boundWildcardUB(entity([ *ids, wildcard(extends(Entity wcb)) ])) = wcb;
 public Entity boundWildcardUB(entity([ *ids, captureof(wildcard(extends(Entity wcb))) ])) = wcb;
-public Entity boundWildcardUB(entity([ *ids, wildcard(super(Entity wcb)) ])) = zero();
-public Entity boundWildcardUB(entity([ *ids, captureof(wildcard(super(Entity wcb))) ])) = zero();
+public Entity boundWildcardUB(entity([ *ids, wildcard(super(Entity wcb)) ])) = object();
+public Entity boundWildcardUB(entity([ *ids, captureof(wildcard(super(Entity wcb))) ])) = object();
 public default Entity boundWildcardUB(Entity val) = val;
 @doc{EXTENSION with wildcards}
-public Entity boundWildcardLB(entity([ *ids, wildcard() ])) = zero();
+public Entity boundWildcardLB(entity([ *ids, wildcard() ])) = bottom();
 public Entity boundWildcardLB(entity([ *ids, wildcard(super(Entity wcb)) ])) = wcb;
 public Entity boundWildcardLB(entity([ *ids, captureof(wildcard(super(Entity wcb))) ])) = wcb;
-public Entity boundWildcardLB(entity([ *ids, wildcard(extends(Entity wcb)) ])) = zero();
-public Entity boundWildcardLB(entity([ *ids, captureof(wildcard(extends(Entity wcb))) ])) = zero();
+public Entity boundWildcardLB(entity([ *ids, wildcard(extends(Entity wcb)) ])) = bottom();
+public Entity boundWildcardLB(entity([ *ids, captureof(wildcard(extends(Entity wcb))) ])) = bottom();
 public default Entity boundWildcardLB(Entity val) = val;
 @doc{EXTENSION with wildcards}
-public Entity boundWildcard(entity([ *ids, wildcard() ])) = zero();
+public Entity boundWildcard(entity([ *ids, wildcard() ])) = object();
 public Entity boundWildcard(entity([ *ids, wildcard(super(Entity wcb)) ])) = wcb;
 public Entity boundWildcard(entity([ *ids, captureof(wildcard(super(Entity wcb))) ])) = wcb;
 public Entity boundWildcard(entity([ *ids, wildcard(extends(Entity wcb)) ])) = wcb;
 public Entity boundWildcard(entity([ *ids, captureof(wildcard(extends(Entity wcb))) ])) = wcb;
 public default Entity boundWildcard(Entity val) = val;
+
+@doc{EXTENSION with wildcards}
+public bool isBottom(entity([ bottom() ])) = true;
+public default bool isBottom(Entity _) = false;
 
 @doc{Does lookup into substitution}
 public Entity lookupSubsts(Substs s, Entity v) {

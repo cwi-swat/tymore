@@ -140,6 +140,9 @@ public default PEntity toGensNonRecByCase(CompilUnit facts, Mapper mapper, Entit
 
 public Substs idS(Substs s) = s;
 
+@doc{EXTENSION with wildcards}
+public PEntity toGensNonRecByCase(CompilUnit facts, Mapper mapper, val:entity([ bottom() ])) = pentity(substs([],[]), val)[@paramval=val];
+
 @doc{EXTENSION with wildcards: extends to account for wildcards ***with capturing***}
 public Entity typeArgument(CompilUnit facts, Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([]), &C c) 
 	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
@@ -147,9 +150,6 @@ public Entity typeArgument(CompilUnit facts, Mapper mapper, tp:entity([ *ids, ty
 	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
 public Entity typeArgument(CompilUnit facts, Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, wildcard(_) ]), &C c)
 	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);	
-// !!! TODO: re-think of this case
-//public Entity typeArgument(Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([ *_, captureof(_) ]), &C c)
-//	= entity([ captureof(entity([ typeArgument(name, c, init) ])) ]);
 
 @doc{EXTENSION with wildcards: extends to account for wildcards ***without capturing***}
 public Entity typeArgumentNoCapture(CompilUnit facts, Mapper mapper, tp:entity([ *ids, typeParameter(str name) ]), init:entity([]), &C c) 
@@ -176,9 +176,3 @@ private bool hasRawTypeArgument(CompilUnit facts, Mapper mapper, init:entity([ *
 	if(Entity arg <- pinit.s.args, arg == zero() || hasRawTypeArgument(facts, mapper, arg)) return true;
 	return false;
 }
-// !!! TODO: re-think of this case 
-//private bool hasRawTypeArgument(CompilUnit facts, Mapper mapper, init:entity([ *_, captureof(_) ])) {
-//	PEntity pinit = mkSubsts(facts, mapper, boundWildcardUB(init));
-//	if(Entity arg <- pinit.s.args, arg == zero() || hasRawTypeArgument(facts, mapper, arg)) return true;
-//	return false;
-//}

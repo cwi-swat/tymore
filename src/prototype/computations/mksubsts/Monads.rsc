@@ -143,6 +143,9 @@ public set[list[Substs]] evalSubsts(SubstsTL_[&T] mv) = { ss | <&T _, list[Subst
 public SubstsTL_[&T2] bind(SubstsTL_[&T1] _:substsl_( rel[&T1,list[Substs]] vs1 ), SubstsTL_[&T2] (&T1) f)
 	= substsl_({ <v2, substs1 + substs2> | <&T1 v1, list[Substs] substs1> <- vs1, 
 										   <&T2 v2, list[Substs] substs2> <- run(f(v1)) });
+										   
+public SubstsTL_[&T] concat(SubstsTL_[&T] mv1, SubstsTL_[&T] mv2)
+	= substsl_(run(mv1) + run(mv2));
 	
 public SubstsTL_[&T] liftTL_(set[&T] vs) = !isEmpty(vs) ? substsl_( { <v, []> | &T v <- vs } )
 													    : substsl_( {} );

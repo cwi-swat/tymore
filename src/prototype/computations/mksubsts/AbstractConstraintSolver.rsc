@@ -118,23 +118,27 @@ public set[Constraint[SubstsTL[Entity]]] solveit(CompilUnit facts, Mapper mapper
 
 // public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, Constraint[SubstsTL[Entity]] c, SubstsTL_[Entity] r) = r;
 @doc{EXTENSION with wildcards}
-public map[tuple[SubstsTL_[Entity],SubstsTL[Entity]],SubstsTL_[Entity]] memoIntersectLHS1 = ();
+public map[tuple[SubstsTL_[Entity],SubstsTL[Entity],Constraint[SubstsTL[Entity]]],SubstsTL_[Entity]] memoIntersectLHS1 = ();
 @doc{EXTENSION with wildcards}
 public SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, Constraint[SubstsTL[Entity]] c, SubstsTL_[Entity] r) {
-	if(<r,c.lh> in memoIntersectLHS1) return memoIntersectLHS1[<r,c.lh>];
+	if(<r,c.lh,c> in memoIntersectLHS1) return memoIntersectLHS1[<r,c.lh,c>];
 
 	SubstsT_[Entity] l = bind(tau(tauToSubstsT(c.lh)), SubstsT_[Entity] (Entity var) {
-							  return bind(tauToSubstsT_(r), SubstsT_[Entity] (Entity val) {
-										return tau(replaceSubsts(facts, mapper, val, var)); }); });
-	res = intersect(facts, mapper, tauToSubstsTL_(l), r, c);
+							  SubstsT_[Entity] b = lift([]);
+							  if(isLowerBoundTypeArgument(var))
+							  		b = returnS_(entity([ bottom() ])); // in case of lower bounds, adds bottom type to possible values
+							  return concat(b, bind(tauToSubstsT_(r), SubstsT_[Entity] (Entity val) {
+													return tau(replaceSubsts(facts, mapper, val, var)); })); });
+	
+	res = intersectLHS(facts, mapper, c, tauToSubstsTL_(l), r);
 
-	memoIntersectLHS1[<r,c.lh>] = res;
+	memoIntersectLHS1[<r,c.lh,c>] = res;
 	return res;
 }
 
-public map[tuple[SubstsTL_[Entity],SubstsTL_[Entity]],SubstsTL_[Entity]] memoIntersectLHS2 = ();
+public map[tuple[SubstsTL_[Entity],SubstsTL_[Entity],Constraint[SubstsTL[Entity]]],SubstsTL_[Entity]] memoIntersectLHS2 = ();
 public default SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, Constraint[SubstsTL[Entity]] c, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
-	if(<l,r> in memoIntersectLHS2) return memoIntersectLHS2[<l,r>];
+	if(<l,r,c> in memoIntersectLHS2) return memoIntersectLHS2[<l,r,c>];
 	
 	SubstsT_[&T] res = bind(tauToSubstsT_(l), SubstsT_[Entity] (Entity lv) { 
 							return bind(tau(popSubsts()), SubstsT_[Entity] (Substs substs) {
@@ -146,8 +150,8 @@ public default SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, C
 										return !isZero(cond) ? returnS_(lv) : lift([]); });
 						});				 
 	res_ = tauToSubstsTL_(res);
-	
-	memoIntersectLHS2[<l,r>] = res_;
+
+	memoIntersectLHS2[<l,r,c>] = res_;
 	return res_;
 }
 
@@ -162,26 +166,38 @@ public default SubstsTL_[Entity] intersectLHS(CompilUnit facts, Mapper mapper, C
 //	return res;
 //}
 @doc{EXTENSION with wildcards}
-public map[tuple[SubstsTL_[Entity],SubstsTL[Entity]],SubstsTL_[Entity]] memoIntersectRHS1 = ();
+public map[tuple[SubstsTL_[Entity],SubstsTL[Entity],Constraint[SubstsTL[Entity]]],SubstsTL_[Entity]] memoIntersectRHS1 = ();
 @doc{EXTENSION with wildcards}
 public SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, Constraint[SubstsTL[Entity]] c, SubstsTL_[Entity] l) {
-	if(<l,c.rh> in memoIntersectRHS1) return memoIntersectRHS1[<l,c.rh>];
-															   
+	if(<l,c.rh,c> in memoIntersectRHS1) return memoIntersectRHS1[<l,c.rh,c>];
+																   
 	res = intersect(facts, mapper, _supertypes_all_(facts, mapper, l, c.rh), supertypes_all_(facts, mapper, l), c); // the second argument is exactly the super
-	
-	memoIntersectRHS1[<l,c.rh>] = res;
+
+	memoIntersectRHS1[<l,c.rh,c>] = res;
 	return res;
 }
 
-public map[tuple[SubstsTL_[Entity],SubstsTL_[Entity]],SubstsTL_[Entity]] memoIntersectRHS2 = ();
+public map[tuple[SubstsTL_[Entity],SubstsTL_[Entity],Constraint[SubstsTL[Entity]]],SubstsTL_[Entity]] memoIntersectRHS2 = ();
+//public default SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, Constraint[SubstsTL[Entity]] c, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
+//	if(<l,r> in memoIntersectRHS2) return memoIntersectRHS2[<l,r>];
+//	
+//	SubstsTL_[Entity] res = intersect(facts, mapper, r, supertypes_all_(facts, mapper, l), c);
+//	
+//	memoIntersectRHS2[<l,r>] = res;
+//	return res;
+//}
+@doc{EXTENSION with wildcards}
 public default SubstsTL_[Entity] intersectRHS(CompilUnit facts, Mapper mapper, Constraint[SubstsTL[Entity]] c, SubstsTL_[Entity] l, SubstsTL_[Entity] r) {
-	if(<l,r> in memoIntersectRHS2) return memoIntersectRHS2[<l,r>];
+	if(<l,r,c> in memoIntersectRHS2) return memoIntersectRHS2[<l,r,c>];
+	
+	if(entity([ bottom() ]) in eval(l)) return r; // identity behaviour if the left-hand side set has a bottom type
 	
 	SubstsTL_[Entity] res = intersect(facts, mapper, r, supertypes_all_(facts, mapper, l), c);
 	
-	memoIntersectRHS2[<l,r>] = res;
+	memoIntersectRHS2[<l,r,c>] = res;
 	return res;
 }
+
 
 @doc{EXTENSION with wildcards}
 public SubstsT[Entity] replaceSubsts(CompilUnit facts, Mapper mapper, Entity val, Entity var) {
@@ -298,10 +314,11 @@ public SubstsTL_[Entity] intersect(CompilUnit facts, Mapper mapper, SubstsTL_[En
 	res_ = inferMoreTypeArgumentConstraints(facts, mapper, res, c);
 	
 	memoIntersect[<l,r,c>] = res_;
+
 	return res_;
 }
 
-public map[tuple[Entity,list[Substs]],set[Constraint[SubstsT[Entity]]]] memoInference = ();
+public map[tuple[Entity,list[Substs],Constraint[SubstsTL[Entity]]],set[Constraint[SubstsT[Entity]]]] memoInference = ();
 public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mvals, Constraint[SubstsTL[Entity]] c) {
 	rel[Entity,list[Substs]] vals = run(mvals);
 	for(<Entity val, list[Substs] ss0> <- vals, size(ss0) > 1) {
@@ -315,11 +332,11 @@ public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapp
 			SubstsT[Entity] rh = bind(appnd(first), SubstsT[Entity] (value _) { 
 									return returnS(val_i); });						
 			set[Constraint[SubstsT[Entity]]] inferred = {};
-			if(<val,ss0> in memoInference) { 
-				inferred = memoInference[<val,ss0>];
+			if(<val,ss0,c> in memoInference) { 
+				inferred = memoInference[<val,ss0,c>];
 			} else {
 				inferred = subtyping(facts, mapper, Constraint::subtype(_,_) := c ? Constraint::subtype(lh,rh) : Constraint::eq(lh,rh));
-				memoInference[<val,ss0>] = inferred;
+				memoInference[<val,ss0,c>] = inferred;
 			}			
 			// Remove the solution if there is a violated constraint
 			if(!isEmpty({ c | Constraint[SubstsT[Entity]] c <- inferred, Constraint::violated(_) := c })) {
@@ -338,35 +355,53 @@ public SubstsTL_[Entity] inferMoreTypeArgumentConstraints(CompilUnit facts, Mapp
 @doc{EXTENSION with wildcards}
 public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper, bool allConstraints = true) {
 	set[Constraint[SubstsTL[Entity]]] more =
-	{  (!isZero(solutions[mvar]) && !isZero(solutions[upper])) ? c 
-															   : { // Undo equality solution - unlikely to happen (TODO: I need to think of it more)
-															   	   tracer(true, "WARNING: unlikely undo has happened");
-															       constraints = cons; 
-															       solutions[mvar] = solutionLower; 
-															       if(wasThere) solutions[upper] = solutionUpper; 
-															   	   c = Constraint::subtype(mvar, upper); 
-															   	   constraints = constraints + {c};
-															   	   c; }
-			| SubstsTL[Entity] mvar <- solutions,
-			  isLowerBoundTypeArgument(mvar), // look up a lower bound type argument variable
-			  SubstsTL_[Entity] solutionLower := solutions[mvar], 
-			  !isZero(solutionLower),        // the one with non-empty solution
-			  SubstsTL[Entity] upper := bind(mvar, SubstsTL[Entity] (Entity v) { 
+		{ *c | SubstsTL[Entity] mvar <- solutions,
+			   isLowerBoundTypeArgument(mvar), // look up a lower bound type argument variable
+			   SubstsTL_[Entity] lsolutions := solutions[mvar], 
+			   SubstsTL[Entity] upper := bind(mvar, SubstsTL[Entity] (Entity v) { 
 						   						return returnSL(replaceWithUpper(v)); }), // introduce the upper bound type argument variable
-			  Constraint[SubstsTL[Entity]] c := Constraint::subtype(mvar, upper),
-			  bool wasThere := (upper in solutions),
-			  SubstsTL_[Entity] solutionUpper := solutions[upper] ? liftTL_({}),
-			  set[Constraint[SubstsTL[Entity]]] cons := constraints,
-			  // try to solve with the equality constraint
-			  _ := ( (c notin constraints) ? { constraints = constraints + {c}; solveit(facts, mapper, allConstraints = allConstraints); } 
+			   // First option: checks if the lower bound solution does not have a bottom type, i.e., it has to be specified; 
+			   // if yes, tries to equalize the lower and upper bounds
+			   set[Constraint[SubstsTL[Entity]]] c 
+			   			:= ( (allConstraints && !hasBottom(lsolutions)) 
+			   					? { Constraint::eq(mvar,upper), *( (capOfUpper := tauToSubstsTL(bind(tauToSubstsT(upper), SubstsT[Entity] (Entity ub) { 
+			   															   							 return capture(facts, mapper, ub); })) && capOfUpper in solutions) 
+			   															? { Constraint::eq(capOfUpper, upper) } 
+			   															: {} ) }
+			   					: { (Constraint::eq(mvar,upper) notin constraints) 
+			   							? { Constraint::subtype(mvar,upper) } 
+			   							: { (capOfUpper := tauToSubstsTL(bind(tauToSubstsT(upper), SubstsT[Entity] (Entity ub) { 
+			   															   	   return capture(facts, mapper, ub); })) && capOfUpper in solutions) 
+			   									? { Constraint::eq(capOfUpper, upper) } 
+			   									: {}; }; } ),
+			    // Second option: checks if the lower bound solution does not have a bottom type, i.e., it has to be specified;
+			    // if yes, tries to equalize the upper bound of a wildcard type with the upper bound of the respective type parameter;
+			    //set[Constraint[SubstsTL[Entity]]] c 
+			    //		:= ( (allConstraints && !hasBottom(lsolutions)) 
+			    //				? ( ( Constraint::eq(mvar,upper) notin constraints) 
+			    //						? {
+			   	//							bool cond =isZero(bind(mvar, SubstsTL[Entity] (Entity var) {
+			   	//													return (entity([ *_, typeArgument(_,tuple[str,str] cntx,_), lower(_) ]) := var) ? liftTL(tzero()) : returnSL(var); }));
+			   	//							SubstsTL[Entity] b = bind(upper, SubstsTL[Entity] (Entity v) { 
+		  	  // 															return tauToSubstsTL(bind(boundEnvWithNoCapture(facts, mapper, getTypeParameter(v)), SubstsT[Entity] (Entity bv) {
+		  	  // 																						return returnS(getGenV(facts, mapper, bv)); })); });
+		  	  // 								if(cond) println("New equality due to type argument context: <prettyprint(mvar)>; <prettyprint(Constraint::eq(mvar,upper))>");
+		  	  // 								cond ? { Constraint::eq(mvar,upper) } : { println("New equality due to upper bound: <prettyprint(Constraint::eq(upper,b))>"); { Constraint::subtype(mvar,upper), Constraint::eq(upper,b) }; };
+			   	//						  } 
+			   	//						: { (capOfUpper := tauToSubstsTL(bind(tauToSubstsT(upper), SubstsT[Entity] (Entity ub) { 
+			   	//														   		return capture(facts, mapper, ub); })) && capOfUpper in solutions) 
+			   	//														   					? { Constraint::eq(capOfUpper, upper) } 
+			   	//														   					: {}; } )
+			   	//				: { Constraint::subtype(mvar,upper) } ),
+			  _ := ( (c notin constraints) ? { constraints = constraints + { *c }; solveit(facts, mapper, allConstraints = allConstraints); }
 			  						       : { // DEBUG:
 			  							       println("Extra equality constraint is already there.");
 			  							       {}; })
 			  
-	} 
-	+ 
-	addTypeParameterBoundConstraints(facts, mapper, allConstraints = allConstraints);
-	
+		} 
+		+ 
+		addTypeParameterBoundConstraints(facts, mapper, allConstraints = allConstraints);
+		
 	if(isEmpty(more))
 		return false; 
 
@@ -378,8 +413,8 @@ public bool ifLowerBoundsInferred(CompilUnit facts, Mapper mapper, bool allConst
 //		| SubstsTL[Entity] mvar <- solutions,
 //		  isTypeArgument(mvar),
 //		  SubstsTL[Entity] b := bind(mvar, SubstsTL[Entity] (Entity v) { 
-//		  						return tauToSubstsTL(bind(boundEnv(facts, mapper, getTypeParameter(v)), SubstsT[Entity] (Entity bv) {
-//		  									return (bv == object()) ? lift(tzero()) : returnS(getGenV(facts, mapper, bv)); })); }),
+//		  							return tauToSubstsTL(bind(boundEnv(facts, mapper, getTypeParameter(v)), SubstsT[Entity] (Entity bv) {
+//		  													return (bv == object()) ? lift(tzero()) : returnS(getGenV(facts, mapper, bv)); })); }),
 //		  !isZero(b),
 //		  Constraint[SubstsTL[Entity]] c := Constraint::subtype(mvar, b),
 //		  c notin constraints,
@@ -393,14 +428,17 @@ public set[Constraint[SubstsTL[Entity]]] addTypeParameterBoundConstraints(Compil
 		| SubstsTL[Entity] mvar <- solutions,
 		  isUpperBoundTypeArgument(mvar),
 		  SubstsTL[Entity] b := bind(mvar, SubstsTL[Entity] (Entity v) { 
-		  						return tauToSubstsTL(bind(boundEnvWithNoCapture(facts, mapper, getTypeParameter(v)), SubstsT[Entity] (Entity bv) {
-		  									return (bv == object()) ? lift(tzero()) : returnS(getGenV(facts, mapper, bv)); })); }),
+		  							return tauToSubstsTL(bind(boundEnvWithNoCapture(facts, mapper, getTypeParameter(v)), SubstsT[Entity] (Entity bv) {
+		  													return (bv == object()) ? lift(tzero()) : returnS(getGenV(facts, mapper, bv)); })); }),
 		  !isZero(b),
 		  Constraint[SubstsTL[Entity]] c := Constraint::subtype(mvar, b),
 		  c notin constraints,
 		  _ := { constraints = constraints + {c}; solveit(facts, mapper, allConstraints = allConstraints); {}; }
 	};
 }
+
+public bool hasBottom(SubstsTL_[Entity] mvals) = !isZero(bind(mvals, SubstsTL_[Entity] (Entity val) {
+															  return isBottom(val) ? returnSL_(val) : liftTL_({}); }));
 
 public bool solveit(CompilUnit facts, Mapper mapper, bool allConstraints = true) {
 	int n = size(constraints);
@@ -513,7 +551,7 @@ public str prettyprintOneSolution(CompilUnit facts, Mapper mapper, SubstsTL[Enti
 	
 	if(upp == "") {
 		if(!isEmpty(ub)) {
-			ubOnes = pickTheMostSpecific(facts, mapper, ub);
+			ubOnes = pickTheMostSpecific(facts, mapper, ub) - {<entity([ bottom() ]),[]>}; // ensure that the bottom is not an upper bound solution
 			for(tuple[Entity,list[Substs]] ubOne<-ubOnes) {
 				list[str] ubArgs = [];
 				ubArgs = [ prettyprintOneSolution(facts, mapper, returnSL(lookupSubsts(ubOne[1][0], param))) 
@@ -525,15 +563,19 @@ public str prettyprintOneSolution(CompilUnit facts, Mapper mapper, SubstsTL[Enti
 	
 	common = [ *({*lvarpps} & {*uvarpps}) ];
 	
-	if(isEmpty(lvarpps) && lpp == "")
-		pp[lvar] = "_; []";
+	if(isEmpty(lvarpps) && lpp == "") {
+		println("<for(<v,_> <-lb){><prettyprint(v)>; <}>");
+		throw "Should not ever happen if the initial program is type correct";
+	}
 		
 	if(isEmpty(uvarpps) && upp == "")
-		pp[uvar] = "_; []";
+		throw "Should not ever happen if the initial program is type correct";
 				
 	if(!isEmpty(lvarpps) && !isEmpty(uvarpps)) {
+		lvarpps = lvarpps - ["Cloneable []"];
+		uvarpps = uvarpps - ["Cloneable []"];
 		if(!isEmpty(common)) {
-			common0 = common - ["Serializable []", "Cloneable []"]; // annoying ones, always pops up
+			common0 = common - ["Cloneable []"]; // annoying ones, always pops up
 			if(!isEmpty(common0))
 				common = common0;
 			pp[lvar] = common[0];
@@ -548,12 +590,12 @@ public str prettyprintOneSolution(CompilUnit facts, Mapper mapper, SubstsTL[Enti
 		pp[uvar] = uvarpps[0];
 	}	
 	
-	if(pp[lvar] == pp[uvar] && pp[lvar] != "_; []") {
-		pp[luvar] =  pp[lvar];
-	} else if(pp[lvar] != pp[uvar] && pp[lvar] == "_; []") {
+	if(pp[lvar] == pp[uvar]) {
+		pp[luvar] = pp[lvar];
+	} else if(pp[lvar] != pp[uvar] && <entity([ bottom() ]),[]> in lb) {
 		pp[luvar] = "! extends <pp[uvar]>";
-	} else if(pp[lvar] != "_; []" && <object(),[]> in ub) {
-		pp[luvar] =  "! super <pp[lvar]>";
+	} else if(pp[lvar] != pp[uvar] && <entity([ bottom() ]),[]> notin lb) {
+		pp[luvar] = "! super <pp[lvar]> (<pp[uvar]>)";
 	} else {
 		pp[luvar] = "! super <pp[lvar]> & extends <pp[uvar]>";	
 	}
@@ -564,11 +606,18 @@ public str prettyprintOneSolution(CompilUnit facts, Mapper mapper, SubstsTL[Enti
 
 public SubstsTL_[Entity] pickTheMostSpecificLowerBound(CompilUnit facts, Mapper mapper, SubstsTL_[Entity] mvals) {
 	rel[Entity,list[Substs]] vals = run(mvals);
-	set[Entity] msvals = { <Entity val, _> <- pickMostSpecific(facts, mapper, ) };
-	;
+	set[Entity] mostSpecificVals = { <Entity val, _> <- pickMostSpecific(facts, mapper, vals) };
+	return bind(mvals, SubstsTL_[Entity] (Entity val) {
+				return (val in mostSpecificVals) ? returnSL_(val) : liftTL_({}); });
 }
 
 public rel[Entity,list[Substs]] pickTheMostSpecific(CompilUnit facts, Mapper mapper, rel[Entity,list[Substs]] vals) {
+	bool hadBottom = false;
+	if(<entity([ bottom() ]),[]> in vals) {
+		hadBottom = true;
+		vals = vals - {<entity([ bottom() ]),[]>};
+	}
+	if(isEmpty(vals)) return {<entity([ bottom() ]),[]>}; // if empty, the bottom has been removed
 	rel[Entity,list[Substs]] res = { getOneFrom(vals) };
 	solve(res) {
 		for(tuple[Entity,list[Substs]] v <- vals) {
@@ -590,5 +639,7 @@ public rel[Entity,list[Substs]] pickTheMostSpecific(CompilUnit facts, Mapper map
 			}
 		}
 	}
+	if(hadBottom)
+		res = res + {<entity([ bottom() ]),[]>};
 	return res;
 }

@@ -35,12 +35,12 @@ public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, tp:entity([ *ids
 			return bind(pushSubsts(idS)(facts, mapper, b), SubstsT[Entity] (Entity b_) { 
 						return boundSu(facts, mapper, b_); });
 			});
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard() ]))])) // case of 'Ta'
-	= boundSu(facts, mapper, entity( ids + ta + upper(zero()) ));
+public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str name,_, init:entity([ *ids, wildcard() ]))])) // case of 'Ta'
+	= boundSu(facts, mapper, entity( ids + ta + upper(boundEnv(facts, mapper, entity([ typeParameter(name) ]))) ));
 public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSu(facts, mapper, entity( ids + ta + upper(wcb) ));
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
-	= boundSu(facts, mapper, entity( ids + ta + upper(zero()) ));	
+public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str name,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
+	= boundSu(facts, mapper, entity( ids + ta + upper(boundEnv(facts, mapper, entity([ typeParameter(name) ]))) )); // there is always non-zero init
 // ***Note: optimization in case of only inference of rawtypes
 public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([]))])) // case of 'Ta'
 	= boundSu(facts, mapper, entity( ids + ta + upper(init) ));
@@ -54,10 +54,10 @@ public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, ta:entity([ *ids
 	= boundS(facts, mapper, ta);
 
 public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([])) = lift(tzero());
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
+public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard() ])) = returnS(object()); // wildcard value
 public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) // wildcard value
 	= bind(pushSubsts(idS)(facts, mapper, wcb), SubstsT[Entity] (Entity _) { return boundSu(mapper, wcb); }); // wildcard value
-public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) = lift(tzero()); // wildcard value
+public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) = returnS(object()); // wildcard value
 public SubstsT[Entity] boundSu(CompilUnit facts, Mapper mapper, entity([ *ids, captureof(Entity wcd) ])) 
 	= boundSu(facts, mapper, wcd); // capture value
 
@@ -72,9 +72,9 @@ public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, tp:entity([ *ids
 						return boundSl(facts, mapper, b_); });
 			});
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard() ]))])) // case of 'Ta'
-	= boundSl(facts, mapper, entity( ids + ta + lower(zero()) ));
+	= boundSl(facts, mapper, entity( ids + ta + lower(entity([ bottom() ])) ));
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(extends(Entity wcb)) ]))])) // case of 'Ta'
-	= boundSl(facts, mapper, entity( ids + ta + lower(zero()) ));
+	= boundSl(facts, mapper, entity( ids + ta + lower(entity([ bottom() ])) ));
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, ta:typeArgument(str _,_, init:entity([ *ids, wildcard(super(Entity wcb)) ]))])) // case of 'Ta'
 	= boundSl(facts, mapper, entity( ids + ta + lower(wcb) ));	
 // ***Note: optimization in case of only inference of rawtypes
@@ -90,8 +90,8 @@ public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, ta:entity([ *ids
 	= boundS(facts, mapper, ta);
 
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([])) = lift(tzero());
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard() ])) = lift(tzero()); // wildcard value
-public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) = lift(tzero()); // wildcard value
+public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard() ])) = returnS(entity([ bottom() ])); // wildcard value
+public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(extends(Entity wcb)) ])) = returnS(entity([ bottom() ])); // wildcard value
 public SubstsT[Entity] boundSl(CompilUnit facts, Mapper mapper, entity([ *ids, wildcard(super(Entity wcb)) ])) // wildcard value
 	= bind(pushSubsts(idS)(facts, mapper, wcb), SubstsT[Entity] (Entity _) { 
 			return boundSl(facts, mapper, wcb); }); // wildcard value

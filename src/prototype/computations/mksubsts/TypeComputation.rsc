@@ -95,7 +95,7 @@ public list[bool] supertype(CompilUnit facts, Mapper mapper, tuple[Entity l, Ent
 
 @doc{Simple way to take care of raw types, and wildcards; 
 	 the assumption of initial program type correctness makes it sufficient for Java}
-public bool isSub(CompilUnit facts, Mapper mapper, Entity sub, Entity sup) = (mkSubsts(facts, mapper, sub).genval == mkSubsts(facts, mapper, sup).genval);
+public default bool isSub(CompilUnit facts, Mapper mapper, Entity sub, Entity sup) = (mkSubsts(facts, mapper, sub).genval == mkSubsts(facts, mapper, sup).genval);
 
 @doc{Computes ***direct*** supertypes}
 public SubstsT_[Entity] supertypes_(CompilUnit facts, Mapper mapper, Entity v) {
@@ -172,6 +172,8 @@ public TypeOf[Entity] scopec(CompilUnit facts, Mapper mapper, AstNode e) {
 	return tauInv(scopes);
 }
 
+@doc{EXTENSION with wildcards}
+public bool isSub(CompilUnit facts, Mapper mapper, entity([ bottom() ]), Entity _) = true;
 
 @doc{EXTENSION with wildcards: split of the evaluation semantics into 'left' (capturing) and 'right'} 
 public SubstsT[Entity] gevalcNoCapture(CompilUnit facts, Mapper mapper, Entity v)
@@ -206,7 +208,8 @@ public SubstsT[Entity] boundLkp(CompilUnit facts, Mapper mapper, Entity v) {
 public SubstsT[Entity] capture(CompilUnit facts, Mapper mapper, Entity v) {
 	v = getGenV(facts, mapper, v);
 	list[Entity] params = getTypeParamsOrArgs(v);
-	if(isTypeArgument(v)) return isCapturedTypeArgument(v) ? returnS(v) : returnS(capture(v));
+	if(isTypeArgument(v)) 
+		return isCapturedTypeArgument(v) ? returnS(v) : returnS(capture(v)); // captured(_)
 	if(isEmpty(params)) return returnS(v);
 	return bind(popSubsts(), SubstsT[Entity] (Substs s) {
 				list[Entity] args = [];
