@@ -31,6 +31,7 @@ public loc wexmpl2 = |project://TyMoReCases/src/wildcards/Example2.java|;
 public loc wexmpl3 = |project://TyMoReCases/src/wildcards/Example3.java|;
 public loc wexmpl4 = |project://TyMoReCases/src/wildcards/Example4.java|;
 public loc wexmpl6 = |project://TyMoReCases/src/wildcards/Example6.java|;
+public loc wexmpl7 = |project://TyMoReCases/src/wildcards/Example7.java|;
 
 
 public list[loc] testcases = [ exmpl1,

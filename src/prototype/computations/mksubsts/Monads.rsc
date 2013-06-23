@@ -48,7 +48,7 @@ public TypeOf[&T] eval(SubstsT[&T] mv) = bind(mv.v(substs([],[])), TypeOf[&T] (t
 public SubstsT[&T2] bind(SubstsT[&T1] mv, SubstsT[&T2] (&T1) f)
 	= substs( TypeOf[tuple[&T2,Substs]] (Substs s) {
 				TypeOf[tuple[&T1,Substs]] v = run(mv)(s);
-				return bind(v, TypeOf[tuple[&T2,Substs]] (tuple[&T1,Substs] tpl) { 
+				return bind(v, TypeOf[tuple[&T2,Substs]] (tuple[&T1,Substs] tpl) { // 'bind' operator uses the 'bind' of the base monad 'TypeOf'
 							return run(f(tpl[0]))(tpl[1]); });
 			  } );
 			  
@@ -162,6 +162,12 @@ public SubstsT[&T] tauInv(SubstsT_[&T] mv)
 		list[tuple[&T, Substs]] v = run(mv)(s);
 		return tauInv(v); });
 		
+@doc{tau: TypeOf -> list}
+public list[&T] tau(TypeOf[&T] mv) 
+	= typeof(&T v) := mv ? [ v ] : [];
+public TypeOf[&T] tauInv(list[&T] mv) 
+	= isEmpty(mv) ? tzero() : returnT(head(mv));
+		
 @doc{tauToSubstsTL: SubstsT -> SubstsTL}
 public SubstsTL[&T] tauToSubstsTL(SubstsT[&T] mv) {
 	TypeOf[tuple[&T,Substs]] v = run(mv)(substs([],[]));
@@ -175,7 +181,6 @@ public SubstsT[&T] tauToSubstsT(SubstsTL[&T] mv) {
 						return bind(v, TypeOf[tuple[&T,Substs]] (tuple[&T,list[Substs]] v_) { return returnT(<v_[0], (!isEmpty(v_[1])) ? v_[1][0] : substs([],[]) >); }); });
 }
 
-// TODO: rename to tau
 @doc{tauToSubstsT: SubstsTL -> SubstsTL'}
 public SubstsTL_[&T] tauToSubstsTL_(SubstsTL[&T] mv) {
 	TypeOf[tuple[&T,list[Substs]]] v = run(mv);
@@ -198,14 +203,7 @@ public SubstsT_[&T] tauToSubstsT_(SubstsTL_[&T] mv) {
 	rel[&T,list[Substs]] vs = run(mv);
 	return substs_( lrel[&T,Substs] (Substs s) {
 						return [ <v, (!isEmpty(ss)) ? ss[0] : substs([],[]) > | <&T v, list[Substs] ss> <- vs ]; });
-} 
-		
-@doc{tau: TypeOf -> list}
-public list[&T] tau(TypeOf[&T] mv) 
-	= typeof(&T v) := mv ? [ v ] : [];
-public TypeOf[&T] tauInv(list[&T] mv) 
-	= isEmpty(mv) ? tzero() : returnT(head(mv));
-	
+}	
 
 @doc{Prettyprinting facilities}		
 public str prettyprint(typeof(&T v)) = prettyprint(v);
