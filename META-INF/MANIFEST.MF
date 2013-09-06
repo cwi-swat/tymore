@@ -4,7 +4,16 @@ Bundle-Name: TyMoRe
 Bundle-SymbolicName: TyMoRe
 Bundle-Version: 1.0.0
 Require-Bundle: org.eclipse.imp.pdb.values,
- rascal
+ rascal,
+ org.eclipse.jdt.core;bundle-version="3.9.0",
+ rascal_eclipse;bundle-version="0.6.1",
+ org.eclipse.ui.workbench;bundle-version="3.105.0",
+ org.eclipse.core.filebuffers,
+ org.eclipse.jface.text;bundle-version="3.8.100",
+ org.eclipse.core.jobs,
+ org.eclipse.jdt.ui,
+ org.eclipse.ltk.ui.refactoring;bundle-version="3.7.100",
+ org.eclipse.ltk.core.refactoring;bundle-version="3.6.100"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Import-Package: org.eclipse.core.resources,
  org.eclipse.core.runtime;version="3.4.0",

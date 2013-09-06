@@ -21,7 +21,7 @@ import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.rascalmpl.eclipse.library.lang.java.jdt.internal.JDT;
+import lang.java.jdt.internal.JDT;
 import org.rascalmpl.interpreter.IEvaluatorContext;
 import org.rascalmpl.interpreter.control_exceptions.Throw;
 
@@ -49,8 +49,8 @@ public class JDT4Refactorings {
 		TypeComputationModelBuilder typeComputationModelBuilder = new TypeComputationModelBuilder(values, new BindingConverter());
 		typeComputationModelBuilder.extract(this.getCompilationUnit(loc));
 		
-		compilUnitValue = ((IConstructor) compilUnitValue).setAnnotation("typeComputationModel", typeComputationModelBuilder.getTypeComputationModel());
-		compilUnitValue = ((IConstructor) compilUnitValue).setAnnotation("semanticsOfParameterizedTypes", typeComputationModelBuilder.getSemanticsOfParameterizedTypes());
+		compilUnitValue = ((IConstructor) compilUnitValue).asAnnotatable().setAnnotation("typeComputationModel", typeComputationModelBuilder.getTypeComputationModel());
+		compilUnitValue = ((IConstructor) compilUnitValue).asAnnotatable().setAnnotation("semanticsOfParameterizedTypes", typeComputationModelBuilder.getSemanticsOfParameterizedTypes());
 		return compilUnitValue;
 	}
 	
